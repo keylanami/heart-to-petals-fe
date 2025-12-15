@@ -1,10 +1,10 @@
+import Link from "next/link"; // <--- 1. Jangan lupa import ini
 
 const CustomBouquet = () => {
-
   return (
     <section className="max-w-7xl mx-auto px-6 mb-24">
       <div className="bg-[#E6E2D6] rounded-[2rem] p-10 md:p-16 flex flex-col md:flex-row items-center justify-between relative overflow-hidden">
-     
+      
         <div className="absolute -right-20 -top-20 w-64 h-64 bg-white/30 rounded-full blur-3xl"></div>
   
         <div className="md:w-1/2 z-10 hover:cursor-default">
@@ -13,9 +13,15 @@ const CustomBouquet = () => {
           <p className="text-gray-600 mb-8 max-w-md ">
             Pilih bunga favoritmu satu per satu. Mawar merah, Tulip, atau Lili? Kamu adalah senimannya.
           </p>
-          <button className="border-b-2 border-dark-green pb-1 text-dark-green font-medium hover:text-sage-green hover:border-sage-green transition">
+          
+          {/* 2. Ganti button jadi Link */}
+          <Link 
+            href="/custom" 
+            className="inline-block border-b-2 border-dark-green pb-1 text-dark-green font-medium hover:text-sage-green hover:border-sage-green transition"
+          >
             Mulai Custom Sekarang &rarr;
-          </button>
+          </Link>
+
         </div>
         
         <div className="md:w-1/3 mt-10 md:mt-0 relative z-10">
@@ -29,7 +35,5 @@ const CustomBouquet = () => {
     </section>
   );
 }
-
-
 
 export default CustomBouquet;
