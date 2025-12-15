@@ -75,7 +75,7 @@ const BentoItem = ({
 
 export default function BentoCatalog() {
   return (
-    <section className="w-full px-4 py-20 max-w-[1600px] mx-auto"> {/* Full Width tapi dibatasin dikit biar ga pecah di monitor ultrawide */}
+    <section className="w-full px-4 py-20 max-w-[1600px] mx-auto"> 
       
       {/* --- MOOD: WARM (Happy/Love) --- */}
       <div className="mb-20">
