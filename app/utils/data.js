@@ -545,3 +545,6 @@ const bouquet = [
   }
 
 ];
+
+
+export default bouquet;
