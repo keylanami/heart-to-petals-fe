@@ -9,11 +9,13 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "framer-motion": "^12.23.26",
+    "html-to-image": "^1.11.13",
     "lucide-react": "^0.561.0",
-    "next": "16.0.8",
+    "next": "^16.0.10",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "tailwind": "^4.0.0"
+    "tailwind": "^2.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

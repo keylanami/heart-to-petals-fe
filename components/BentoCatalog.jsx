@@ -106,7 +106,7 @@ export default function BentoCatalog() {
             price="Rp 450.000"
             philosophy="Warna kuning melambangkan kesuksesan, optimisme, dan awal perjalanan baru yang cerah."
             composition="5 Bunga Matahari Besar, Chamomile, Solidago, Wrapping Kertas Kraft Premium."
-            image="https://images.unsplash.com/photo-1543616995-15638531109a?q=80&w=800&auto=format&fit=crop"
+            image="/public/assets/bouquet/peace/crimson_promise.png"
             theme="light"
           />
 

@@ -1,4 +1,4 @@
-import Link from "next/link"; // <--- 1. Jangan lupa import ini
+import Link from "next/link"; 
 
 const CustomBouquet = () => {
   return (
@@ -14,7 +14,7 @@ const CustomBouquet = () => {
             Pilih bunga favoritmu satu per satu. Mawar merah, Tulip, atau Lili? Kamu adalah senimannya.
           </p>
           
-          {/* 2. Ganti button jadi Link */}
+          
           <Link 
             href="/custom" 
             className="inline-block border-b-2 border-dark-green pb-1 text-dark-green font-medium hover:text-sage-green hover:border-sage-green transition"
