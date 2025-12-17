@@ -8,7 +8,6 @@ import Link from "next/link";
 import { allItems } from "../utils/shop";
 
 
-// --- ANIMATION VARIANTS ---
 const containerVariants = {
   hidden: { opacity: 0 },
   show: {
@@ -25,6 +24,7 @@ const itemVariants = {
 };
 
 // --- COMPONENT: BENTO CARD ---
+// --- COMPONENT: BENTO CARD (LINKED) ---
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === 'dark';
 
@@ -38,8 +38,10 @@ const BentoCard = ({ product, index, className }) => {
       transition={{ duration: 0.5, type: "spring", bounce: 0.3 }}
       className={`group relative overflow-hidden cursor-pointer h-full shadow-sm hover:shadow-2xl transition-shadow duration-500 ${className}`}
     >
+     
+      <Link href={`/shop/${product.id}`} className="absolute inset-0 z-10" />
+
       
-      {/* 1. Image with Zoom */}
       <div className="absolute inset-0 overflow-hidden">
         <img 
           src={product.image} 
@@ -48,27 +50,27 @@ const BentoCard = ({ product, index, className }) => {
         />
       </div>
 
-      {/* 2. Enhanced Gradient Overlay */}
+     
       <div className={`absolute inset-0 bg-gradient-to-t ${isDark ? 'from-[#0F1F18] via-[#0F1F18]/40' : 'from-[#8C8681] via-[#8C8681]/20'} to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500`}></div>
 
-      {/* 3. Glass Badge */}
-      <div className="absolute top-5 left-5 z-20">
+     
+      <div className="absolute top-5 left-5 z-20 pointer-events-none">
         <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
           {product.tag}
         </span>
       </div>
 
-      {/* 4. Floating Arrow Button */}
-      <div className="absolute top-5 right-5 z-20 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 delay-100 ease-out">
-        <button className="bg-white text-dark-green w-10 h-10 rounded-full flex items-center justify-center shadow-lg hover:bg-sage-green hover:text-white transition-colors">
+    
+      <div className="absolute top-5 right-5 z-20 translate-x-10 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-300 delay-100 ease-out pointer-events-none">
+        <button className="bg-white text-dark-green w-10 h-10 rounded-full flex items-center justify-center shadow-lg">
            <ArrowUpRight size={20} />
         </button>
       </div>
 
-      {/* 5. Content Wrapper */}
-      <div className={`absolute bottom-0 left-0 w-full p-6 md:p-8 flex flex-col justify-end z-10 ${isDark ? 'text-cream-bg' : 'text-white'}`}>
+  
+      <div className={`absolute bottom-0 left-0 w-full p-6 md:p-8 flex flex-col justify-end z-20 pointer-events-none ${isDark ? 'text-cream-bg' : 'text-white'}`}>
         
-        {/* Title & Price - Slide Up Effect */}
+
         <div className="transform transition-transform duration-500 group-hover:-translate-y-2">
            <h3 className="text-2xl md:text-3xl font-serif font-bold leading-tight mb-1 drop-shadow-lg">
              {product.title}
@@ -78,14 +80,15 @@ const BentoCard = ({ product, index, className }) => {
            </p>
         </div>
 
-        {/* Hidden Actions - Reveal Effect */}
+  
         <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
             <div className="overflow-hidden">
                 <p className="text-sm opacity-90 line-clamp-2 mb-5 leading-relaxed font-light">
                   {product.desc}
                 </p>
                 
-                <div className="flex gap-3 pb-1"> 
+      
+                <div className="flex gap-3 pb-1 pointer-events-auto"> 
                   <button className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md border transition-all active:scale-95 ${isDark ? 'bg-cream-bg/90 text-dark-green border-cream-bg hover:bg-white' : 'bg-dark-green/80 text-white border-dark-green/50 hover:bg-dark-green'}`}>
                     <ShoppingBag size={14} /> Add
                   </button>
@@ -102,7 +105,6 @@ const BentoCard = ({ product, index, className }) => {
 };
 
 
-// --- COMPONENT: PROMO CARD (KOTAK IKLAN) ---
 const PromoCard = ({ className }) => {
   return (
     <motion.div
@@ -112,7 +114,7 @@ const PromoCard = ({ className }) => {
       animate="show"
       exit="hidden"
       transition={{ duration: 0.5 }}
-      className={`group relative rounded-[2rem] overflow-hidden h-full bg-gradient-to-br from-[#8FA89B] to-[#1A2F24] text-white p-8 md:p-10 flex flex-col justify-center items-start text-left shadow-xl ${className}`}
+      className={`group relative overflow-hidden h-full bg-gradient-to-br from-[#8FA89B] to-[#1A2F24] text-white p-8 md:p-10 flex flex-col justify-center items-start text-left shadow-xl ${className}`}
     >
     
       <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.8) 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
@@ -179,7 +181,7 @@ const ShopPage = () => {
             </h1>
         </motion.div>
         
-        {/* TAB FILTER */}
+      
         <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative">
           {["All", "Warm", "Gloomy"].map((mood) => {
              const isActive = activeMood === mood;
@@ -210,7 +212,6 @@ const ShopPage = () => {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 pb-32">
-        {/* ANIMATED GRID CONTAINER */}
         <motion.div 
             layout 
             variants={containerVariants}

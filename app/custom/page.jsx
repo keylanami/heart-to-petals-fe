@@ -3,7 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toJpeg } from "html-to-image";
-
+import { FLOWER_LIBRARY } from "../utils/flower";
 
 
 const CANVAS_COLORS = [
@@ -258,10 +258,9 @@ export default function CustomBuilder() {
         </div>
       </aside>
 
-      {/* 2. MAIN AREA */}
+
       <main className="flex-1 relative flex flex-col bg-white">
-        
-        {/* Top Bar */}
+      
         <header className="h-16 bg-white border-b border-gray-200 flex justify-between items-center px-6 z-10 shadow-sm">
             <div className="flex items-center gap-2">
                 <span className="text-gray-400 text-sm">Name:</span>
@@ -292,7 +291,7 @@ export default function CustomBuilder() {
             </div>
         </header>
 
-        {/* CANVAS */}
+    
         <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#F3F4F6]">
             
             <div className="absolute inset-0 z-0" onClick={() => { setActiveId(null); setEditingId(null); }}></div>
@@ -340,7 +339,7 @@ export default function CustomBuilder() {
                 )}
             </div>
 
-            {/* EDIT PANEL */}
+          
             {editingId && editingFlower && (
                 <div className="absolute bottom-6 right-6 bg-white p-5 rounded-2xl shadow-2xl border border-gray-100 w-72 z-[1000] animate-in slide-in-from-bottom-5">
                     

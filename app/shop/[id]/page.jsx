@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, Minus, Plus, ShoppingBag, Heart, Droplets, Leaf, BookOpen } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { PRODUCTS } from "@/utils/data"; // Import data dummy
+import { allItems } from "@/app/utils/shop"; 
 
 export default function ProductDetailPage() {
   const { id } = useParams(); // Ambil ID dari URL (misal: /shop/1 -> id = 1)
@@ -16,7 +16,7 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState("story"); // story | care | composition
 
   // Cari produk yang cocok dengan ID
-  const product = PRODUCTS.find((p) => String(p.id) === String(id));
+  const product = allItems.find((p) => String(p.id) === String(id));
 
   // Handle jika produk tidak ditemukan (misal user asal ketik URL)
   if (!product) {
@@ -36,11 +36,8 @@ export default function ProductDetailPage() {
   return (
     <main className="bg-cream-bg min-h-screen">
       <Navbar />
-
-      {/* CONTAINER: Centered & Contained (Gak Full Screen) */}
       <div className="max-w-5xl mx-auto px-6 pt-32 pb-24">
         
-        {/* Back Button */}
         <motion.button 
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
@@ -51,11 +48,9 @@ export default function ProductDetailPage() {
             Back to Collection
         </motion.button>
 
-        {/* MAIN LAYOUT: 2 Columns */}
         <div className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-white/50 p-6 md:p-10">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-start">
                 
-                {/* --- LEFT: IMAGE --- */}
                 <motion.div 
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -67,8 +62,7 @@ export default function ProductDetailPage() {
                         alt={product.title} 
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
-                    
-                    {/* Badge Mood */}
+                
                     <div className="absolute top-6 left-6">
                         <span className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md shadow-sm text-white ${product.theme === 'dark' ? 'bg-dark-green/80' : 'bg-sage-green/90'}`}>
                             {product.category} Mood
@@ -77,10 +71,8 @@ export default function ProductDetailPage() {
                 </motion.div>
 
 
-                {/* --- RIGHT: INFO --- */}
                 <div className="flex flex-col h-full pt-2">
                     
-                    {/* Header */}
                     <div className="flex justify-between items-start mb-4">
                         <div>
                             <span className="text-xs font-bold text-sage-green tracking-[0.2em] uppercase mb-2 block">{product.tag} Collection</span>
@@ -91,15 +83,11 @@ export default function ProductDetailPage() {
                         </button>
                     </div>
 
-                    {/* Price */}
                     <p className="text-2xl font-sans font-medium text-gray-800 mb-6">{priceFormatted}</p>
-
-                    {/* Short Desc */}
                     <p className="text-gray-500 leading-relaxed mb-8 font-light">
                         {product.desc}
                     </p>
 
-                    {/* --- TABS SYSTEM (Story / Care / Composition) --- */}
                     <div className="mb-8 bg-cream-bg/50 rounded-2xl p-2 border border-dark-green/5">
                         <div className="flex gap-1 mb-4 border-b border-gray-200/50 px-2">
                             {['story', 'composition', 'care'].map((tab) => (
@@ -119,7 +107,6 @@ export default function ProductDetailPage() {
                             ))}
                         </div>
 
-                        {/* Tab Content */}
                         <div className="px-2 pb-2 min-h-[120px] text-sm text-gray-600">
                              <AnimatePresence mode="wait">
                                 {activeTab === 'story' && (
