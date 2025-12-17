@@ -5,6 +5,8 @@ import { ShoppingBag, ArrowUpRight, Sparkles } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
+import { allItems } from "../utils/shop";
+
 
 // --- ANIMATION VARIANTS ---
 const containerVariants = {
@@ -47,7 +49,6 @@ const BentoCard = ({ product, index, className }) => {
       </div>
 
       {/* 2. Enhanced Gradient Overlay */}
-      {/* Gradasi dibuat lebih kuat di bawah agar teks selalu terbaca */}
       <div className={`absolute inset-0 bg-gradient-to-t ${isDark ? 'from-[#0F1F18] via-[#0F1F18]/40' : 'from-[#8C8681] via-[#8C8681]/20'} to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500`}></div>
 
       {/* 3. Glass Badge */}
@@ -101,7 +102,7 @@ const BentoCard = ({ product, index, className }) => {
 };
 
 
-// --- COMPONENT: PROMO CARD ---
+// --- COMPONENT: PROMO CARD (KOTAK IKLAN) ---
 const PromoCard = ({ className }) => {
   return (
     <motion.div
@@ -111,9 +112,9 @@ const PromoCard = ({ className }) => {
       animate="show"
       exit="hidden"
       transition={{ duration: 0.5 }}
-      className={`group relative overflow-hidden h-full bg-gradient-to-br from-[#8FA89B] to-[#1A2F24] text-white p-8 md:p-10 flex flex-col justify-center items-start text-left shadow-xl ${className}`}
+      className={`group relative rounded-[2rem] overflow-hidden h-full bg-gradient-to-br from-[#8FA89B] to-[#1A2F24] text-white p-8 md:p-10 flex flex-col justify-center items-start text-left shadow-xl ${className}`}
     >
-      {/* Decorative Noise/Pattern */}
+    
       <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(255,255,255,0.8) 1px, transparent 0)', backgroundSize: '24px 24px' }}></div>
       <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px] -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
 
@@ -143,95 +144,6 @@ const PromoCard = ({ className }) => {
 const ShopPage = () => {
   const [activeMood, setActiveMood] = useState("All");
 
-  // --- DATA DUMMY ---
-  const allItems = [
-    {
-      id: 1, type: 'product', title: "Head Over Heels", price: 850000,
-      image: "/assets/bouquet/peace/crimson_promise.png",
-      category: "Warm", tag: "Romance", desc: "Cinta yang meledak-ledak dan penuh gairah.", theme: "light"
-    },
-    {
-      id: 2, type: 'product', title: "Forgive Me", price: 550000,
-      image: "/assets/bouquet/regret/sweet_apology.png",
-      category: "Gloomy", tag: "Apology", desc: "Sampaikan maaf yang tulus ketika kata tak lagi cukup.", theme: "dark"
-    },
-    {
-      id: 3, type: 'product', title: "Bright Future", price: 450000,
-      image: "/assets/bouquet/peace/sunset_harmony.png",
-      category: "Warm", tag: "Graduation", desc: "Menyambut masa depan cerah dengan senyuman.", theme: "light"
-    },
-    {
-      id: 4, type: 'product', title: "Silent Tears", price: 700000,
-      image: "/assets/bouquet/peace/crimson_promise.png",
-      category: "Gloomy", tag: "Grief", desc: "Penghormatan terakhir untuk jiwa yang tenang.", theme: "dark"
-    },
-    {
-      id: 'promo-1', type: 'promo' 
-    },
-    {
-      id: 5, type: 'product', title: "Sweet Gratitude", price: 350000,
-      image: "/assets/bouquet/peace/moonlight_serenity.png",
-      category: "Warm", tag: "Thank You", desc: "Terima kasih yang manis untuk dia yang spesial.", theme: "light"
-    },
-    {
-      id: 6, type: 'product', title: "Midnight Regret", price: 480000,
-      image: "/assets/bouquet/regret/first_date_bloom.png",
-      category: "Gloomy", tag: "Regret", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark"
-    },
-    {
-      id: 7, type: 'product', title: "Silent Tears", price: 700000,
-      image: "/assets/bouquet/peace/crimson_promise.png",
-      category: "Gloomy", tag: "Grief", desc: "Penghormatan terakhir untuk jiwa yang tenang.", theme: "dark"
-    },
-    {
-      id: 8, type: 'product', title: "Sweet Gratitude", price: 350000,
-      image: "/assets/bouquet/peace/moonlight_serenity.png",
-      category: "Warm", tag: "Thank You", desc: "Terima kasih yang manis untuk dia yang spesial.", theme: "light"
-    },
-    {
-      id: 9, type: 'product', title: "Midnight Regret", price: 480000,
-      image: "/assets/bouquet/regret/first_date_bloom.png",
-      category: "Gloomy", tag: "Regret", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark"
-    },
-    {
-      id: 10, type: 'product', title: "Sweet Gratitude", price: 350000,
-      image: "/assets/bouquet/peace/moonlight_serenity.png",
-      category: "Warm", tag: "Thank You", desc: "Terima kasih yang manis untuk dia yang spesial.", theme: "light"
-    },
-    {
-      id: 11, type: 'product', title: "Midnight Regret", price: 480000,
-      image: "/assets/bouquet/regret/first_date_bloom.png",
-      category: "Gloomy", tag: "Regret", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark"
-    },
-    {
-      id: 12, type: 'product', title: "Silent Tears", price: 700000,
-      image: "/assets/bouquet/peace/crimson_promise.png",
-      category: "Gloomy", tag: "Grief", desc: "Penghormatan terakhir untuk jiwa yang tenang.", theme: "dark"
-    },
-    {
-      id:13, type: 'product', title: "Sweet Gratitude", price: 350000,
-      image: "/assets/bouquet/peace/moonlight_serenity.png",
-      category: "Warm", tag: "Thank You", desc: "Terima kasih yang manis untuk dia yang spesial.", theme: "light"
-    },
-    {
-      id: 'promo-2', type: 'promo' 
-    },
-    {
-      id: 14, type: 'product', title: "Midnight Regret", price: 480000,
-      image: "/assets/bouquet/regret/first_date_bloom.png",
-      category: "Gloomy", tag: "Regret", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark"
-    },
-    {
-      id: 15, type: 'product', title: "Midnight Regret", price: 480000,
-      image: "/assets/bouquet/peace/moonlight_serenity.png",
-      category: "Warm", tag: "Peace", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark"
-    },
-    {
-      id: 16, type: 'product', title: "Midnight Regret", price: 480000,
-      image: "/assets/bouquet/peace/moonlight_serenity.png",
-      category: "Warm", tag: "Peace", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark"
-    }
-  ];
 
   const filteredItems = activeMood === "All" 
     ? allItems

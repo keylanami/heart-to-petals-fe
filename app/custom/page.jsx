@@ -4,29 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toJpeg } from "html-to-image";
 
-// --- DATA ASSETS (Tetap Sama) ---
-const FLOWER_LIBRARY = [
-  // ROMANCE
-  { id: 'r1', name: "Red Rose", category: "romance", price: 85000, unit: "per 5 tangkai", image: "/assets/romance/red_rose.png", color: "bg-red-500" },
-  { id: 'r2', name: "Peony Pink", category: "romance", price: 120000, unit: "per 3 tangkai", image: "/assets/romance/peony.png", color: "bg-pink-400" },
-  { id: 'r3', name: "Red Tulip", category: "romance", price: 95000, unit: "per 5 tangkai", image: "/assets/romance/red_tulip.png", color: "bg-red-600" },
-  { id: 'r4', name: "Calla Lily", category: "romance", price: 85000, unit: "per 5 tangkai", image: "/assets/romance/calla_lily.png", color: "bg-red-500" },
-  { id: 'r5', name: "Deep Pink Rose", category: "romance", price: 120000, unit: "per 3 tangkai", image: "/assets/romance/deep_pink_rose.png", color: "bg-pink-400" },
-  { id: 'r6', name: "Pink Orchid", category: "romance", price: 95000, unit: "per 5 tangkai", image: "/assets/romance/pink_orchid.png", color: "bg-red-600" },
-  { id: 'r7', name: "Red Rose", category: "romance", price: 85000, unit: "per 5 tangkai", image: "/assets/romance/red_rose.png", color: "bg-red-500" },
-  { id: 'r8', name: "Peony Pink", category: "romance", price: 120000, unit: "per 3 tangkai", image: "/assets/romance/peony.png", color: "bg-pink-400" },
-  { id: 'r9', name: "Red Tulip", category: "romance", price: 95000, unit: "per 5 tangkai", image: "/assets/romance/red_tulip.png", color: "bg-red-600" },
-  // GRATITUDE
-  { id: 'g1', name: "Sunflower", category: "gratitude", price: 45000, unit: "per 1 tangkai besar", image: "/assets/gratitude/sunflower.png", color: "bg-yellow-400" },
-  { id: 'g2', name: "White Orchid", category: "gratitude", price: 150000, unit: "per potong", image: "/assets/gratitude/white_orchid.png", color: "bg-white" },
-  { id: 'g3', name: "Eucalyptus", category: "gratitude", price: 35000, unit: "per 1 ikat", image: "/assets/gratitude/eucalyptus.png", color: "bg-green-700" },
-  // REGRET
-  { id: 'rg1', name: "Baby's Breath", category: "regret", price: 40000, unit: "per 1 ikat besar", image: "/assets/regret/babys_breathe.png", color: "bg-gray-100" },
-  { id: 'rg2', name: "Blue Hydrangea", category: "regret", price: 75000, unit: "per 1 tangkai", image: "/assets/regret/blue_hydrangea.png", color: "bg-blue-300" },
-  { id: 'rg3', name: "Black Rose", category: "regret", price: 90000, unit: "per 3 tangkai", image: "/assets/regret/black_rose.png", color: "bg-gray-900" },
-  // PEACE
-  { id: 'p1', name: "Moonlight Serenity", category: "peace", price: 65000, unit: "per 5 tangkai", image: "/assets/bouquet/peace/moonlight_serenity.png", color: "bg-purple-200" },
-];
+
 
 const CANVAS_COLORS = [
     { name: "White", hex: "#FFFFFF", class: "bg-white" },
@@ -70,7 +48,7 @@ export default function CustomBuilder() {
             setBouquetName(draftToLoad.name);
             if (draftToLoad.canvasBg) setCanvasBg(draftToLoad.canvasBg);
             
-            // PENTING: Set ID draft ini biar nanti pas save dia tau ini update, bukan create
+            //  Set ID draft ini biar nanti pas save dia tau ini update, bukan create
             setCurrentDraftId(draftToLoad.id);
         }
         
@@ -79,7 +57,7 @@ export default function CustomBuilder() {
   }, []);
 
 
-  // --- LOGIC: ADD & REMOVE ---
+  // ADD & REMOVE ---
   const addFlower = (flower) => {
     const randomOffset = () => Math.floor(Math.random() * 60) - 30;
     const randomRotate = () => Math.floor(Math.random() * 40) - 20;
@@ -102,7 +80,7 @@ export default function CustomBuilder() {
     if (editingId === uid) setEditingId(null);
   };
 
-  // --- LOGIC: DRAG & DROP ---
+  //  DRAG & DROP ---
   const handleMouseDown = (e, uid, x, y) => {
     e.stopPropagation();
     setActiveId(uid);    
@@ -122,7 +100,7 @@ export default function CustomBuilder() {
 
   const handleMouseUp = () => setIsDragging(false);
 
-  // --- LOGIC: EDIT ---
+  // EDIT ---
   const handleDoubleClick = (e, uid) => {
     e.stopPropagation();
     setEditingId(uid); 
@@ -168,21 +146,19 @@ export default function CustomBuilder() {
     setActiveId(null);
     setEditingId(null);
     
-    // 2. Delay sekejap biar React render (ilangin border)
+    // 2. Delay biar React render
     await new Promise(resolve => setTimeout(resolve, 100));
 
     let previewImage = null;
 
     if (canvasRef.current) {
         try {
-            // LIBRARY BARU: html-to-image
-            // Dia lebih pinter nangkap CSS modern
+           
             previewImage = await toJpeg(canvasRef.current, {
-                quality: 0.6, // Kompres dikit biar ringan (0.6 = 60%)
-                backgroundColor: canvasBg.hex === 'grid' ? '#ffffff' : canvasBg.hex, // Handle background
+                quality: 0.6, 
+                backgroundColor: canvasBg.hex === 'grid' ? '#ffffff' : canvasBg.hex, 
                 style: {
-                    // INI MAGICNYA:
-                    // Kita paksa elemen yang difoto untuk "lupa" kalau dia lagi di-zoom
+    
                     transform: 'scale(1)', 
                     transformOrigin: 'top left',
                     width: '500px',
@@ -192,11 +168,11 @@ export default function CustomBuilder() {
             });
         } catch (err) {
             console.error("Gagal generate gambar:", err);
-            // Kalau gagal, tetep lanjut save tanpa gambar (atau pake placeholder)
+            // If gagal, tetep lanjut save tanpa gambar
         }
     }
 
-    // 3. Siapkan Data Payload
+    // 3. Prepare Data Payload
     const draftPayload = {
       name: bouquetName,
       date: new Date().toLocaleDateString("id-ID"),
@@ -244,8 +220,7 @@ export default function CustomBuilder() {
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
     >
-      
-      {/* 1. SIDEBAR */}
+    
       <aside className="w-80 bg-white border-r border-gray-200 flex flex-col z-20 shadow-xl">
         <div className="p-6 border-b border-gray-100">
           <Link href="/" className="text-gray-400 text-sm hover:text-dark-green mb-2 inline-block">&larr; Back to Home</Link>
