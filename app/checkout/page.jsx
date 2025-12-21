@@ -11,7 +11,7 @@ const shippingOptions = [
   { name: "Reguler", cost: 9000, eta: "2-3 Hari" },
 ];
 
-export const dynamic = "force-dynamic";
+
 
 export default function CheckoutContent() {
   const { cart, removeFromCart, clearCart } = useCart();
@@ -287,5 +287,13 @@ export default function CheckoutContent() {
         </div>
       </div>
     </main>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center">Loading Checkout...</div>}>
+      <CheckoutContent />
+    </Suspense>
   );
 }
