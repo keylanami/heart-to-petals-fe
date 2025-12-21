@@ -28,5 +28,3 @@ export const PROMOS = [
   }
 ];
 
-// TAMBAHAN 2: UPDATE allItems (Opsional: Tambah properti isBestSeller)
-// Kamu bisa edit manual allItems yang ada, tambahkan field: isBestSeller: true

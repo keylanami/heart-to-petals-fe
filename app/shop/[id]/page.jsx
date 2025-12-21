@@ -166,7 +166,7 @@ const PromoCard = ({ className }) => {
 // --- MAIN PAGE: STORE FRONT ---
 export default function ShopEtalasePage() {
   const { id } = useParams();
-  const router = useRouter(); // Buat tombol back
+  const router = useRouter();
   const [activeMood, setActiveMood] = useState("All");
 
   // 1. Ambil Data Toko
@@ -185,29 +185,16 @@ export default function ShopEtalasePage() {
         );
 
  const getBentoClass = (index) => {
-    // --- ALGORITMA "SYNCHRONIZED CHAOS" ---
-    
-    // 1. ITEM SPESIAL (HERO): Setiap item ke-7 (index 0, 7, 14...)
-    // Tipe: BIG BOX (2x2) - Biar ada focal point gede.
+   
     if (index % 7 === 0) {
       return "md:col-span-2 md:row-span-2 min-h-[640px]"; 
     }
-
-    // 2. ITEM PENYEIMBANG: Setiap item ke-5 (kecuali yang kena aturan no.1)
-    // Tipe: WIDE (2x1) - Melebar ke samping.
     if (index % 5 === 0) {
       return "md:col-span-2 md:row-span-1 min-h-[320px]";
     }
-
-    // 3. ITEM TIANG: Setiap item ke-3 (kecuali yang kena aturan no.1 & 2)
-    // Tipe: TALL (1x2) - Memanjang ke bawah.
     if (index % 3 === 0) {
        return "md:col-span-1 md:row-span-2 min-h-[640px]";
     }
-
-    // 4. ITEM FILLER: Sisanya (Angka genap/ganjil lain)
-    // Tipe: SMALL (1x1) - Ini kuncinya! Dia akan otomatis 'terbang' 
-    // mengisi lubang-lubang kecil yang ditinggalkan item Gede/Tinggi.
     return "md:col-span-1 md:row-span-1 min-h-[320px]";
   };
 
@@ -270,7 +257,7 @@ export default function ShopEtalasePage() {
           )}
         </motion.div>
 
-        {/* --- TABS MOOD (SUDAH KEMBALI!) --- */}
+
         <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative mt-4">
           {["All", "Warm", "Gloomy"].map((mood) => {
             const isActive = activeMood === mood;
@@ -306,7 +293,6 @@ export default function ShopEtalasePage() {
         </div>
       </div>
 
-      {/* PRODUCT GRID */}
       <div className="max-w-6xl mx-auto px-6 pb-32">
         <motion.div
           layout

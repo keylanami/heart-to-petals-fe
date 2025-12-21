@@ -20,7 +20,7 @@ import { useCart } from "@/app/context/CartContext";
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
-  const { addToCart } = useCart(); // 2. AMBIL FUNGSI DARI CONTEXT
+  const { addToCart } = useCart(); 
 
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState("story");

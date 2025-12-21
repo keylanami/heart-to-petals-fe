@@ -150,7 +150,6 @@ export default function DashboardPage() {
       <section className="mb-20 pl-4 md:pl-0 overflow-hidden">
          <div className="max-w-7xl mx-auto">
             
-            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 pt-10 pr-6 pl-10">
                 <div className="relative">
                     <div className="absolute -left-6 top-1 w-1 h-full bg-dark-green rounded-full hidden md:block"></div>
@@ -159,12 +158,12 @@ export default function DashboardPage() {
                     </h2>
                     <p className="text-gray-500 max-w-md">Koleksi terpopuler dari berbagai tenant pilihan.</p>
                 </div>
-                <Link href="/shop" className="hidden md:flex items-center gap-2 text-sm font-bold text-dark-green border-b border-dark-green pb-1 hover:text-sage-green hover:border-sage-green transition-all mt-4 md:mt-0">
+                <Link href="/toko" className="hidden md:flex items-center gap-2 text-sm font-bold text-dark-green border-b border-dark-green pb-1 hover:text-sage-green hover:border-sage-green transition-all mt-4 md:mt-0">
                     LIHAT SEMUA <ArrowRight size={14} />
                 </Link>
             </div>
             
-            {/* DRAGGABLE CAROUSEL */}
+          
             <motion.div 
                 ref={carouselRef} 
                 className="cursor-grab active:cursor-grabbing"
@@ -172,7 +171,7 @@ export default function DashboardPage() {
             >
                 <motion.div 
                     drag="x"
-                    dragConstraints={{ right: 0, left: -1000 }} // Sesuaikan panjang drag
+                    dragConstraints={{ right: 0, left: -1000 }} 
                     className="flex touch-pan-x pl-2 pb-10"
                 >
                     {bestSellers.map((item, idx) => (
@@ -187,8 +186,8 @@ export default function DashboardPage() {
                         </motion.div>
                     ))}
                     
-                    {/* Kartu "See More" */}
-                    <Link href="/shop" className="flex-shrink-0 w-40 h-[400px] flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-dark-green/30 text-dark-green hover:bg-dark-green hover:text-white transition-all group ml-4 mr-10 mt-4">
+                
+                    <Link href="/toko" className="flex-shrink-0 w-40 h-[400px] flex flex-col items-center justify-center rounded-[2rem] border-2 border-dashed border-dark-green/30 text-dark-green hover:bg-dark-green hover:text-white transition-all group ml-4 mr-10 mt-4">
                         <span className="font-serif font-bold text-lg text-center">Explore<br/>More</span>
                         <div className="w-10 h-10 rounded-full border border-current flex items-center justify-center mt-4 group-hover:rotate-45 transition-transform">
                             <ArrowRight size={18} />
@@ -213,17 +212,17 @@ export default function DashboardPage() {
                 </div>
             </div>
             
-            {/* Simple Horizontal Scroll buat Toko */}
+           
             <div className="flex gap-6 overflow-x-auto pb-4 pr-6 md:pr-0 scrollbar-hide">
                 {nearestShops.map((shop) => (
-                    <Link href={`/toko/${shop.id}`} key={shop.id} className="flex-shrink-0 w-72 group cursor-pointer">
-                        <div className="h-48 rounded-2xl overflow-hidden relative mb-4">
-                            <img src={shop.image} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"/>
+                    <Link href={`/shop/${shop.id}`} key={shop.id} className="flex-shrink-0 w-72 group cursor-pointer">
+                        <div className="h-48 rounded-xl overflow-hidden relative mb-4">
+                            <img src={shop.image} className="w-full h-full object-cover group-hover:opacity-60 transition-opacity "/>
                             <div className="absolute top-3 left-3 bg-white/90 backdrop-blur text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
                                 {shop.distance}
                             </div>
                         </div>
-                        <h3 className="text-xl font-serif font-bold text-dark-green leading-tight">{shop.name}</h3>
+                        <h3 className="text-xl font-serif font-bold text-dark-green leading-tight group-hover:text-sage-green">{shop.name}</h3>
                         <div className="flex items-center gap-1 text-orange-400 text-sm mt-1">
                             <Star size={12} fill="currentColor"/> {shop.rating}
                         </div>
