@@ -8,6 +8,7 @@ import {
   Star,
   ArrowRight,
   Palette,
+  Package,
   ShoppingBag,
   ArrowUpRight,
   Sparkles,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
+import { useRouter } from "next/navigation";
 
 // --- ANIMATION VARIANTS ---
 const pageVariants = {
@@ -34,30 +36,44 @@ const itemVariants = {
   }
 };
 
-// --- ENHANCED COMPONENT: TOP SHOP CARD (PORTAL STYLE) ---
+// --- COMPONENT 1: TOP SHOP CARD (PORTAL STYLE) ---
 const TopShopCard = ({ shop }) => (
   <motion.div variants={itemVariants}>
     <Link
       href={`/shop/${shop.id}`}
       className="group relative flex-shrink-0 w-[240px] h-[320px] block cursor-pointer"
     >
-  
-      <div className="w-full h-full rounded-md mt-2 overflow-hidden relative shadow-md group-hover:shadow-2xl transition-all duration-500 transform group-hover:-translate-y-2">
-    
+      <div className="w-full h-full mt-3 rounded-xl overflow-hidden relative shadow-md group-hover:shadow-2xl transition-all duration-500 transform group-hover:-translate-y-2">
+        
+        {/* Image Background */}
         <img
           src={shop.image}
           alt={shop.name}
-          className="w-full h-full object-cover "
+          className="w-full h-full object-cover"
         />
         
+
         <div className="absolute inset-0 bg-gradient-to-t from-[#1A2F24] via-[#1A2F24]/40 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-90"></div>
+
+      
+        <div className="absolute top-4 left-4 z-10">
+            {shop.can_customize ? (
+                <div className="flex items-center gap-1.5 bg-sage-green/90 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full text-[9px] font-bold text-white shadow-sm tracking-widest uppercase">
+                    <Palette size={10} /> Custom
+                </div>
+            ) : (
+                <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full text-[9px] font-bold text-white shadow-sm tracking-widest uppercase">
+                    <Package size={10} /> Ready
+                </div>
+            )}
+        </div>
 
 
         <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md border border-white/20 px-2 py-1 rounded-full flex items-center gap-1 text-[10px] font-bold text-white shadow-sm">
            <Star size={10} fill="currentColor" className="text-yellow-400" /> {shop.rating}
         </div>
 
-      
+
         <div className="absolute bottom-0 left-0 w-full p-6 text-white text-center">
            <h3 className="font-serif text-xl font-bold leading-tight mb-1 group-hover:text-sage-green transition-colors">
              {shop.name}
@@ -66,7 +82,7 @@ const TopShopCard = ({ shop }) => (
              <MapPin size={10} /> {shop.location}
            </p>
            
-          
+
            <div className="h-0 group-hover:h-8 overflow-hidden transition-all duration-300">
               <div className="flex items-center justify-center gap-2 text-[10px] font-bold uppercase tracking-widest text-sage-green opacity-0 group-hover:opacity-100 transition-opacity delay-100">
                  Visit Flowershop <ArrowRight size={12} />
@@ -78,10 +94,11 @@ const TopShopCard = ({ shop }) => (
   </motion.div>
 );
 
-// --- COMPONENT: BENTO CARD (ORIGINAL LAYOUT, NEW BUTTONS) ---
+
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
   const { addToCart } = useCart();
+  const router = useRouter();
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -90,10 +107,17 @@ const BentoCard = ({ product, index, className }) => {
     alert(`${product.title} masuk keranjang!`);
   };
 
+  const handleCheckout = (e) => {
+    e.preventDefault(); 
+    e.stopPropagation(); 
+    addToCart(product, 1); 
+    router.push(`/checkout?direct=true&id=${product.id}`);
+  };
+
   return (
     <motion.div
       layout
-      variants={itemVariants} // Pakai variants untuk entrance animation
+      variants={itemVariants}
       className={`group relative overflow-hidden cursor-pointer h-full shadow-sm hover:shadow-2xl transition-shadow duration-500 ${className}`}
     >
       <Link href={`/product/${product.id}`} className="absolute inset-0 z-10" />
@@ -113,7 +137,7 @@ const BentoCard = ({ product, index, className }) => {
         } to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500`}
       ></div>
       
-      {/* LABEL TOKO (Top Left) */}
+     
       <div className="absolute top-5 left-5 z-20 pointer-events-none flex flex-col items-start gap-2">
          {product.shop && (
             <div className="bg-white/90 backdrop-blur-md border border-white/50 text-dark-green py-1.5 px-3 rounded-full shadow-lg flex items-center gap-1.5">
@@ -160,13 +184,14 @@ const BentoCard = ({ product, index, className }) => {
                 <ShoppingBag size={14} /> Add
               </button>
               <button
+                onClick={handleCheckout}
                 className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
                   isDark
                     ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
                     : "bg-white/20 border border-white/50 text-white hover:bg-white hover:text-dark-green"
                 }`}
               >
-                Checkout
+                Checkout <ArrowRight size={14} />
               </button>
             </div>
           </div>
@@ -176,7 +201,7 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
-// --- COMPONENT: PROMO CARD ---
+
 const PromoCard = ({ className }) => (
   <motion.div
     layout
@@ -213,6 +238,7 @@ const PromoCard = ({ className }) => (
   </motion.div>
 );
 
+
 export default function TenantListPage() {
   const getBentoClass = (index) => {
     const pattern = [
@@ -230,7 +256,8 @@ export default function TenantListPage() {
   return (
     <main className="bg-cream-bg min-h-screen">
       <Navbar />
-
+      
+  
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {
           height: 8px;
@@ -250,6 +277,7 @@ export default function TenantListPage() {
 
       <div className="pt-36 pb-24 px-4 md:px-6 max-w-7xl mx-auto">
         
+        {/* HEADER */}
         <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -269,7 +297,7 @@ export default function TenantListPage() {
           </p>
         </motion.div>
 
-    
+        
         <motion.section 
             variants={pageVariants}
             initial="hidden"
@@ -299,7 +327,7 @@ export default function TenantListPage() {
           </motion.div>
         </motion.section>
 
-        {/* --- SECTION 2: ETALASE BOUQUET --- */}
+        {/* SECTION 2: ALL COLLECTIONS */}
         <motion.section
             variants={pageVariants}
             initial="hidden"

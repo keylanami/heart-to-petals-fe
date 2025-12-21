@@ -7,7 +7,6 @@ import { Check, Copy, ArrowRight, Clock, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 
 export default function OrderSuccessPage() {
-  // Simulasi Data Transaksi
   const orderId = "HTP-" + Math.floor(Math.random() * 1000000);
   const vaNumber = "880123456789";
   const [copied, setCopied] = useState(false);
@@ -30,7 +29,7 @@ export default function OrderSuccessPage() {
             transition={{ duration: 0.5 }}
             className="bg-white rounded-3xl shadow-lg overflow-hidden text-center relative"
         >
-            {/* Hiasan Header Hijau */}
+
             <div className="bg-dark-green h-32 relative flex items-center justify-center">
                 <div className="absolute -bottom-10 bg-white p-3 rounded-full">
                     <motion.div 
@@ -86,7 +85,7 @@ export default function OrderSuccessPage() {
                         Cek Status Pesanan
                     </button>
                     
-                    <Link href="/shop" className="block w-full">
+                    <Link href="/toko" className="block w-full">
                         <button className="w-full py-3 bg-white border border-gray-200 text-gray-600 rounded-full font-bold hover:bg-gray-50 transition flex items-center justify-center gap-2">
                             <ShoppingBag size={18} />
                             Belanja Lagi
