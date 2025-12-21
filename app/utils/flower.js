@@ -1,7 +1,16 @@
+// Kita asumsikan ID Toko sesuai dengan data di utils/shop.js
+// 101: Rosy Garden
+// 102: Eternal Florist
+// 103: The Flower Studio
+// 104: Sentra Bunga
+// 105: Luxe De Pere
+// 106: Petal & Paper
+
 export const FLOWER_LIBRARY = [
-  // ROMANCE
+  // --- ROMANCE COLLECTION ---
   {
     id: "r1",
+    shop_id: 101, // Rosy Garden (Specialist Mawar)
     name: "Red Rose",
     category: "romance",
     price: 85000,
@@ -11,6 +20,7 @@ export const FLOWER_LIBRARY = [
   },
   {
     id: "r2",
+    shop_id: 101, // Rosy Garden
     name: "Peony Pink",
     category: "romance",
     price: 120000,
@@ -20,6 +30,7 @@ export const FLOWER_LIBRARY = [
   },
   {
     id: "r3",
+    shop_id: 104, // Sentra Bunga (Market - Tulip biasanya banyak disini)
     name: "Red Tulip",
     category: "romance",
     price: 95000,
@@ -29,6 +40,7 @@ export const FLOWER_LIBRARY = [
   },
   {
     id: "r4",
+    shop_id: 103, // The Flower Studio (Artistic)
     name: "Calla Lily",
     category: "romance",
     price: 85000,
@@ -38,6 +50,7 @@ export const FLOWER_LIBRARY = [
   },
   {
     id: "r5",
+    shop_id: 101, // Rosy Garden
     name: "Deep Pink Rose",
     category: "romance",
     price: 120000,
@@ -47,6 +60,7 @@ export const FLOWER_LIBRARY = [
   },
   {
     id: "r6",
+    shop_id: 105, // Luxe (Premium Orchid)
     name: "Pink Orchid",
     category: "romance",
     price: 95000,
@@ -54,26 +68,30 @@ export const FLOWER_LIBRARY = [
     image: "/assets/romance/pink_orchid.png",
     color: "bg-red-600",
   },
+  
   {
     id: "r7",
+    shop_id: 102, 
     name: "Red Rose",
     category: "romance",
-    price: 85000,
+    price: 90000, // Harga beda dikit
     unit: "per 5 tangkai",
     image: "/assets/romance/red_rose.png",
     color: "bg-red-500",
   },
   {
     id: "r8",
+    shop_id: 106, // Petal & Paper
     name: "Peony Pink",
     category: "romance",
-    price: 120000,
+    price: 115000,
     unit: "per 3 tangkai",
     image: "/assets/romance/peony.png",
     color: "bg-pink-400",
   },
   {
     id: "r9",
+    shop_id: 103, // Flower Studio
     name: "Red Tulip",
     category: "romance",
     price: 95000,
@@ -81,9 +99,11 @@ export const FLOWER_LIBRARY = [
     image: "/assets/romance/red_tulip.png",
     color: "bg-red-600",
   },
-  // GRATITUDE
+
+  // --- GRATITUDE COLLECTION ---
   {
     id: "g1",
+    shop_id: 102, // Eternal Florist
     name: "Sunflower",
     category: "gratitude",
     price: 45000,
@@ -93,6 +113,7 @@ export const FLOWER_LIBRARY = [
   },
   {
     id: "g2",
+    shop_id: 105, // Luxe (White Orchid Premium)
     name: "White Orchid",
     category: "gratitude",
     price: 150000,
@@ -102,6 +123,7 @@ export const FLOWER_LIBRARY = [
   },
   {
     id: "g3",
+    shop_id: 103, // Flower Studio (Suka pakai filler unik)
     name: "Eucalyptus",
     category: "gratitude",
     price: 35000,
@@ -109,9 +131,11 @@ export const FLOWER_LIBRARY = [
     image: "/assets/gratitude/eucalyptus.png",
     color: "bg-green-700",
   },
-  // REGRET
+
+  // --- REGRET COLLECTION ---
   {
     id: "rg1",
+    shop_id: 104, // Sentra Bunga (Grosir Filler)
     name: "Baby's Breath",
     category: "regret",
     price: 40000,
@@ -121,6 +145,7 @@ export const FLOWER_LIBRARY = [
   },
   {
     id: "rg2",
+    shop_id: 103, // Flower Studio
     name: "Blue Hydrangea",
     category: "regret",
     price: 75000,
@@ -130,6 +155,7 @@ export const FLOWER_LIBRARY = [
   },
   {
     id: "rg3",
+    shop_id: 105, // Luxe (Mawar Hitam Langka)
     name: "Black Rose",
     category: "regret",
     price: 90000,
@@ -137,9 +163,11 @@ export const FLOWER_LIBRARY = [
     image: "/assets/regret/black_rose.png",
     color: "bg-gray-900",
   },
-  // PEACE
+
+  // --- PEACE COLLECTION ---
   {
     id: "p1",
+    shop_id: 106, // Petal & Paper
     name: "Moonlight Serenity",
     category: "peace",
     price: 65000,

@@ -10,6 +10,7 @@ import {
   Palette,
   Star,
   ArrowLeft,
+  Store,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -48,7 +49,6 @@ const BentoCard = ({ product, index, className }) => {
       exit="hidden"
       className={`group relative overflow-hidden cursor-pointer h-full shadow-sm hover:shadow-2xl transition-shadow duration-500 ${className}`}
     >
-      {/* LINK KE DETAIL PRODUCT */}
       <Link href={`/product/${product.id}`} className="absolute inset-0 z-10" />
 
       <div className="absolute inset-0 overflow-hidden">
@@ -121,8 +121,9 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
-// --- COMPONENT: PROMO CARD (Wajib ada biar gak error render) ---
-const PromoCard = ({ className }) => {
+// --- COMPONENT: PROMO CARD (SUDAH DIPERBAIKI) ---
+// Perhatikan: sekarang menerima props "shopId"
+const PromoCard = ({ className, shopId }) => {
   return (
     <motion.div
       layout
@@ -147,8 +148,10 @@ const PromoCard = ({ className }) => {
         Punya Cerita <br />{" "}
         <span className="italic text-cream-bg">Sendiri?</span>
       </h3>
+      
+      {/* UPDATE LINK DI SINI: Mengarah ke /custom/[shopId] */}
       <Link
-        href="/custom"
+        href={shopId ? `/custom/${shopId}` : "/custom"} 
         className="relative z-10 group/btn flex items-center gap-3 bg-cream-bg text-dark-green px-8 py-4 rounded-full font-bold text-sm hover:bg-white transition-all hover:scale-105 shadow-lg hover:shadow-xl"
       >
         <span>Mulai Custom Sekarang</span>
@@ -172,29 +175,26 @@ export default function ShopEtalasePage() {
   // 1. Ambil Data Toko
   const currentShop = SHOPS.find((s) => String(s.id) === String(id));
 
-  // 2. Ambil Barang Toko Tersebut
+  // 2. Ambil Barang Toko (DENGAN FILTER PROMO)
   const shopProducts = allItems.filter((item) => {
-    return item.shop?.id === currentShop?.id || item.type === "promo";
+    if (!currentShop) return false;
+    if (item.type === "promo") {
+      return currentShop.can_customize;
+    }
+    return item.shop?.id === currentShop.id;
   });
 
   const filteredItems =
     activeMood === "All"
-      ? shopProducts
-      : shopProducts.filter(
-          (item) => item.type === "promo" || item.category === activeMood
-        );
+    ? shopProducts
+    : shopProducts.filter(
+        (item) => item.type === "promo" || item.category === activeMood
+      );
 
- const getBentoClass = (index) => {
-   
-    if (index % 7 === 0) {
-      return "md:col-span-2 md:row-span-2 min-h-[640px]"; 
-    }
-    if (index % 5 === 0) {
-      return "md:col-span-2 md:row-span-1 min-h-[320px]";
-    }
-    if (index % 3 === 0) {
-       return "md:col-span-1 md:row-span-2 min-h-[640px]";
-    }
+  const getBentoClass = (index) => {
+    if (index % 6 === 0) return "md:col-span-2 md:row-span-2 min-h-[640px]";
+    if (index % 5 === 0) return "md:col-span-2 md:row-span-1 min-h-[320px]";
+    if (index % 3 === 0) return "md:col-span-1 md:row-span-2 min-h-[640px]";
     return "md:col-span-1 md:row-span-1 min-h-[320px]";
   };
 
@@ -205,20 +205,20 @@ export default function ShopEtalasePage() {
     <main className="bg-cream-bg min-h-screen relative">
       <Navbar />
 
-       <div className="absolute top-0 left-0 w-full z-20 pointer-events-none">
-         <div className="max-w-6xl mx-auto px-6 relative h-screen">
-             <div className="absolute top-32 pointer-events-auto">
-                <button
-                    onClick={() => router.push("/toko")}
-                    className="w-12 h-12 bg-white/50 backdrop-blur-md border border-white/60 rounded-full flex items-center justify-center text-dark-green hover:bg-dark-green hover:text-white transition-all shadow-sm group"
-                >
-                    <ArrowLeft
-                    size={22}
-                    className="group-hover:-translate-x-1 transition-transform"
-                    />
-                </button>
-             </div>
-         </div>
+      <div className="fixed top-0 left-0 w-full z-50 pointer-events-none h-screen">
+        <div className="max-w-6xl mx-auto px-6 relative h-full">
+          <div className="absolute top-32 pointer-events-auto">
+            <button
+              onClick={() => router.push("/toko")}
+              className="w-12 h-12 bg-white/50 backdrop-blur-md border border-white/60 rounded-full flex items-center justify-center text-dark-green hover:bg-dark-green hover:text-white transition-all shadow-sm group"
+            >
+              <ArrowLeft
+                size={22}
+                className="group-hover:-translate-x-1 transition-transform"
+              />
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="relative pt-36 pb-12 px-6 text-center z-10">
@@ -245,10 +245,13 @@ export default function ShopEtalasePage() {
               <Star size={12} fill="currentColor" /> {currentShop.rating}
             </span>
           </div>
+
+          {/* Tombol Custom Header (SUDAH DIPERBAIKI) */}
           {currentShop.can_customize && (
             <div className="mb-10">
               <Link
-                href="/custom"
+                // UPDATE LINK DI SINI: Mengarah ke /custom/[id]
+                href={`/custom/${currentShop.id}`}
                 className="inline-flex items-center gap-2 bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition shadow-lg"
               >
                 <Palette size={18} /> Racik Buket Sendiri
@@ -257,7 +260,7 @@ export default function ShopEtalasePage() {
           )}
         </motion.div>
 
-
+        {/* Filter Mood */}
         <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative mt-4">
           {["All", "Warm", "Gloomy"].map((mood) => {
             const isActive = activeMood === mood;
@@ -305,7 +308,12 @@ export default function ShopEtalasePage() {
             {filteredItems.map((item, index) => {
               if (item.type === "promo") {
                 return (
-                  <PromoCard key={item.id} className={getBentoClass(index)} />
+                  // PENTING: Pass 'shopId' ke PromoCard
+                  <PromoCard 
+                    key={item.id} 
+                    className={getBentoClass(index)} 
+                    shopId={currentShop.id} 
+                  />
                 );
               }
               return (
@@ -320,7 +328,6 @@ export default function ShopEtalasePage() {
           </AnimatePresence>
         </motion.div>
 
-        {/* Empty State kalau difilter gak ada hasil */}
         {filteredItems.filter((i) => i.type !== "promo").length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}

@@ -199,7 +199,7 @@ export default function DashboardPage() {
          </div>
       </section>
 
-      {/* --- NEAREST FLORIST CAROUSEL --- */}
+
       <section className="mb-16 pl-6 md:pl-0 bg-white py-16 -mx-6 md:mx-0 md:rounded-[3rem]">
          <div className="max-w-7xl mx-auto md:px-6">
             <div className="flex justify-between items-end mb-8 pr-6">

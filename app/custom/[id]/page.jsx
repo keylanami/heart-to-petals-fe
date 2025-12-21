@@ -1,10 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+// PERBAIKAN 1: Tambahkan useParams
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { toJpeg } from "html-to-image";
-import { FLOWER_LIBRARY } from "../utils/flower";
-
+import { FLOWER_LIBRARY } from "../../utils/flower"; 
+import { SHOPS } from "../../utils/shop"; 
+import { Info, Store, ArrowLeft } from "lucide-react";
 
 const CANVAS_COLORS = [
     { name: "White", hex: "#FFFFFF", class: "bg-white" },
@@ -16,58 +18,80 @@ const CANVAS_COLORS = [
 
 export default function CustomBuilder() {
   const router = useRouter();
+  // PERBAIKAN 2: Ambil params dari URL (ini yang menangkap angka 103 dari custom/103)
+  const params = useParams(); 
   const canvasRef = useRef(null);
 
-  // --- STATE ---
+  // --- 1. SETUP SHOP ID ---
+  const [selectedShopId, setSelectedShopId] = useState(null);
+  
+  // State lainnya
   const [selectedFlowers, setSelectedFlowers] = useState([]);
   const [activeCategory, setActiveCategory] = useState("romance");
   const [bouquetName, setBouquetName] = useState("Untitled Bouquet");
   const [zoom, setZoom] = useState(100);
   const [canvasBg, setCanvasBg] = useState(CANVAS_COLORS[1]); 
-
-  // Interaction State
+  
   const [activeId, setActiveId] = useState(null); 
   const [editingId, setEditingId] = useState(null); 
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
-
-  // --- NEW STATE: MENYIMPAN ID DRAFT YANG SEDANG DIEDIT ---
   const [currentDraftId, setCurrentDraftId] = useState(null);
 
-  // --- LOAD DRAFT (CONTINUE EDITING) ---
+  // --- 2. DETEKSI TOKO (DRAFT vs URL) ---
   useEffect(() => {
     const editId = localStorage.getItem("editDraftId");
     
     if (editId) {
+        // --- LOGIC A: DARI DRAFT (Prioritas Utama) ---
         const drafts = JSON.parse(localStorage.getItem("flowerDrafts") || "[]");
-        // Convert editId ke number karena Date.now() itu number
-        const draftToLoad = drafts.find(d => d.id === Number(editId));
+        const draftToLoad = drafts.find(d => String(d.id) === String(editId));
         
         if (draftToLoad) {
             setSelectedFlowers(draftToLoad.items);
             setBouquetName(draftToLoad.name);
             if (draftToLoad.canvasBg) setCanvasBg(draftToLoad.canvasBg);
-            
-            //  Set ID draft ini biar nanti pas save dia tau ini update, bukan create
             setCurrentDraftId(draftToLoad.id);
+            
+            if (draftToLoad.shop?.id) {
+                setSelectedShopId(draftToLoad.shop.id);
+            }
         }
-        
         localStorage.removeItem("editDraftId");
+
+    } else {
+        // --- LOGIC B: DARI URL (NEW CUSTOM) ---
+        // PERBAIKAN 3: Cek params.id, bukan searchParams
+        if (params?.id) {
+            setSelectedShopId(params.id); 
+        } else {
+            // Fallback (Jaga-jaga kalau error)
+            setSelectedShopId(SHOPS[0].id);
+        }
     }
-  }, []);
+  }, [params]); // Dependency ganti ke params
+
+  // --- 3. HELPER: CARI TOKO AKTIF (SAFE MATCH) ---
+  const activeShop = SHOPS.find(s => String(s.id) === String(selectedShopId)) || SHOPS[0];
+
+  // --- 4. HELPER: FILTER LIBRARY (SAFE MATCH) ---
+  const filteredLibrary = FLOWER_LIBRARY.filter(f => 
+    f.category === activeCategory && 
+    String(f.shop_id) === String(activeShop.id) 
+  );
+
+  const totalPrice = selectedFlowers.reduce((sum, item) => sum + item.price, 0);
+  const editingFlower = selectedFlowers.find(f => f.uid === editingId);
 
 
-  // ADD & REMOVE ---
+  // --- ACTIONS (SAMA SEPERTI SEBELUMNYA) ---
   const addFlower = (flower) => {
-    const randomOffset = () => Math.floor(Math.random() * 60) - 30;
-    const randomRotate = () => Math.floor(Math.random() * 40) - 20;
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
     const newFlower = {
       ...flower,
       uid: uniqueId, 
       x: 0, y: 0,
-      rotation: randomRotate(),
+      rotation: (Math.random() * 40) - 20,
       scale: 1, 
     };
     setSelectedFlowers([...selectedFlowers, newFlower]); 
@@ -80,7 +104,6 @@ export default function CustomBuilder() {
     if (editingId === uid) setEditingId(null);
   };
 
-  //  DRAG & DROP ---
   const handleMouseDown = (e, uid, x, y) => {
     e.stopPropagation();
     setActiveId(uid);    
@@ -100,7 +123,6 @@ export default function CustomBuilder() {
 
   const handleMouseUp = () => setIsDragging(false);
 
-  // EDIT ---
   const handleDoubleClick = (e, uid) => {
     e.stopPropagation();
     setEditingId(uid); 
@@ -115,9 +137,6 @@ export default function CustomBuilder() {
     }));
   };
 
-  
-
-  // --- LOGIC: LAYERING ---
   const bringToFront = () => {
     if (!editingId) return;
     const index = selectedFlowers.findIndex(f => f.uid === editingId);
@@ -138,81 +157,49 @@ export default function CustomBuilder() {
     setSelectedFlowers(newArr);
   };
 
-  // --- LOGIC: SAVE (PAKE HTML-TO-IMAGE) ---
   const handleSaveDraft = async () => {
     if (selectedFlowers.length === 0) { alert("Kanvas kosong!"); return; }
     
-    // 1. Matikan seleksi
     setActiveId(null);
     setEditingId(null);
-    
-    // 2. Delay biar React render
     await new Promise(resolve => setTimeout(resolve, 100));
 
     let previewImage = null;
-
     if (canvasRef.current) {
         try {
-           
             previewImage = await toJpeg(canvasRef.current, {
                 quality: 0.6, 
                 backgroundColor: canvasBg.hex === 'grid' ? '#ffffff' : canvasBg.hex, 
-                style: {
-    
-                    transform: 'scale(1)', 
-                    transformOrigin: 'top left',
-                    width: '500px',
-                    height: '600px',
-                    margin: '0' 
-                }
+                style: { transform: 'scale(1)', width: '500px', height: '600px', margin: '0' }
             });
-        } catch (err) {
-            console.error("Gagal generate gambar:", err);
-            // If gagal, tetep lanjut save tanpa gambar
-        }
+        } catch (err) { console.error(err); }
     }
 
-    // 3. Prepare Data Payload
     const draftPayload = {
       name: bouquetName,
       date: new Date().toLocaleDateString("id-ID"),
       items: selectedFlowers,
-      totalPrice: selectedFlowers.reduce((sum, item) => sum + item.price, 0),
+      totalPrice: totalPrice,
       previewImage: previewImage, 
-      canvasBg: canvasBg
+      canvasBg: canvasBg,
+      shop: activeShop 
     };
 
-    // 4. Save Logic (Create / Update)
     try {
         const existingDrafts = JSON.parse(localStorage.getItem("flowerDrafts") || "[]");
-
         if (currentDraftId) {
-            // UPDATE
-            const updatedDrafts = existingDrafts.map(d => {
-                if (d.id === currentDraftId) {
-                    return { ...d, ...draftPayload };
-                }
-                return d;
-            });
+            const updatedDrafts = existingDrafts.map(d => d.id === currentDraftId ? { ...d, ...draftPayload } : d);
             localStorage.setItem("flowerDrafts", JSON.stringify(updatedDrafts));
         } else {
-            // CREATE NEW
             const newDraft = { id: Date.now(), ...draftPayload };
             localStorage.setItem("flowerDrafts", JSON.stringify([newDraft, ...existingDrafts]));
         }
         
-        router.push("/custom/drafts");
-
+        router.push(`/custom/${activeShop.id}/drafts`);
     } catch (e) {
-        alert("Gagal menyimpan! LocalStorage penuh?");
-        console.error(e);
+        alert("Gagal menyimpan!");
     }
   };
-
-  // Helpers
-  const filteredLibrary = FLOWER_LIBRARY.filter(f => f.category === activeCategory);
-  const totalPrice = selectedFlowers.reduce((sum, item) => sum + item.price, 0);
-  const editingFlower = selectedFlowers.find(f => f.uid === editingId);
 
   return (
     <div 
@@ -223,8 +210,19 @@ export default function CustomBuilder() {
     
       <aside className="w-80 bg-white border-r border-gray-200 flex flex-col z-20 shadow-xl">
         <div className="p-6 border-b border-gray-100">
-          <Link href="/" className="text-gray-400 text-sm hover:text-dark-green mb-2 inline-block">&larr; Back to Home</Link>
+          {/* LINK BACK DIPERBAIKI: Mengarah kembali ke halaman toko yang benar */}
+          <Link href={`/shop/${activeShop.id}`} className="text-gray-400 text-sm hover:text-dark-green mb-2 flex items-center gap-1">
+             <ArrowLeft size={14}/> Back to Shop
+          </Link>
           <h2 className="text-2xl font-serif font-bold text-dark-green">Flower Library</h2>
+          
+          <div className="mt-3 flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+             <Store size={16} className="text-sage-green" />
+             <div className="flex flex-col">
+                <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Vendor</span>
+                <span className="text-sm font-bold text-dark-green leading-none">{activeShop.name}</span>
+             </div>
+          </div>
         </div>
         
         <div className="flex overflow-x-auto px-6 py-3 gap-2 border-b border-gray-100 scrollbar-hide">
@@ -234,7 +232,7 @@ export default function CustomBuilder() {
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {filteredLibrary.map((flower) => (
+          {filteredLibrary.length > 0 ? filteredLibrary.map((flower) => (
             <div key={flower.id} onClick={() => addFlower(flower)} className="flex items-center gap-3 p-2 rounded-xl hover:bg-cream-bg cursor-pointer border border-transparent hover:border-sage-green group relative">
               <div className="w-14 h-14 bg-gray-50 rounded-lg overflow-hidden border border-gray-100"><img src={flower.image} className="w-full h-full object-cover p-1" /></div>
               <div className="flex-1">
@@ -243,7 +241,12 @@ export default function CustomBuilder() {
               </div>
               <button className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-dark-green group-hover:bg-dark-green group-hover:text-white transition text-xs">+</button>
             </div>
-          ))}
+          )) : (
+            <div className="text-center py-10 flex flex-col items-center justify-center text-gray-400 text-xs gap-2">
+                <span className="text-2xl">🥀</span>
+                <p>Stok bunga kategori ini<br/>kosong di {activeShop.name}</p>
+            </div>
+          )}
         </div>
 
         <div className="p-6 border-t bg-white">
@@ -251,7 +254,6 @@ export default function CustomBuilder() {
                 <span className="text-sm text-gray-500">Estimasi</span>
                 <span className="text-lg font-bold text-dark-green">{totalPrice.toLocaleString('id-ID', {style: 'currency', currency: 'IDR'})}</span>
             </div>
-            {/* Ubah teks tombol biar user tau dia lagi edit atau bikin baru */}
             <button onClick={handleSaveDraft} className="w-full py-3 bg-dark-green text-white rounded-full font-bold shadow-lg hover:bg-sage-green transition">
                 {currentDraftId ? "Update Draft" : "Save as New Draft"}
             </button>
@@ -272,7 +274,7 @@ export default function CustomBuilder() {
                 <div className="flex gap-2">
                     {CANVAS_COLORS.map((color) => (
                         <button 
-                            key={color.name}
+                            key={color.name} 
                             onClick={() => setCanvasBg(color)}
                             title={color.name}
                             className={`w-5 h-5 rounded-full border border-gray-300 shadow-sm transition-transform hover:scale-110 ${color.hex === 'grid' ? 'bg-gray-100' : ''} ${canvasBg.name === color.name ? 'ring-2 ring-dark-green ring-offset-1' : ''}`}
@@ -294,6 +296,17 @@ export default function CustomBuilder() {
     
         <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#F3F4F6]">
             
+            <div className="absolute top-6 right-6 bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/50 z-10 w-56 animate-in fade-in zoom-in duration-500 pointer-events-none select-none">
+                <h4 className="font-bold text-dark-green mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">
+                    <Info size={14} /> Cara Edit
+                </h4>
+                <ul className="space-y-1.5 list-disc pl-4 text-[10px] text-gray-500 leading-relaxed font-medium">
+                    <li><span className="font-bold text-dark-green">Drag</span> bunga untuk memindahkan posisi.</li>
+                    <li><span className="font-bold text-dark-green">Double Click</span> bunga untuk membuka menu edit (Ukuran, Rotasi, Layer).</li>
+                    <li>Klik area kosong untuk <span className="font-bold text-dark-green">Unselect</span>.</li>
+                </ul>
+            </div>
+
             <div className="absolute inset-0 z-0" onClick={() => { setActiveId(null); setEditingId(null); }}></div>
 
             <div 

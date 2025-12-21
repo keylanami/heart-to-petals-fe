@@ -1,31 +1,30 @@
-import { Playfair_Display, DM_Sans, Lora, Inter_Tight, Inter} from "next/font/google";
-import { CartProvider } from "@/app/context/CartContext";
+import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
+import { CartProvider } from "./context/CartContext";
+// 1. IMPORT AUTH PROVIDER
+import { AuthProvider } from "./context/AuthContext"; 
 
-const playfair = Lora({ 
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const playfair = Playfair_Display({
   subsets: ["latin"],
-  variable: "--font-playfair", 
-  display: "swap",
-});
-
-const dmSans = Inter({
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
-  display: "swap",
+  variable: "--font-playfair",
 });
 
 export const metadata = {
-  title: "HeartToPetals The Sentiment Florist",
-  description: "Ungkapkan perasaanmu lewat bunga.",
+  title: "HeartToPetals",
+  description: "Florist Marketplace",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id">
-      <body className={`${playfair.variable} ${dmSans.variable} font-sans bg-cream-bg text-dark-green antialiased`}>
-        <CartProvider>
-        {children}
-        </CartProvider>
+    <html lang="en">
+      <body className={`${inter.variable} ${playfair.variable} font-sans`}>
+      
+        <AuthProvider>
+          <CartProvider>
+            {children}
+          </CartProvider>
+        </AuthProvider>
       </body>
     </html>
   );
