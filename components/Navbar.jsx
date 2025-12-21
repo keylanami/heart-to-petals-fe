@@ -23,8 +23,8 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Home", href: "/" },
-    { name: "Shop", href: "/shop" },
-    { name: "Custom", href: "/custom" }, // Aku tambahin menu Custom biar gampang akses
+    { name: "Florists", href: "/toko" },
+
   ];
 
   return (

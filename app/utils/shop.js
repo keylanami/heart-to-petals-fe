@@ -1,6 +1,24 @@
+export const SHOPS = [
+  {
+    id: 101,
+    name: "Rosy Garden Bandung",
+    location: "Bandung, Jawa Barat",
+    image: "https://images.unsplash.com/photo-1589244159943-460088ed5b92?q=80&w=200&auto=format&fit=crop",
+    can_customize: true
+  },
+  {
+    id: 102,
+    name: "Eternal Florist Jakarta",
+    location: "Jakarta Selatan",
+    image: "https://images.unsplash.com/photo-1533616688232-6084e5f56211?q=80&w=200&auto=format&fit=crop",
+    can_customize: false
+  }
+];
+
 export const allItems = [
   {
     id: 1,
+    shop: SHOPS[0], // Rosy Garden
     type: "product",
     title: "Head Over Heels",
     price: 850000,
@@ -9,9 +27,11 @@ export const allItems = [
     tag: "Romance",
     desc: "Cinta yang meledak-ledak dan penuh gairah.",
     theme: "light",
+    isBestSeller: true
   },
   {
     id: 2,
+    shop: SHOPS[0], // Rosy Garden
     type: "product",
     title: "Forgive Me",
     price: 550000,
@@ -23,6 +43,7 @@ export const allItems = [
   },
   {
     id: 3,
+    shop: SHOPS[0], // Rosy Garden
     type: "product",
     title: "Bright Future",
     price: 450000,
@@ -34,6 +55,19 @@ export const allItems = [
   },
   {
     id: 4,
+    shop: SHOPS[1], // Eternal Florist
+    type: "product",
+    title: "Sweet Gratitude",
+    price: 350000,
+    image: "/assets/bouquet/peace/moonlight_serenity.png",
+    category: "Warm",
+    tag: "Thank You",
+    desc: "Terima kasih yang manis untuk dia yang spesial.",
+    theme: "light",
+  },
+  {
+    id: 5,
+    shop: SHOPS[1], // Eternal Florist (Saya assign ke toko 2)
     type: "product",
     title: "Silent Tears",
     price: 700000,
@@ -45,21 +79,11 @@ export const allItems = [
   },
   {
     id: "promo-1",
-    type: "promo",
-  },
-  {
-    id: 5,
-    type: "product",
-    title: "Sweet Gratitude",
-    price: 350000,
-    image: "/assets/bouquet/peace/moonlight_serenity.png",
-    category: "Warm",
-    tag: "Thank You",
-    desc: "Terima kasih yang manis untuk dia yang spesial.",
-    theme: "light",
+    type: "promo", // Promo gak perlu shop karena gak masuk cart
   },
   {
     id: 6,
+    shop: SHOPS[0], // Rosy Garden
     type: "product",
     title: "Midnight Regret",
     price: 480000,
@@ -68,9 +92,11 @@ export const allItems = [
     tag: "Regret",
     desc: "Penyesalan terdalam di tengah malam yang sunyi.",
     theme: "dark",
+    isBestSeller: true
   },
   {
     id: 7,
+    shop: SHOPS[1], // Eternal Florist
     type: "product",
     title: "Silent Tears",
     price: 700000,
@@ -82,6 +108,7 @@ export const allItems = [
   },
   {
     id: 8,
+    shop: SHOPS[0], // Rosy Garden
     type: "product",
     title: "Sweet Gratitude",
     price: 350000,
@@ -93,6 +120,7 @@ export const allItems = [
   },
   {
     id: 9,
+    shop: SHOPS[1], // Eternal Florist
     type: "product",
     title: "Midnight Regret",
     price: 480000,
@@ -104,6 +132,7 @@ export const allItems = [
   },
   {
     id: 10,
+    shop: SHOPS[0], // Rosy Garden
     type: "product",
     title: "Sweet Gratitude",
     price: 350000,
@@ -115,6 +144,7 @@ export const allItems = [
   },
   {
     id: 11,
+    shop: SHOPS[1], // Eternal Florist
     type: "product",
     title: "Midnight Regret",
     price: 480000,
@@ -126,6 +156,7 @@ export const allItems = [
   },
   {
     id: 12,
+    shop: SHOPS[0],
     type: "product",
     title: "Silent Tears",
     price: 700000,
@@ -137,6 +168,7 @@ export const allItems = [
   },
   {
     id: 13,
+    shop: SHOPS[1],
     type: "product",
     title: "Sweet Gratitude",
     price: 350000,
@@ -145,6 +177,7 @@ export const allItems = [
     tag: "Thank You",
     desc: "Terima kasih yang manis untuk dia yang spesial.",
     theme: "light",
+    isBestSeller: true
   },
   {
     id: "promo-2",
@@ -152,6 +185,7 @@ export const allItems = [
   },
   {
     id: 14,
+    shop: SHOPS[0],
     type: "product",
     title: "Midnight Regret",
     price: 480000,
@@ -163,6 +197,7 @@ export const allItems = [
   },
   {
     id: 15,
+    shop: SHOPS[1],
     type: "product",
     title: "Midnight Regret",
     price: 480000,
@@ -174,6 +209,7 @@ export const allItems = [
   },
   {
     id: 16,
+    shop: SHOPS[0],
     type: "product",
     title: "Midnight Regret",
     price: 480000,
@@ -184,4 +220,3 @@ export const allItems = [
     theme: "dark",
   },
 ];
-

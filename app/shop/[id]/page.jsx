@@ -1,181 +1,352 @@
 "use client";
 import { useState } from "react";
-import { useParams, useRouter } from "next/navigation"; // useParams buat ambil ID dari URL
+import { useParams, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Minus, Plus, ShoppingBag, Heart, Droplets, Leaf, BookOpen } from "lucide-react";
+import {
+  ShoppingBag,
+  ArrowUpRight,
+  Sparkles,
+  MapPin,
+  Palette,
+  Star,
+  ArrowLeft,
+} from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { allItems } from "@/app/utils/shop"; 
+import Link from "next/link";
+import { allItems, SHOPS } from "@/app/utils/shop";
+import { useCart } from "@/app/context/CartContext";
 
-export default function ProductDetailPage() {
-  const { id } = useParams(); // Ambil ID dari URL (misal: /shop/1 -> id = 1)
-  const router = useRouter();
-  
-  // State
-  const [qty, setQty] = useState(1);
-  const [activeTab, setActiveTab] = useState("story"); // story | care | composition
+// --- ANIMATION VARIANTS ---
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: { opacity: 1, transition: { staggerChildren: 0.1 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, scale: 0.9 },
+  show: { opacity: 1, scale: 1 },
+};
 
-  // Cari produk yang cocok dengan ID
-  const product = allItems.find((p) => String(p.id) === String(id));
+// --- COMPONENT: BENTO CARD ---
+const BentoCard = ({ product, index, className }) => {
+  const isDark = product.theme === "dark";
+  const { addToCart } = useCart();
 
-  // Handle jika produk tidak ditemukan (misal user asal ketik URL)
-  if (!product) {
-    return (
-      <main className="bg-cream-bg min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-4xl font-serif text-dark-green mb-4">Bunga Tidak Ditemukan 🥀</h1>
-          <button onClick={() => router.back()} className="text-sage-green underline">Kembali ke Shop</button>
-        </div>
-      </main>
-    );
-  }
-
-  // Format Harga
-  const priceFormatted = new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(product.price);
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product, 1);
+    alert(`${product.title} masuk keranjang!`);
+  };
 
   return (
-    <main className="bg-cream-bg min-h-screen">
-      <Navbar />
-      <div className="max-w-5xl mx-auto px-6 pt-32 pb-24">
-        
-        <motion.button 
-            initial={{ opacity: 0, x: -10 }}
-            animate={{ opacity: 1, x: 0 }}
-            onClick={() => router.back()}
-            className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-dark-green mb-8 transition-colors group"
-        >
-            <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" /> 
-            Back to Collection
-        </motion.button>
+    <motion.div
+      layout
+      variants={itemVariants}
+      initial="hidden"
+      animate="show"
+      exit="hidden"
+      className={`group relative overflow-hidden cursor-pointer h-full shadow-sm hover:shadow-2xl transition-shadow duration-500 ${className}`}
+    >
+      {/* LINK KE DETAIL PRODUCT */}
+      <Link href={`/product/${product.id}`} className="absolute inset-0 z-10" />
 
-        <div className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-white/50 p-6 md:p-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-start">
-                
-                <motion.div 
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.5 }}
-                    className="relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-gray-100 shadow-inner group"
-                >
-                    <img 
-                        src={product.image} 
-                        alt={product.title} 
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                
-                    <div className="absolute top-6 left-6">
-                        <span className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md shadow-sm text-white ${product.theme === 'dark' ? 'bg-dark-green/80' : 'bg-sage-green/90'}`}>
-                            {product.category} Mood
-                        </span>
-                    </div>
-                </motion.div>
-
-
-                <div className="flex flex-col h-full pt-2">
-                    
-                    <div className="flex justify-between items-start mb-4">
-                        <div>
-                            <span className="text-xs font-bold text-sage-green tracking-[0.2em] uppercase mb-2 block">{product.tag} Collection</span>
-                            <h1 className="text-4xl md:text-5xl font-serif font-bold text-dark-green leading-tight mb-2">{product.title}</h1>
-                        </div>
-                        <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-colors">
-                            <Heart size={20} />
-                        </button>
-                    </div>
-
-                    <p className="text-2xl font-sans font-medium text-gray-800 mb-6">{priceFormatted}</p>
-                    <p className="text-gray-500 leading-relaxed mb-8 font-light">
-                        {product.desc}
-                    </p>
-
-                    <div className="mb-8 bg-cream-bg/50 rounded-2xl p-2 border border-dark-green/5">
-                        <div className="flex gap-1 mb-4 border-b border-gray-200/50 px-2">
-                            {['story', 'composition', 'care'].map((tab) => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    className={`
-                                        flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-all relative
-                                        ${activeTab === tab ? "text-dark-green" : "text-gray-400 hover:text-gray-600"}
-                                    `}
-                                >
-                                    {tab}
-                                    {activeTab === tab && (
-                                        <motion.div layoutId="underline" className="absolute bottom-0 left-0 w-full h-[2px] bg-dark-green" />
-                                    )}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="px-2 pb-2 min-h-[120px] text-sm text-gray-600">
-                             <AnimatePresence mode="wait">
-                                {activeTab === 'story' && (
-                                    <motion.div 
-                                        key="story" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                                        className="flex gap-3 items-start"
-                                    >
-                                        <BookOpen size={18} className="text-sage-green shrink-0 mt-0.5" />
-                                        <p className="leading-relaxed italic">"{product.story || product.desc}"</p>
-                                    </motion.div>
-                                )}
-                                {activeTab === 'composition' && (
-                                    <motion.div 
-                                        key="composition" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                                    >
-                                        <ul className="grid grid-cols-1 gap-2">
-                                            {product.composition ? product.composition.map((item, idx) => (
-                                                <li key={idx} className="flex items-center gap-2">
-                                                    <Leaf size={14} className="text-sage-green" />
-                                                    <span>{item}</span>
-                                                </li>
-                                            )) : <p>Detail komposisi standar.</p>}
-                                        </ul>
-                                    </motion.div>
-                                )}
-                                {activeTab === 'care' && (
-                                    <motion.div 
-                                        key="care" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}
-                                        className="flex gap-3 items-start"
-                                    >
-                                        <Droplets size={18} className="text-blue-400 shrink-0 mt-0.5" />
-                                        <p className="leading-relaxed">{product.care || "Ganti air setiap hari dan potong batang."}</p>
-                                    </motion.div>
-                                )}
-                             </AnimatePresence>
-                        </div>
-                    </div>
-
-                   
-                    <div className="mt-auto pt-6 border-t border-gray-100 flex gap-4">
-                
-                        <div className="flex items-center gap-4 bg-gray-50 rounded-full px-4 py-3 border border-gray-200">
-                            <button onClick={() => setQty(Math.max(1, qty - 1))} className="hover:text-dark-green transition"><Minus size={16} /></button>
-                            <span className="font-bold w-4 text-center">{qty}</span>
-                            <button onClick={() => setQty(qty + 1)} className="hover:text-dark-green transition"><Plus size={16} /></button>
-                        </div>
-
-                        <button className="flex-1 bg-dark-green text-white rounded-full font-bold uppercase tracking-wide hover:bg-sage-green transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
-                            <ShoppingBag size={18} />
-                            <span>Add to Cart</span>
-                        </button>
-                    </div>
-
-                </div>
-            </div>
-        </div>
-
-       
-        <div className="mt-20 text-center">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">You might also like</p>
-            <div className="flex justify-center gap-4 opacity-50 hover:opacity-100 transition-opacity duration-500">
-                <div className="w-12 h-12 rounded-full bg-gray-200"></div>
-                <div className="w-12 h-12 rounded-full bg-gray-200"></div>
-                <div className="w-12 h-12 rounded-full bg-gray-200"></div>
-            </div>
-        </div>
-
+      <div className="absolute inset-0 overflow-hidden">
+        <img
+          src={product.image}
+          alt={product.title}
+          className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+        />
       </div>
-      
+      <div
+        className={`absolute inset-0 bg-gradient-to-t ${
+          isDark
+            ? "from-[#0F1F18] via-[#0F1F18]/40"
+            : "from-[#8C8681] via-[#8C8681]/20"
+        } to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500`}
+      ></div>
+      <div className="absolute top-5 left-5 z-20 pointer-events-none">
+        <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
+          {product.tag}
+        </span>
+      </div>
+
+      <div
+        className={`absolute bottom-0 left-0 w-full p-6 md:p-8 flex flex-col justify-end z-20 pointer-events-none ${
+          isDark ? "text-cream-bg" : "text-white"
+        }`}
+      >
+        <div className="transform transition-transform duration-500 group-hover:-translate-y-2">
+          <h3 className="text-2xl md:text-3xl font-serif font-bold leading-tight mb-1 drop-shadow-lg">
+            {product.title}
+          </h3>
+          <p className="font-sans font-medium text-lg opacity-90 mb-2">
+            {new Intl.NumberFormat("id-ID", {
+              style: "currency",
+              currency: "IDR",
+              maximumSignificantDigits: 3,
+            }).format(product.price)}
+          </p>
+        </div>
+        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
+          <div className="overflow-hidden">
+            <p className="text-sm opacity-90 line-clamp-2 mb-5 leading-relaxed font-light">
+              {product.desc}
+            </p>
+            <div className="flex gap-3 pb-1 pointer-events-auto">
+              <button
+                onClick={handleAddToCart}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md border transition-all active:scale-95 ${
+                  isDark
+                    ? "bg-cream-bg/90 text-dark-green border-cream-bg hover:bg-white"
+                    : "bg-dark-green/80 text-white border-dark-green/50 hover:bg-dark-green"
+                }`}
+              >
+                <ShoppingBag size={14} /> Add
+              </button>
+              <button
+                className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
+                  isDark
+                    ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
+                    : "bg-white/20 border border-white/50 text-white hover:bg-white hover:text-dark-green"
+                }`}
+              >
+                Buy Now
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// --- COMPONENT: PROMO CARD (Wajib ada biar gak error render) ---
+const PromoCard = ({ className }) => {
+  return (
+    <motion.div
+      layout
+      variants={itemVariants}
+      initial="hidden"
+      animate="show"
+      exit="hidden"
+      className={`group relative overflow-hidden h-full bg-gradient-to-br from-[#8FA89B] to-[#1A2F24] text-white p-8 md:p-10 flex flex-col justify-center items-start text-left shadow-xl ${className}`}
+    >
+      <div
+        className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 2px 2px, rgba(255,255,255,0.8) 1px, transparent 0)",
+          backgroundSize: "24px 24px",
+        }}
+      ></div>
+      <span className="relative z-10 text-[10px] font-bold tracking-[0.2em] uppercase bg-white/20 border border-white/10 px-3 py-1 rounded-full mb-6 inline-block backdrop-blur-md">
+        Exclusive Offer
+      </span>
+      <h3 className="relative z-10 text-3xl md:text-5xl font-serif font-bold mb-6 leading-[1.1]">
+        Punya Cerita <br />{" "}
+        <span className="italic text-cream-bg">Sendiri?</span>
+      </h3>
+      <Link
+        href="/custom"
+        className="relative z-10 group/btn flex items-center gap-3 bg-cream-bg text-dark-green px-8 py-4 rounded-full font-bold text-sm hover:bg-white transition-all hover:scale-105 shadow-lg hover:shadow-xl"
+      >
+        <span>Mulai Custom Sekarang</span>
+        <ArrowUpRight size={18} />
+      </Link>
+      <Sparkles
+        strokeWidth={1}
+        size={180}
+        className="absolute -bottom-10 -right-10 text-white/5 rotate-12 pointer-events-none group-hover:scale-110 group-hover:rotate-45 transition-transform duration-700 ease-in-out"
+      />
+    </motion.div>
+  );
+};
+
+// --- MAIN PAGE: STORE FRONT ---
+export default function ShopEtalasePage() {
+  const { id } = useParams();
+  const router = useRouter(); // Buat tombol back
+  const [activeMood, setActiveMood] = useState("All");
+
+  // 1. Ambil Data Toko
+  const currentShop = SHOPS.find((s) => String(s.id) === String(id));
+
+  // 2. Ambil Barang Toko Tersebut
+  const shopProducts = allItems.filter((item) => {
+    return item.shop?.id === currentShop?.id || item.type === "promo";
+  });
+
+  const filteredItems =
+    activeMood === "All"
+      ? shopProducts
+      : shopProducts.filter(
+          (item) => item.type === "promo" || item.category === activeMood
+        );
+
+ const getBentoClass = (index) => {
+    // --- ALGORITMA "SYNCHRONIZED CHAOS" ---
+    
+    // 1. ITEM SPESIAL (HERO): Setiap item ke-7 (index 0, 7, 14...)
+    // Tipe: BIG BOX (2x2) - Biar ada focal point gede.
+    if (index % 7 === 0) {
+      return "md:col-span-2 md:row-span-2 min-h-[640px]"; 
+    }
+
+    // 2. ITEM PENYEIMBANG: Setiap item ke-5 (kecuali yang kena aturan no.1)
+    // Tipe: WIDE (2x1) - Melebar ke samping.
+    if (index % 5 === 0) {
+      return "md:col-span-2 md:row-span-1 min-h-[320px]";
+    }
+
+    // 3. ITEM TIANG: Setiap item ke-3 (kecuali yang kena aturan no.1 & 2)
+    // Tipe: TALL (1x2) - Memanjang ke bawah.
+    if (index % 3 === 0) {
+       return "md:col-span-1 md:row-span-2 min-h-[640px]";
+    }
+
+    // 4. ITEM FILLER: Sisanya (Angka genap/ganjil lain)
+    // Tipe: SMALL (1x1) - Ini kuncinya! Dia akan otomatis 'terbang' 
+    // mengisi lubang-lubang kecil yang ditinggalkan item Gede/Tinggi.
+    return "md:col-span-1 md:row-span-1 min-h-[320px]";
+  };
+
+  if (!currentShop)
+    return <div className="text-center py-40">Toko tidak ditemukan</div>;
+
+  return (
+    <main className="bg-cream-bg min-h-screen relative">
+      <Navbar />
+
+       <div className="absolute top-0 left-0 w-full z-20 pointer-events-none">
+         <div className="max-w-6xl mx-auto px-6 relative h-screen">
+             <div className="absolute top-32 pointer-events-auto">
+                <button
+                    onClick={() => router.push("/toko")}
+                    className="w-12 h-12 bg-white/50 backdrop-blur-md border border-white/60 rounded-full flex items-center justify-center text-dark-green hover:bg-dark-green hover:text-white transition-all shadow-sm group"
+                >
+                    <ArrowLeft
+                    size={22}
+                    className="group-hover:-translate-x-1 transition-transform"
+                    />
+                </button>
+             </div>
+         </div>
+      </div>
+
+      <div className="relative pt-36 pb-12 px-6 text-center z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <div className="w-24 h-24 mx-auto bg-gray-200 rounded-full overflow-hidden mb-6 border-4 border-white shadow-xl">
+            <img
+              src={currentShop.image}
+              alt={currentShop.name}
+              className="w-full h-full object-cover"
+            />
+          </div>
+          <h1 className="text-4xl md:text-6xl font-serif text-dark-green mb-3">
+            {currentShop.name}
+          </h1>
+          <div className="flex items-center justify-center gap-4 text-gray-500 text-sm mb-8">
+            <span className="flex items-center gap-1">
+              <MapPin size={14} /> {currentShop.location}
+            </span>
+            <span className="flex items-center gap-1 text-orange-500 font-bold bg-orange-50 px-2 py-0.5 rounded">
+              <Star size={12} fill="currentColor" /> {currentShop.rating}
+            </span>
+          </div>
+          {currentShop.can_customize && (
+            <div className="mb-10">
+              <Link
+                href="/custom"
+                className="inline-flex items-center gap-2 bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition shadow-lg"
+              >
+                <Palette size={18} /> Racik Buket Sendiri
+              </Link>
+            </div>
+          )}
+        </motion.div>
+
+        {/* --- TABS MOOD (SUDAH KEMBALI!) --- */}
+        <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative mt-4">
+          {["All", "Warm", "Gloomy"].map((mood) => {
+            const isActive = activeMood === mood;
+            return (
+              <button
+                key={mood}
+                onClick={() => setActiveMood(mood)}
+                className={`relative px-8 py-2.5 rounded-full text-sm font-bold transition-colors duration-300 z-10 ${
+                  isActive
+                    ? "text-white"
+                    : "text-gray-500 hover:text-dark-green"
+                }`}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute inset-0 bg-dark-green rounded-full shadow-md"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  {mood === "Warm" && (
+                    <Sparkles
+                      size={12}
+                      className={isActive ? "text-yellow-300" : ""}
+                    />
+                  )}
+                  {mood}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* PRODUCT GRID */}
+      <div className="max-w-6xl mx-auto px-6 pb-32">
+        <motion.div
+          layout
+          variants={containerVariants}
+          initial="hidden"
+          animate="show"
+          className="grid grid-cols-1 md:grid-cols-4 gap-6 grid-flow-dense"
+        >
+          <AnimatePresence mode="popLayout">
+            {filteredItems.map((item, index) => {
+              if (item.type === "promo") {
+                return (
+                  <PromoCard key={item.id} className={getBentoClass(index)} />
+                );
+              }
+              return (
+                <BentoCard
+                  key={item.id}
+                  product={item}
+                  index={index}
+                  className={getBentoClass(index)}
+                />
+              );
+            })}
+          </AnimatePresence>
+        </motion.div>
+
+        {/* Empty State kalau difilter gak ada hasil */}
+        {filteredItems.filter((i) => i.type !== "promo").length === 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-32 text-gray-400"
+          >
+            <p className="text-xl font-serif italic">
+              Belum ada koleksi bunga untuk kategori ini di {currentShop.name}.
+            </p>
+          </motion.div>
+        )}
+      </div>
       <Footer />
     </main>
   );

@@ -44,11 +44,16 @@ export function CartProvider({ children }) {
     setCart((prev) => prev.filter((item) => item.id !== productId));
   };
 
+  const removeItems = (idsToRemove) => {
+    // Filter cart, buang item yang ID-nya ada di list 'idsToRemove'
+    setCart((prev) => prev.filter((item) => !idsToRemove.includes(item.id)));
+  };
+
   // Hitung total items (misal: beli 2 mawar + 1 tulip = 3 items)
   const totalItems = cart.reduce((acc, item) => acc + item.qty, 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, totalItems }}>
+    <CartContext.Provider value={{ cart, removeItems,  addToCart, removeFromCart, totalItems }}>
       {children}
     </CartContext.Provider>
   );
