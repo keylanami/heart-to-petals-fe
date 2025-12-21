@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Check, Copy, ArrowRight, Clock, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 
+
 export default function OrderSuccessPage() {
   const orderId = "HTP-" + Math.floor(Math.random() * 1000000);
   const vaNumber = "880123456789";

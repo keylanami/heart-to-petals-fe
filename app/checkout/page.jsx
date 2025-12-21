@@ -1,6 +1,7 @@
 "use client";
 import { useCart } from "@/app/context/CartContext";
 import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, AlertTriangle } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 
@@ -10,6 +11,8 @@ const shippingOptions = [
   { name: "Reguler", cost: 9000, eta: "2-3 Hari" },
 ];
 
+export const dynamic = "force-dynamic";
+
 export default function CheckoutContent() {
   const { cart, removeFromCart, clearCart } = useCart();
   const router = useRouter();
@@ -17,11 +20,12 @@ export default function CheckoutContent() {
   const [isClient, setIsClient] = useState(false);
   const [shippingSelection, setShippingSelection] = useState({});
   
-  // LOGIC FILTER DISPLAY ITEM
   const isDirectBuy = searchParams.get("direct") === "true";
   const directId = searchParams.get("id");
 
-  // Jika Direct Buy, tampilkan CUMA item itu. Jika tidak, tampilkan SEMUA cart.
+  
+
+ 
   const displayItems = isDirectBuy && directId 
     ? cart.filter(item => String(item.id) === String(directId))
     : cart;
@@ -30,7 +34,7 @@ export default function CheckoutContent() {
     setIsClient(true);
   }, []);
 
-  // Logic Grouping berdasarkan 'displayItems' (bukan cart mentah)
+
   const groupedCart = displayItems.reduce((acc, item) => {
     const shopId = item.shop?.id || "unknown";
     if (!acc[shopId]) {

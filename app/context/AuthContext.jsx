@@ -5,64 +5,104 @@ import { useRouter } from "next/navigation";
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null); // Data user yang lagi login
+  const [user, setUser] = useState(null);
   const router = useRouter();
+
+  // --- HELPER AMAN BUAT VERCEL ---
+  // Kita bungkus localStorage biar gak error di Server
+  const getStorage = (key) => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(key);
+    }
+    return null;
+  };
+
+  const setStorage = (key, value) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(key, value);
+    }
+  };
+
+  const removeStorage = (key) => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(key);
+    }
+  };
 
   // 1. Cek User Pas Loading Awal
   useEffect(() => {
-    const loggedInUser = localStorage.getItem("currentUser");
-    if (loggedInUser) {
-      setUser(JSON.parse(loggedInUser));
+    // Pakai try-catch biar kalau data corrupt gak bikin blank putih
+    try {
+      const loggedInUser = getStorage("currentUser");
+      if (loggedInUser) {
+        setUser(JSON.parse(loggedInUser));
+      }
+    } catch (error) {
+      console.error("Error reading user from storage:", error);
+      removeStorage("currentUser"); // Bersihin data error
     }
   }, []);
 
   // 2. Logic REGISTER
   const register = (name, email, password) => {
-    // Ambil database user dummy yg udah ada
-    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-    
-    // Cek email kembar
-    const isExist = existingUsers.find((u) => u.email === email);
-    if (isExist) {
-      alert("Email sudah terdaftar!");
+    try {
+      // Ambil database user dummy (Safe Parsing)
+      const rawData = getStorage("users");
+      const existingUsers = rawData ? JSON.parse(rawData) : [];
+      
+      // Cek email kembar
+      const isExist = existingUsers.find((u) => u.email === email);
+      if (isExist) {
+        alert("Email sudah terdaftar!");
+        return false;
+      }
+
+      // Simpan user baru
+      const newUser = { id: Date.now(), name, email, password };
+      existingUsers.push(newUser);
+      
+      setStorage("users", JSON.stringify(existingUsers));
+      
+      alert("Register Berhasil! Silakan Login.");
+      router.push("/login");
+      return true;
+    } catch (e) {
+      alert("Gagal register, coba clear cache browser.");
       return false;
     }
-
-    // Simpan user baru
-    const newUser = { id: Date.now(), name, email, password };
-    existingUsers.push(newUser);
-    localStorage.setItem("users", JSON.stringify(existingUsers));
-    
-    alert("Register Berhasil! Silakan Login.");
-    router.push("/login");
-    return true;
   };
 
   // 3. Logic LOGIN
   const login = (email, password) => {
-    const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
-    
-    // Cari user yang cocok
-    const validUser = existingUsers.find(
-      (u) => u.email === email && u.password === password
-    );
+    try {
+      const rawData = getStorage("users");
+      const existingUsers = rawData ? JSON.parse(rawData) : [];
+      
+      // Cari user yang cocok
+      const validUser = existingUsers.find(
+        (u) => u.email === email && u.password === password
+      );
 
-    if (validUser) {
-      // Simpan sesi login
-      localStorage.setItem("currentUser", JSON.stringify(validUser));
-      setUser(validUser);
-      alert(`Welcome back, ${validUser.name}!`);
-      router.push("/toko"); // Redirect ke halaman toko
-      return true;
-    } else {
-      alert("Email atau Password salah!");
+      if (validUser) {
+        // Simpan sesi login
+        setStorage("currentUser", JSON.stringify(validUser));
+        setUser(validUser);
+        alert(`Welcome back, ${validUser.name}!`);
+        router.push("/toko"); 
+        return true;
+      } else {
+        alert("Email atau Password salah!");
+        return false;
+      }
+    } catch (e) {
+      console.error(e);
       return false;
     }
   };
 
   // 4. Logic LOGOUT
   const logout = () => {
-    localStorage.removeItem("currentUser");
+    removeStorage("currentUser");
     setUser(null);
     router.push("/login");
   };

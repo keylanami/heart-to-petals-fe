@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
-import { useAuth } from "@/app/context/AuthContext"; // 1. Import Auth
+import { useAuth } from "@/app/context/AuthContext"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, FileText, LogOut, User as UserIcon } from "lucide-react";
 import { useState, useEffect } from "react";
@@ -10,7 +10,7 @@ import { useState, useEffect } from "react";
 const Navbar = () => {
   const pathname = usePathname();
   const { totalItems } = useCart();
-  const { user, logout } = useAuth(); // 2. Ambil user & logout function
+  const { user, logout } = useAuth();
   
   const [scrolled, setScrolled] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -30,15 +30,13 @@ const Navbar = () => {
     { name: "Florists", href: "/toko" },
   ];
 
-  // --- STYLE BUTTONS ---
-  // Base class untuk tombol ikon (Cart/Draft)
+ 
   const iconBtnClass = `h-10 w-10 sm:w-auto sm:px-4 border rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 relative ${
     scrolled 
       ? "border-gray-200 text-gray-600 hover:border-dark-green hover:text-dark-green bg-transparent" 
       : "border-dark-green/30 text-dark-green hover:bg-dark-green hover:text-white bg-white/20"
   }`;
 
-  // Style untuk tombol Login (Secondary - Outline)
   const loginBtnClass = `h-10 px-6 rounded-full text-sm font-bold border transition-all duration-300 flex items-center ${
     scrolled
       ? "border-gray-300 text-gray-600 hover:border-dark-green hover:text-dark-green"
