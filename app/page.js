@@ -72,8 +72,16 @@ const DashboardProductCard = ({ item }) => {
   );
 };
 
-// ... (Komponen Snowfall SAMA) ...
+
 const Snowfall = () => {
+const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  if (!isClient) return null; 
+
   return (
     <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
       {[...Array(10)].map((_, i) => (
