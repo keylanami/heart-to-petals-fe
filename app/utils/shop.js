@@ -1,45 +1,45 @@
-// 1. DATA TOKO (TENANTS)
+// DATA TOKO (TENANTS)
 export const SHOPS = [
   {
     id: 101,
     name: "Rosy Garden Bandung",
     location: "Dago, Bandung",
-    image: "../assets/flowershop/rosy_garden.png",
+    image: "/assets/flowershop/rosy_garden.png", // Path disesuaikan absolute
     rating: 4.9,
-    reviewCount: 1240, // Rated by 1.2k people
+    reviewCount: 1240, 
     distance: "1.2 km",
-    can_customize: true, // Label Custom: YES
+    can_customize: true, 
     openTime: "08.00 - 20.00"
   },
   {
     id: 102,
     name: "Eternal Florist Jakarta",
     location: "Kemang, Jakarta Selatan",
-    image: "../assets/flowershop/eternal_florist.png",
+    image: "/assets/flowershop/eternal_florist.png",
     rating: 4.7,
     reviewCount: 850,
     distance: "3.5 km",
-    can_customize: false, // Label Custom: NO (Ready Stock Only)
+    can_customize: false, 
     openTime: "09.00 - 21.00"
   },
   {
     id: 103,
     name: "The Flower Studio",
     location: "Cikini, Jakarta Pusat",
-    image: "../assets/flowershop/the_flower_studio.png",
+    image: "/assets/flowershop/the_flower_studio.png",
     rating: 4.8,
     reviewCount: 210,
     distance: "0.8 km",
-    can_customize: true, // Custom Specialist
+    can_customize: true, 
     openTime: "10.00 - 18.00"
   },
   {
     id: 104,
     name: "Sentra Bunga Rawabelong",
     location: "Kebon Jeruk, Jakarta Barat",
-    image: "../assets/flowershop/sentara_bunga.png",
+    image: "/assets/flowershop/sentara_bunga.png",
     rating: 4.5,
-    reviewCount: 5300, // Banyak yang review (Market style)
+    reviewCount: 5300, 
     distance: "12 km",
     can_customize: false,
     openTime: "24 Jam"
@@ -48,9 +48,9 @@ export const SHOPS = [
     id: 105,
     name: "Luxe De Pere En Fils",
     location: "SCBD, Jakarta Selatan",
-    image: "../assets/flowershop/de_pere.png",
+    image: "/assets/flowershop/de_pere.png",
     rating: 5.0,
-    reviewCount: 45, // Toko baru/premium
+    reviewCount: 45, 
     distance: "4.2 km",
     can_customize: true,
     openTime: "09.00 - 17.00"
@@ -59,7 +59,7 @@ export const SHOPS = [
     id: 106,
     name: "Petal & Paper",
     location: "BSD City, Tangerang",
-    image: "../assets/flowershop/petal_paper.png",
+    image: "/assets/flowershop/petal_paper.png",
     rating: 4.6,
     reviewCount: 112,
     distance: "25 km",
@@ -68,145 +68,107 @@ export const SHOPS = [
   }
 ];
 
-
+// DATA PRODUK (allItems)
 export const allItems = [
   {
     id: 1,
-    shop: SHOPS[0], // Rosy Garden
+    shop: SHOPS[0], 
     type: "product",
     title: "Head Over Heels",
     price: 850000,
     image: "/assets/bouquet/peace/crimson_promise.png",
-    category: "Warm",
-    tag: "Romance",
-    desc: "Cinta yang meledak-ledak dan penuh gairah.",
-    theme: "light",
-    isBestSeller: true
+    category: "Warm", tag: "Romance", desc: "Cinta yang meledak-ledak dan penuh gairah.", theme: "light", isBestSeller: true
   },
   {
     id: 2,
-    shop: SHOPS[0], // Rosy Garden
+    shop: SHOPS[0], 
     type: "product",
     title: "Forgive Me",
     price: 550000,
     image: "/assets/bouquet/regret/sweet_apology.png",
-    category: "Gloomy",
-    tag: "Apology",
-    desc: "Sampaikan maaf yang tulus ketika kata tak lagi cukup.",
-    theme: "dark",
+    category: "Gloomy", tag: "Apology", desc: "Sampaikan maaf yang tulus ketika kata tak lagi cukup.", theme: "dark",
   },
   {
     id: 3,
-    shop: SHOPS[0], // Rosy Garden
+    shop: SHOPS[0], 
     type: "product",
     title: "Bright Future",
     price: 450000,
     image: "/assets/bouquet/peace/sunset_harmony.png",
-    category: "Warm",
-    tag: "Graduation",
-    desc: "Menyambut masa depan cerah dengan senyuman.",
-    theme: "light",
+    category: "Warm", tag: "Graduation", desc: "Menyambut masa depan cerah dengan senyuman.", theme: "light",
   },
   {
     id: 4,
-    shop: SHOPS[1], // Eternal Florist
+    shop: SHOPS[1], 
     type: "product",
     title: "Sweet Gratitude",
     price: 350000,
     image: "/assets/bouquet/peace/moonlight_serenity.png",
-    category: "Warm",
-    tag: "Thank You",
-    desc: "Terima kasih yang manis untuk dia yang spesial.",
-    theme: "light",
+    category: "Warm", tag: "Thank You", desc: "Terima kasih yang manis untuk dia yang spesial.", theme: "light",
   },
   {
     id: 5,
-    shop: SHOPS[1], // Eternal Florist (Saya assign ke toko 2)
+    shop: SHOPS[1], 
     type: "product",
     title: "Silent Tears",
     price: 700000,
     image: "/assets/bouquet/peace/crimson_promise.png",
-    category: "Gloomy",
-    tag: "Grief",
-    desc: "Penghormatan terakhir untuk jiwa yang tenang.",
-    theme: "dark",
+    category: "Gloomy", tag: "Grief", desc: "Penghormatan terakhir untuk jiwa yang tenang.", theme: "dark",
   },
-  {
-    id: "promo-1",
-    type: "promo", // Promo gak perlu shop karena gak masuk cart
-  },
+  { id: "promo-1", type: "promo" },
   {
     id: 6,
-    shop: SHOPS[0], // Rosy Garden
+    shop: SHOPS[0], 
     type: "product",
     title: "Midnight Regret",
     price: 480000,
     image: "/assets/bouquet/regret/first_date_bloom.png",
-    category: "Gloomy",
-    tag: "Regret",
-    desc: "Penyesalan terdalam di tengah malam yang sunyi.",
-    theme: "dark",
-    isBestSeller: true
+    category: "Gloomy", tag: "Regret", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark", isBestSeller: true
   },
   {
     id: 7,
-    shop: SHOPS[1], // Eternal Florist
+    shop: SHOPS[1], 
     type: "product",
     title: "Silent Tears",
     price: 700000,
     image: "/assets/bouquet/peace/crimson_promise.png",
-    category: "Gloomy",
-    tag: "Grief",
-    desc: "Penghormatan terakhir untuk jiwa yang tenang.",
-    theme: "dark",
+    category: "Gloomy", tag: "Grief", desc: "Penghormatan terakhir untuk jiwa yang tenang.", theme: "dark",
   },
   {
     id: 8,
-    shop: SHOPS[0], // Rosy Garden
+    shop: SHOPS[0], 
     type: "product",
     title: "Sweet Gratitude",
     price: 350000,
     image: "/assets/bouquet/peace/moonlight_serenity.png",
-    category: "Warm",
-    tag: "Thank You",
-    desc: "Terima kasih yang manis untuk dia yang spesial.",
-    theme: "light",
+    category: "Warm", tag: "Thank You", desc: "Terima kasih yang manis untuk dia yang spesial.", theme: "light",
   },
   {
     id: 9,
-    shop: SHOPS[1], // Eternal Florist
+    shop: SHOPS[1], 
     type: "product",
     title: "Midnight Regret",
     price: 480000,
     image: "/assets/bouquet/regret/first_date_bloom.png",
-    category: "Gloomy",
-    tag: "Regret",
-    desc: "Penyesalan terdalam di tengah malam yang sunyi.",
-    theme: "dark",
+    category: "Gloomy", tag: "Regret", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark",
   },
   {
     id: 10,
-    shop: SHOPS[0], // Rosy Garden
+    shop: SHOPS[0], 
     type: "product",
     title: "Sweet Gratitude",
     price: 350000,
     image: "/assets/bouquet/peace/moonlight_serenity.png",
-    category: "Warm",
-    tag: "Thank You",
-    desc: "Terima kasih yang manis untuk dia yang spesial.",
-    theme: "light",
+    category: "Warm", tag: "Thank You", desc: "Terima kasih yang manis untuk dia yang spesial.", theme: "light",
   },
   {
     id: 11,
-    shop: SHOPS[1], // Eternal Florist
+    shop: SHOPS[1], 
     type: "product",
     title: "Midnight Regret",
     price: 480000,
     image: "/assets/bouquet/regret/first_date_bloom.png",
-    category: "Gloomy",
-    tag: "Regret",
-    desc: "Penyesalan terdalam di tengah malam yang sunyi.",
-    theme: "dark",
+    category: "Gloomy", tag: "Regret", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark",
   },
   {
     id: 12,
@@ -215,10 +177,7 @@ export const allItems = [
     title: "Silent Tears",
     price: 700000,
     image: "/assets/bouquet/peace/crimson_promise.png",
-    category: "Gloomy",
-    tag: "Grief",
-    desc: "Penghormatan terakhir untuk jiwa yang tenang.",
-    theme: "dark",
+    category: "Gloomy", tag: "Grief", desc: "Penghormatan terakhir untuk jiwa yang tenang.", theme: "dark",
   },
   {
     id: 13,
@@ -227,16 +186,9 @@ export const allItems = [
     title: "Sweet Gratitude",
     price: 350000,
     image: "/assets/bouquet/peace/moonlight_serenity.png",
-    category: "Warm",
-    tag: "Thank You",
-    desc: "Terima kasih yang manis untuk dia yang spesial.",
-    theme: "light",
-    isBestSeller: true
+    category: "Warm", tag: "Thank You", desc: "Terima kasih yang manis untuk dia yang spesial.", theme: "light", isBestSeller: true
   },
-  {
-    id: "promo-2",
-    type: "promo",
-  },
+  { id: "promo-2", type: "promo" },
   {
     id: 14,
     shop: SHOPS[0],
@@ -244,10 +196,7 @@ export const allItems = [
     title: "Midnight Regret",
     price: 480000,
     image: "/assets/bouquet/regret/first_date_bloom.png",
-    category: "Gloomy",
-    tag: "Regret",
-    desc: "Penyesalan terdalam di tengah malam yang sunyi.",
-    theme: "dark",
+    category: "Gloomy", tag: "Regret", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark",
   },
   {
     id: 15,
@@ -256,10 +205,7 @@ export const allItems = [
     title: "Midnight Regret",
     price: 480000,
     image: "/assets/bouquet/peace/moonlight_serenity.png",
-    category: "Warm",
-    tag: "Peace",
-    desc: "Penyesalan terdalam di tengah malam yang sunyi.",
-    theme: "dark",
+    category: "Warm", tag: "Peace", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark",
   },
   {
     id: 16,
@@ -268,9 +214,11 @@ export const allItems = [
     title: "Midnight Regret",
     price: 480000,
     image: "/assets/bouquet/peace/moonlight_serenity.png",
-    category: "Warm",
-    tag: "Peace",
-    desc: "Penyesalan terdalam di tengah malam yang sunyi.",
-    theme: "dark",
+    category: "Warm", tag: "Peace", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark",
   },
+];
+// PROMOS (biar lengkap)
+export const PROMOS = [
+  { id: 1, title: "Xmas Sale", bg: "bg-[#2F4F4F]", text: "text-white", image: "/assets/promo1.jpg" },
+  { id: 2, title: "New Year", bg: "bg-[#8FBC8F]", text: "text-dark-green", image: "/assets/promo2.jpg" }
 ];

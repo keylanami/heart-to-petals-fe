@@ -11,17 +11,14 @@ import { useRouter } from "next/navigation";
 const CartPage = () => {
   const { cart, addToCart, removeFromCart } = useCart();
   const router = useRouter();
-  
-  // --- STATE: CHECKLIST ITEM ---
-  // Default kosong (Unchecked semua)
   const [selectedItems, setSelectedItems] = useState([]);
 
-  // Bersihkan selectedItems jika item dihapus dari cart
+
   useEffect(() => {
     setSelectedItems(prev => prev.filter(id => cart.find(item => item.id === id)));
   }, [cart]);
 
-  // --- LOGIC: GROUPING ---
+ 
   const groupedCart = cart.reduce((acc, item) => {
     const shopId = item.shop?.id || 'unknown'; 
     if (!acc[shopId]) {
@@ -31,9 +28,7 @@ const CartPage = () => {
     return acc;
   }, {});
 
-  // --- LOGIC: CHECKBOX HANDLERS ---
 
-  // 1. Toggle per Item
   const handleToggleItem = (id) => {
     if (selectedItems.includes(id)) {
       setSelectedItems(prev => prev.filter(itemId => itemId !== id));
@@ -42,34 +37,32 @@ const CartPage = () => {
     }
   };
 
-  // 2. Toggle per Toko
+
   const handleToggleShop = (shopItems) => {
     const shopItemIds = shopItems.map(i => i.id);
     const isAllShopSelected = shopItemIds.every(id => selectedItems.includes(id));
 
     if (isAllShopSelected) {
-      // Uncheck semua item di toko ini
       setSelectedItems(prev => prev.filter(id => !shopItemIds.includes(id)));
     } else {
-      // Check semua item di toko ini (yang belum dicheck)
       const newIds = shopItemIds.filter(id => !selectedItems.includes(id));
       setSelectedItems(prev => [...prev, ...newIds]);
     }
   };
 
-  // 3. Toggle Select All
+
   const isAllSelected = cart.length > 0 && cart.every(item => selectedItems.includes(item.id));
   const handleToggleAll = () => {
     if (isAllSelected) {
-      setSelectedItems([]); // Uncheck semua
+      setSelectedItems([]); 
     } else {
-      setSelectedItems(cart.map(item => item.id)); // Check semua
+      setSelectedItems(cart.map(item => item.id)); 
     }
   };
 
-  // --- LOGIC: TOTAL HARGA (Cuma yang dichecklist) ---
+
   const grandTotal = cart
-    .filter(item => selectedItems.includes(item.id)) // Filter dulu
+    .filter(item => selectedItems.includes(item.id)) 
     .reduce((sum, item) => sum + (item.price * item.qty), 0);
 
   const toRupiah = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(num);
@@ -102,25 +95,22 @@ const CartPage = () => {
           <div className="text-center py-20 bg-white rounded-3xl shadow-sm">
             <div className="text-6xl mb-4">🛒</div>
             <p className="text-gray-400 mb-6">Keranjangmu masih kosong.</p>
-            <Link href="/shop" className="px-6 py-3 bg-dark-green text-white rounded-full font-bold hover:bg-sage-green transition">
+            <Link href="/toko" className="px-6 py-3 bg-dark-green text-white rounded-full font-bold hover:bg-sage-green transition">
               Mulai Belanja
             </Link>
           </div>
         ) : (
           <div className="space-y-6">
             
-            {/* Loop setiap Toko */}
+
             {Object.values(groupedCart).map((group) => {
-              // Cek apakah semua item di toko ini terpilih? (Buat UI Checkbox Toko)
               const isShopSelected = group.items.every(item => selectedItems.includes(item.id));
 
               return (
                 <div key={group.shop?.id || 'unknown'} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                   
-                  {/* HEADER TOKO */}
                   <div className="bg-white p-4 border-b border-gray-100 flex items-center gap-3">
                       <div className="flex items-center gap-2">
-                          {/* CHECKBOX TOKO */}
                           <input 
                             type="checkbox" 
                             className="w-4 h-4 accent-dark-green cursor-pointer"
@@ -138,12 +128,11 @@ const CartPage = () => {
                       )}
                   </div>
     
-                  {/* LIST ITEMS */}
+      
                   <div className="p-4 space-y-6">
                       {group.items.map((item) => (
                           <div key={item.id} className="flex gap-4 items-start">
                               
-                              {/* CHECKBOX ITEM */}
                               <div className="pt-8">
                                   <input 
                                     type="checkbox" 
@@ -195,12 +184,12 @@ const CartPage = () => {
         )}
       </div>
   
-      {/* BOTTOM BAR (Checkout Sticky) */}
+    
       {cart.length > 0 && (
           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 shadow-[0_-4px_20px_rgba(0,0,0,0.05)] z-40">
             <div className="max-w-4xl mx-auto flex justify-between items-center">
                 <div className="flex items-center gap-3">
-                    {/* CHECKBOX SELECT ALL */}
+                   
                     <input 
                         type="checkbox" 
                         className="w-5 h-5 accent-dark-green cursor-pointer" 
@@ -216,7 +205,7 @@ const CartPage = () => {
                     <div className="text-right">
                         <p className="text-xs text-gray-400 mb-1">Total ({selectedItems.length} produk):</p>
                         <motion.p 
-                            key={grandTotal} // Animasi pas harga berubah
+                            key={grandTotal} 
                             initial={{ scale: 1.1, color: "#5F8D4E" }}
                             animate={{ scale: 1, color: "#2F4F4F" }}
                             className="text-xl font-bold text-sage-green font-sans"
