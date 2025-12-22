@@ -2,58 +2,109 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
+import { motion } from "framer-motion";
+import { ArrowLeft, Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const [formData, setFormData] = useState({ email: "", password: "" });
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    login(formData.email, formData.password);
+    setIsLoading(true);
+    await new Promise(resolve => setTimeout(resolve, 800));
+    const success = login(formData.email, formData.password);
+    if (!success) setIsLoading(false);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F3F4F6] px-6">
-      <div className="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border border-gray-100">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-serif font-bold text-dark-green">Welcome Back</h1>
-          <p className="text-gray-400 text-sm mt-2">Masuk untuk melanjutkan pesananmu.</p>
+    <div className="min-h-screen bg-[#F3F4F6] relative flex items-center justify-center p-6 font-sans">
+      
+      {/* Background Texture */}
+      <div className="absolute inset-0 opacity-40 pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(#1A2F24 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}>
+      </div>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-white w-full max-w-md rounded-xl shadow-2xl border border-gray-200 overflow-hidden relative z-10"
+      >
+        {/* Header Section */}
+        <div className="bg-[#1A2F24] p-8 text-center relative overflow-hidden">
+            {/* Abstract Decorative Line */}
+            <div className="absolute -bottom-10 -right-10 w-40 h-40 border border-white/10 rounded-full"></div>
+            
+            <Link href="/" className="absolute top-8 left-8 text-white/50 hover:text-white transition-colors">
+                <ArrowLeft size={20} />
+            </Link>
+            <h1 className="text-3xl font-serif font-bold text-white tracking-wide mb-1">
+                Welcome <span className="italic text-[#8FA89B]">Back.</span>
+            </h1>
+            <p className="text-white/60 text-xs uppercase tracking-widest">Sign in to continue</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Email</label>
-            <input 
-              type="email" 
-              required
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-dark-green text-dark-green font-medium"
-              placeholder="email@kamu.com"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-            />
-          </div>
+        <div className="p-8 md:p-10">
+            <form onSubmit={handleSubmit} className="space-y-6">
+                
+                {/* EMAIL */}
+                <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
+                    <div className="relative group">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1A2F24] transition-colors" size={18} />
+                        <input 
+                            type="email" 
+                            required
+                            className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-11 pr-4 py-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#1A2F24] focus:ring-1 focus:ring-[#1A2F24] transition-all"
+                            placeholder="name@example.com"
+                            value={formData.email}
+                            onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        />
+                    </div>
+                </div>
 
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Password</label>
-            <input 
-              type="password" 
-              required
-              className="w-full bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:border-dark-green text-dark-green font-medium"
-              placeholder="••••••••"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-            />
-          </div>
+                {/* PASSWORD */}
+                <div>
+                    <div className="flex justify-between items-center mb-2">
+                        <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">Password</label>
+                    </div>
+                    <div className="relative group">
+                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#1A2F24] transition-colors" size={18} />
+                        <input 
+                            type="password" 
+                            required
+                            className="w-full bg-gray-50 border border-gray-200 rounded-lg pl-11 pr-4 py-3 text-sm font-medium text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#1A2F24] focus:ring-1 focus:ring-[#1A2F24] transition-all"
+                            placeholder="••••••"
+                            value={formData.password}
+                            onChange={(e) => setFormData({...formData, password: e.target.value})}
+                        />
+                    </div>
+                </div>
 
-          <button type="submit" className="w-full bg-dark-green text-white py-3.5 rounded-xl font-bold hover:bg-sage-green transition shadow-lg mt-4">
-            Masuk
-          </button>
-        </form>
+                <button 
+                    type="submit" 
+                    disabled={isLoading}
+                    className="w-full bg-[#1A2F24] text-white py-4 rounded-lg font-bold text-sm uppercase tracking-widest hover:bg-[#254132] transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed mt-4"
+                >
+                    {isLoading ? "Signing In..." : "Login"}
+                </button>
+            </form>
 
-        <p className="text-center text-gray-400 text-sm mt-6">
-          Belum punya akun? <Link href="/register" className="text-dark-green font-bold hover:underline">Daftar sekarang</Link>
-        </p>
-      </div>
+            <div className="mt-8 text-center pt-6 border-t border-gray-100 flex flex-col gap-3">
+                <p className="text-gray-500 text-sm">
+                    Don't have an account? 
+                    <Link href="/register" className="text-[#1A2F24] font-bold hover:underline ml-1">
+                        Register
+                    </Link>
+                </p>
+                <Link href="#" className="text-xs text-gray-400 hover:text-[#1A2F24] transition-colors">
+                    Forgot Password?
+                </Link>
+            </div>
+        </div>
+      </motion.div>
     </div>
   );
 }

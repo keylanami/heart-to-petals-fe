@@ -53,7 +53,6 @@ export default function DraftListPage() {
         tag: "Custom",
         category: "Custom",
         desc: `Custom bouquet containing ${draft.items.length} flowers.`,
-        // FIX: Gunakan data toko ASLI dari draft, jangan hardcode 999
         shop: draft.shop || { id: params.id, name: "Custom Shop" }, 
         can_customize: true
     };
@@ -68,10 +67,10 @@ export default function DraftListPage() {
       
       <div className="max-w-6xl mx-auto px-6 py-40">
         
-        {/* HEADER */}
+
         <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
             <div>
-                {/* Tombol Back biar gak nyasar */}
+           
                 <Link href={`/custom/${params.id}`} className="text-gray-400 text-sm hover:text-dark-green mb-2 flex items-center gap-1">
                     <ArrowLeft size={14}/> Back to Builder
                 </Link>
@@ -79,7 +78,7 @@ export default function DraftListPage() {
                 <p className="text-gray-500 mt-2">Lanjutkan kreasimu yang tertunda.</p>
             </div>
 
-            {/* FIX: Link New Bouquet mengarah ke ID toko yang aktif sekarang */}
+   
             <Link 
                 href={`/custom/${params.id}`} 
                 className="px-6 py-3 bg-dark-green text-white rounded-full font-bold hover:bg-sage-green transition shadow-lg flex items-center gap-2"
@@ -88,7 +87,7 @@ export default function DraftListPage() {
             </Link>
         </div>
 
-        {/* GRID DRAFTS */}
+      
         {drafts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {drafts.map((draft) => (
@@ -158,12 +157,12 @@ export default function DraftListPage() {
                 ))}
             </div>
         ) : (
-            // EMPTY STATE
+      
             <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-gray-200">
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">📝</div>
                 <h3 className="text-xl font-serif font-bold text-dark-green mb-2">Belum ada Draft</h3>
                 <p className="text-gray-400 mb-8 max-w-md mx-auto">Semua racikan bungamu yang belum selesai akan disimpan di sini.</p>
-                {/* FIX: Link Empty State juga harus dinamis */}
+                
                 <Link href={`/custom/${params.id}`} className="px-8 py-3 bg-dark-green text-white rounded-full font-bold hover:bg-sage-green transition shadow-lg">
                     Mulai Meracik
                 </Link>

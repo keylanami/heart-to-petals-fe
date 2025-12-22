@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useParams } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext"; 
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 
 const Navbar = () => {
   const pathname = usePathname();
+  const params = useParams();
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
   
@@ -29,6 +30,10 @@ const Navbar = () => {
     { name: "Home", href: "/" },
     { name: "Florists", href: "/toko" },
   ];
+
+  const draftLink = params?.id 
+  ? `/custom/${params.id}/drafts` 
+  : `/custom/101/drafts`;
 
  
   const iconBtnClass = `h-10 w-10 sm:w-auto sm:px-4 border rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 relative ${
@@ -61,12 +66,12 @@ const Navbar = () => {
         `}
       >
       
-        {/* LOGO */}
+       
         <Link href="/" className="text-xl md:text-2xl font-serif font-bold tracking-tight text-dark-green flex-shrink-0">
           HeartToPetals.
         </Link>
 
-        {/* MIDDLE LINKS (Hidden on Mobile) */}
+     
         <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-8 text-sm font-bold tracking-wide text-dark-green">
           {navLinks.map((link) => (
             <Link 
@@ -82,10 +87,9 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* RIGHT ACTIONS */}
+ 
         <div className="flex items-center gap-2 sm:gap-3">    
 
-          {/* CART BUTTON (Selalu Muncul) */}
           <Link href="/cart"> 
             <button className={iconBtnClass}>
               <ShoppingBag size={18} />
@@ -108,11 +112,11 @@ const Navbar = () => {
           </Link>
 
           {isClient && user ? (
-             // --- IF LOGGED IN ---
+            
              <>
                 {/* DRAFT BUTTON (Hanya kalau login) */}
                 {/* Note: Kita arahkan ke /custom sementara, atau halaman list draft umum */}
-                <Link href="/custom/draft"> 
+                <Link href={draftLink}> 
                     <button className={`${iconBtnClass} hidden sm:flex`}>
                         <FileText size={18} />
                         <span className="hidden sm:inline">Drafts</span>
