@@ -1,9 +1,10 @@
 "use client";
 import { useCart } from "@/app/context/CartContext";
-import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/app/context/AuthContext"; // 1. Import Auth
+import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, AlertTriangle, LogIn } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-import Link from "next/link"; // Jaga-jaga kalau butuh Link
+import Link from "next/link"; // 2. Import Link buat tombol login
 
 const shippingOptions = [
   { name: "Instant", cost: 25000, eta: "3-6 Jam" },
@@ -11,9 +12,9 @@ const shippingOptions = [
   { name: "Reguler", cost: 9000, eta: "2-3 Hari" },
 ];
 
-// --- INI COMPONENT KAMU (LOGIC ORIGINAL) ---
 function CheckoutContent() {
   const { cart, removeFromCart, clearCart } = useCart();
+  const { user } = useAuth(); // 3. Ambil data User
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
@@ -23,7 +24,6 @@ function CheckoutContent() {
   const isDirectBuy = searchParams.get("direct") === "true";
   const directId = searchParams.get("id");
 
-  // Jika Direct Buy, tampilkan CUMA item itu. Jika tidak, tampilkan SEMUA cart.
   const displayItems = isDirectBuy && directId 
     ? cart.filter(item => String(item.id) === String(directId))
     : cart;
@@ -32,7 +32,6 @@ function CheckoutContent() {
     setIsClient(true);
   }, []);
 
-  // Logic Grouping berdasarkan 'displayItems'
   const groupedCart = displayItems.reduce((acc, item) => {
     const shopId = item.shop?.id || "unknown";
     if (!acc[shopId]) {
@@ -44,7 +43,6 @@ function CheckoutContent() {
 
   const shopKeys = Object.keys(groupedCart);
 
-  // Logic Default Shipping
   useEffect(() => {
     if (shopKeys.length > 0) {
       setShippingSelection((prev) => {
@@ -52,7 +50,7 @@ function CheckoutContent() {
         let hasChange = false;
         shopKeys.forEach((shopId) => {
           if (!next[shopId]) {
-            next[shopId] = shippingOptions[1]; // Default Same Day
+            next[shopId] = shippingOptions[1];
             hasChange = true;
           }
         });
@@ -65,7 +63,6 @@ function CheckoutContent() {
     setShippingSelection((prev) => ({ ...prev, [shopId]: option }));
   };
 
-  // Hitung Total (Pakai displayItems)
   const subtotal = displayItems.reduce((acc, item) => acc + (item.price || 0) * (item.qty || item.quantity || 1), 0);
   
   const totalShipping = shopKeys.reduce((acc, shopId) => {
@@ -85,18 +82,21 @@ function CheckoutContent() {
   };
 
   const handlePayment = async () => {
-    // Simulasi loading biar kerasa prosesnya
+    // Validasi Login sebelum bayar
+    if (!user) {
+        alert("Silakan login terlebih dahulu untuk melanjutkan pembayaran.");
+        router.push("/login");
+        return;
+    }
+
     await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // LOGIC HAPUS YANG BENAR:
     if (isDirectBuy && directId) {
-        // Kalau Direct Buy -> Hapus item itu saja dari cart (karena logikanya udah dibeli)
         removeFromCart(parseInt(directId));
     } else {
-        // Kalau Regular -> Hapus semua
         clearCart();
     }
-    router.push("/success"); // Ubah path sesuai halaman sukses kamu
+    router.push("/checkout/order-success");
   };
 
   if (!isClient) return <div className="min-h-screen bg-gray-50"></div>;
@@ -118,16 +118,43 @@ function CheckoutContent() {
 
       <div className="pt-28 px-4 md:px-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
         <div className="flex-1 space-y-6">
+          
+          {/* --- SECTION ALAMAT (DENGAN LOGIC LOGIN) --- */}
           <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
             <h2 className="font-bold text-lg text-dark-green mb-4 flex items-center gap-2">
               <MapPin size={18} /> Alamat Pengiriman
             </h2>
-            <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-              <p className="font-bold text-gray-900 mb-1">Kei (Rumah)</p>
-              <p className="text-sm text-gray-600">
-                Jl. Dago Asri No. 102, Coblong, Bandung, Jawa Barat, 40135
-              </p>
-            </div>
+            
+            {user ? (
+             
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 group cursor-pointer hover:border-sage-green transition-colors">
+                    <p className="font-bold text-gray-900 mb-1 flex justify-between">
+                        {user.name} (Rumah) 
+                        <span className="text-xs text-sage-green font-normal underline">Ubah</span>
+                    </p>
+                    <p className="text-sm text-gray-600">
+                        Jl. Dago Asri No. 102, Coblong, Bandung, Jawa Barat, 40135
+                    </p>
+                    <p className="text-sm text-gray-500 mt-1">{user.email}</p>
+                </div>
+            ) : (
+ 
+                <div className="bg-yellow-50 p-5 rounded-2xl border border-yellow-50">
+                    <div className="flex items-start gap-3 mb-4">
+                        <AlertTriangle className="text-yellow-600 shrink-0 mt-0.5" size={20}/>
+                        <div>
+                            <p className="text-sm text-yellow-800 font-bold">Aduh, kamu belum login</p>
+                            <p className="text-xs text-yellow-700 mt-1 leading-relaxed">
+                                Untuk memproses pesanan dan menggunakan alamat yang tersimpan, masuk atau daftarkan akunmu dulu.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <Link href="/login" className="w-full flex items-center justify-center gap-2 bg-yellow-600 text-white py-3 rounded-xl font-bold text-sm hover:bg-yellow-700 transition shadow-sm">
+                        <LogIn size={16} /> Login Sekarang
+                    </Link>
+                </div>
+            )}
           </section>
 
           {displayItems.length === 0 ? (
@@ -177,7 +204,6 @@ function CheckoutContent() {
                                 {" "}x {item.qty || item.quantity || 1}
                               </span>
                             </p>
-                            {/* Tombol hapus hanya muncul jika bukan Direct Buy */}
                             {!isDirectBuy && (
                                 <button
                                 onClick={() => removeFromCart(item.id)}
@@ -204,14 +230,14 @@ function CheckoutContent() {
                           key={opt.name}
                           onClick={() => handleChangeShipping(shopId, opt)}
                           className={`
-                                                flex-1 min-w-[120px] text-left p-3 rounded-lg border text-xs transition-all relative
-                                                ${
-                                                  shippingSelection[shopId]
-                                                    ?.name === opt.name
-                                                    ? "border-sage-green bg-white text-dark-green ring-2 ring-sage-green ring-offset-1"
-                                                    : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
-                                                }
-                                              `}
+                            flex-1 min-w-[120px] text-left p-3 rounded-lg border text-xs transition-all relative
+                            ${
+                                shippingSelection[shopId]
+                                ?.name === opt.name
+                                ? "border-sage-green bg-white text-dark-green ring-2 ring-sage-green ring-offset-1"
+                                : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                            }
+                          `}
                         >
                           <div className="font-bold">{opt.name}</div>
                           <div className="text-[10px] opacity-70">
@@ -295,7 +321,6 @@ function CheckoutContent() {
   );
 }
 
-// --- WAJIB: BUNGKUS DENGAN SUSPENSE AGAR TIDAK ERROR BUILD ---
 export default function CheckoutPage() {
   return (
     <Suspense fallback={
