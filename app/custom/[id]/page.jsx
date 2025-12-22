@@ -1,12 +1,12 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-// PERBAIKAN 1: Tambahkan useParams
 import { useRouter, useSearchParams, useParams } from "next/navigation";
 import { toJpeg } from "html-to-image";
 import { FLOWER_LIBRARY } from "../../utils/flower"; 
 import { SHOPS } from "../../utils/shop"; 
 import { Info, Store, ArrowLeft } from "lucide-react";
+import { useToast } from "@/app/context/ToastContext"; 
 
 const CANVAS_COLORS = [
     { name: "White", hex: "#FFFFFF", class: "bg-white" },
@@ -18,11 +18,11 @@ const CANVAS_COLORS = [
 
 export default function CustomBuilder() {
   const router = useRouter();
-  // PERBAIKAN 2: Ambil params dari URL (ini yang menangkap angka 103 dari custom/103)
   const params = useParams(); 
   const canvasRef = useRef(null);
+  const { showToast } = useToast(); 
 
-  // --- 1. SETUP SHOP ID ---
+  // --- SETUP SHOP ID ---
   const [selectedShopId, setSelectedShopId] = useState(null);
   
   // State lainnya
@@ -38,12 +38,11 @@ export default function CustomBuilder() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [currentDraftId, setCurrentDraftId] = useState(null);
 
-  // --- 2. DETEKSI TOKO (DRAFT vs URL) ---
+  // --- DETEKSI TOKO ---
   useEffect(() => {
     const editId = localStorage.getItem("editDraftId");
     
     if (editId) {
-        // --- LOGIC A: DARI DRAFT (Prioritas Utama) ---
         const drafts = JSON.parse(localStorage.getItem("flowerDrafts") || "[]");
         const draftToLoad = drafts.find(d => String(d.id) === String(editId));
         
@@ -60,21 +59,16 @@ export default function CustomBuilder() {
         localStorage.removeItem("editDraftId");
 
     } else {
-        // --- LOGIC B: DARI URL (NEW CUSTOM) ---
-        // PERBAIKAN 3: Cek params.id, bukan searchParams
         if (params?.id) {
             setSelectedShopId(params.id); 
         } else {
-            // Fallback (Jaga-jaga kalau error)
             setSelectedShopId(SHOPS[0].id);
         }
     }
-  }, [params]); // Dependency ganti ke params
+  }, [params]);
 
-  // --- 3. HELPER: CARI TOKO AKTIF (SAFE MATCH) ---
   const activeShop = SHOPS.find(s => String(s.id) === String(selectedShopId)) || SHOPS[0];
 
-  // --- 4. HELPER: FILTER LIBRARY (SAFE MATCH) ---
   const filteredLibrary = FLOWER_LIBRARY.filter(f => 
     f.category === activeCategory && 
     String(f.shop_id) === String(activeShop.id) 
@@ -84,7 +78,7 @@ export default function CustomBuilder() {
   const editingFlower = selectedFlowers.find(f => f.uid === editingId);
 
 
-  // --- ACTIONS (SAMA SEPERTI SEBELUMNYA) ---
+  // --- ACTIONS ---
   const addFlower = (flower) => {
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newFlower = {
@@ -158,7 +152,10 @@ export default function CustomBuilder() {
   };
 
   const handleSaveDraft = async () => {
-    if (selectedFlowers.length === 0) { alert("Kanvas kosong!"); return; }
+    if (selectedFlowers.length === 0) { 
+        showToast("Kanvas masih kosong! Tambahkan bunga dulu.", "error"); 
+        return; 
+    }
     
     setActiveId(null);
     setEditingId(null);
@@ -195,9 +192,12 @@ export default function CustomBuilder() {
             localStorage.setItem("flowerDrafts", JSON.stringify([newDraft, ...existingDrafts]));
         }
         
+        // 4. TOAST SUKSES SEBELUM PINDAH HALAMAN
+        showToast("Draft berhasil disimpan!", "success");
         router.push(`/custom/${activeShop.id}/drafts`);
     } catch (e) {
-        alert("Gagal menyimpan!");
+        // 5. TOAST ERROR
+        showToast("Gagal menyimpan draft!", "error");
     }
   };
 
@@ -210,7 +210,6 @@ export default function CustomBuilder() {
     
       <aside className="w-80 bg-white border-r border-gray-200 flex flex-col z-20 shadow-xl">
         <div className="p-6 border-b border-gray-100">
-          {/* LINK BACK DIPERBAIKI: Mengarah kembali ke halaman toko yang benar */}
           <Link href={`/shop/${activeShop.id}`} className="text-gray-400 text-sm hover:text-dark-green mb-2 flex items-center gap-1">
              <ArrowLeft size={14}/> Back to Shop
           </Link>

@@ -1,109 +1,85 @@
 "use client";
 import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+// Pastikan path import ini benar. Kalau satu folder, "./ToastContext" oke.
+// Kalau ragu, pakai absolute path: "@/app/context/ToastContext"
+import { useToast } from "@/app/context/ToastContext"; 
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const router = useRouter();
+  const { showToast } = useToast(); // Panggil Hook Toast
 
-  // --- HELPER AMAN BUAT VERCEL ---
-  // Kita bungkus localStorage biar gak error di Server
-  const getStorage = (key) => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem(key);
-    }
-    return null;
-  };
+  // ... (Helper Storage Aman tetap sama) ...
+  const getStorage = (key) => typeof window !== "undefined" ? localStorage.getItem(key) : null;
+  const setStorage = (key, value) => typeof window !== "undefined" && localStorage.setItem(key, value);
+  const removeStorage = (key) => typeof window !== "undefined" && localStorage.removeItem(key);
 
-  const setStorage = (key, value) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(key, value);
-    }
-  };
-
-  const removeStorage = (key) => {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(key);
-    }
-  };
-
-  // 1. Cek User Pas Loading Awal
   useEffect(() => {
-    // Pakai try-catch biar kalau data corrupt gak bikin blank putih
     try {
       const loggedInUser = getStorage("currentUser");
-      if (loggedInUser) {
-        setUser(JSON.parse(loggedInUser));
-      }
+      if (loggedInUser) setUser(JSON.parse(loggedInUser));
     } catch (error) {
-      console.error("Error reading user from storage:", error);
-      removeStorage("currentUser"); // Bersihin data error
+      removeStorage("currentUser");
     }
   }, []);
 
-  // 2. Logic REGISTER
   const register = (name, email, password) => {
     try {
-      // Ambil database user dummy (Safe Parsing)
       const rawData = getStorage("users");
       const existingUsers = rawData ? JSON.parse(rawData) : [];
       
-      // Cek email kembar
       const isExist = existingUsers.find((u) => u.email === email);
       if (isExist) {
-        alert("Email sudah terdaftar!");
+        showToast("Email sudah terdaftar!", "error");
         return false;
       }
 
-      // Simpan user baru
       const newUser = { id: Date.now(), name, email, password };
       existingUsers.push(newUser);
-      
       setStorage("users", JSON.stringify(existingUsers));
       
-      alert("Register Berhasil! Silakan Login.");
+      // 🔴 PERBAIKAN DISINI: showToasts -> showToast
+      showToast("Register Berhasil! Silakan Login.", "success");
+      
       router.push("/login");
       return true;
     } catch (e) {
-      alert("Gagal register, coba clear cache browser.");
+      showToast("Gagal register.", "error");
       return false;
     }
   };
 
-  // 3. Logic LOGIN
   const login = (email, password) => {
     try {
       const rawData = getStorage("users");
       const existingUsers = rawData ? JSON.parse(rawData) : [];
       
-      // Cari user yang cocok
       const validUser = existingUsers.find(
         (u) => u.email === email && u.password === password
       );
 
       if (validUser) {
-        // Simpan sesi login
         setStorage("currentUser", JSON.stringify(validUser));
         setUser(validUser);
-        alert(`Welcome back, ${validUser.name}!`);
+        showToast(`Welcome back, ${validUser.name}!`, "success");
         router.push("/toko"); 
         return true;
       } else {
-        alert("Email atau Password salah!");
+        showToast("Email atau Password salah!", "error");
         return false;
       }
     } catch (e) {
-      console.error(e);
       return false;
     }
   };
 
-  // 4. Logic LOGOUT
   const logout = () => {
     removeStorage("currentUser");
     setUser(null);
+    showToast("Berhasil Logout", "info");
     router.push("/login");
   };
 

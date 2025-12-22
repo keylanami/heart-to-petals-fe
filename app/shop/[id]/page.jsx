@@ -18,7 +18,7 @@ import Link from "next/link";
 import { allItems, SHOPS } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 
-// --- ANIMATION VARIANTS ---
+
 const containerVariants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -28,7 +28,8 @@ const itemVariants = {
   show: { opacity: 1, scale: 1 },
 };
 
-// --- COMPONENT: BENTO CARD ---
+
+
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
   const { addToCart } = useCart();
@@ -121,8 +122,7 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
-// --- COMPONENT: PROMO CARD (SUDAH DIPERBAIKI) ---
-// Perhatikan: sekarang menerima props "shopId"
+
 const PromoCard = ({ className, shopId }) => {
   return (
     <motion.div

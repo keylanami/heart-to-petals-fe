@@ -16,11 +16,13 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext"; 
+import { ToastProvider, useToast } from "@/app/context/ToastContext";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { addToCart } = useCart(); 
+  const { showToast } = useToast();
 
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState("story");
@@ -51,10 +53,10 @@ export default function ProductDetailPage() {
     maximumSignificantDigits: 3,
   }).format(product.price);
 
-  // 3. FUNGSI HANDLER
+  
   const handleAddToCart = () => {
     addToCart(product, qty);
-    alert(`Berhasil menambahkan ${qty}x ${product.title} ke keranjang!`); // Feedback visual sementara
+    showToast(`Berhasil menambahkan ${qty}x ${product.title} ke keranjang!`);
   };
 
   return (

@@ -5,6 +5,7 @@ import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, Alert
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link"; // 2. Import Link buat tombol login
+import { useToast } from "../context/ToastContext";
 
 const shippingOptions = [
   { name: "Instant", cost: 25000, eta: "3-6 Jam" },
@@ -19,8 +20,9 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
   const [shippingSelection, setShippingSelection] = useState({});
+  const { showToast } = useToast();
   
-  // LOGIC FILTER DISPLAY ITEM
+
   const isDirectBuy = searchParams.get("direct") === "true";
   const directId = searchParams.get("id");
 
@@ -81,10 +83,11 @@ function CheckoutContent() {
     }
   };
 
+  
+
   const handlePayment = async () => {
-    // Validasi Login sebelum bayar
     if (!user) {
-        alert("Silakan login terlebih dahulu untuk melanjutkan pembayaran.");
+        showToast("Login terlebih dahulu untuk melanjutkan pembayaran.", "error");
         router.push("/login");
         return;
     }

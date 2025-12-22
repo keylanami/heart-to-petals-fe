@@ -19,8 +19,10 @@ import {
 import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 import { useRouter } from "next/navigation";
+// import { useToast } from "../context/ToastContext";
 
-// --- ANIMATION VARIANTS ---
+// const { showToast } = useToast();
+
 const pageVariants = {
   hidden: { opacity: 0 },
   show: {
@@ -38,7 +40,7 @@ const itemVariants = {
   }
 };
 
-// --- COMPONENT: MODAL PILIH TOKO ---
+
 const ShopSelectionModal = ({ isOpen, onClose }) => {
     // Filter hanya toko yang bisa custom
     const customShops = SHOPS.filter(shop => shop.can_customize);
@@ -47,7 +49,7 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop Gelap */}
+        
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -56,14 +58,14 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
             />
             
-            {/* Content Modal */}
+           
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="fixed z-[70] bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             >
-              {/* Modal Header */}
+           
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-cream-bg">
                 <div>
                     <h3 className="font-serif text-2xl font-bold text-dark-green">Pilih Florist</h3>
@@ -74,13 +76,13 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
                 </button>
               </div>
   
-              {/* Modal Body (List Toko) */}
+
               <div className="p-6 overflow-y-auto custom-scrollbar bg-white">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {customShops.map((shop) => (
                         <Link 
                             key={shop.id} 
-                            href={`/custom/${shop.id}`} // Link ke Custom Page toko tsb
+                            href={`/custom/${shop.id}`} 
                             className="group flex items-center gap-4 p-3 rounded-2xl border border-gray-100 hover:border-dark-green hover:bg-cream-bg transition-all duration-300"
                         >
                             <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 shadow-sm group-hover:shadow-md">

@@ -1,21 +1,22 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-// 1. Tambah useParams biar tau kita lagi di folder toko mana
 import { useRouter, useParams } from "next/navigation"; 
 import Navbar from "@/components/Navbar"; 
 import { useCart } from "@/app/context/CartContext"; 
+import { useToast } from "@/app/context/ToastContext";
 import { ShoppingBag, Trash2, Edit3, ArrowLeft } from "lucide-react"; 
 
 export default function DraftListPage() {
   const router = useRouter();
-  const params = useParams(); // Ambil ID toko dari URL (misal: 103)
+  const params = useParams(); 
   const { addToCart } = useCart(); 
+  // 2. PANGGIL HOOK TOAST
+  const { showToast } = useToast();
   const [drafts, setDrafts] = useState([]);
 
   // Load data pas halaman dibuka
   useEffect(() => {
-    // Ambil data dari LocalStorage
     const saved = localStorage.getItem("flowerDrafts");
     if (saved) {
       setDrafts(JSON.parse(saved));
@@ -24,26 +25,26 @@ export default function DraftListPage() {
 
   // Logic Hapus Draft
   const handleDelete = (id) => {
+    // Note: Untuk "Confirm" (Yakin/Tidak) biarkan native browser dulu karena sifatnya blocking.
+    // Tapi kita kasih notifikasi cantik setelahnya.
     if (confirm("Yakin mau hapus draft ini?")) {
         const updated = drafts.filter(d => d.id !== id);
         setDrafts(updated);
         localStorage.setItem("flowerDrafts", JSON.stringify(updated));
+        
+        // 3. KASIH TOAST INFO SETELAH HAPUS
+        showToast("Draft berhasil dihapus.", "success");
     }
   };
 
-  // --- 2. LOGIC EDIT (DIPERBAIKI) ---
+  // Logic Edit
   const handleEdit = (draft) => {
     localStorage.setItem("editDraftId", draft.id);
-    
-    // Cek: Draft ini punya data toko gak? Kalau ada pakai itu.
-    // Kalau gak ada (draft lama), pakai ID dari URL sekarang.
     const targetShopId = draft.shop?.id || params.id;
-    
-    // Redirect ke halaman builder toko yang benar
     router.push(`/custom/${targetShopId}`); 
   };
 
-  // --- 3. LOGIC ADD TO CART (DIPERBAIKI) ---
+  // Logic Add to Cart
   const handleAddToCart = (draft) => {
     const cartItem = {
         id: draft.id, 
@@ -58,7 +59,8 @@ export default function DraftListPage() {
     };
 
     addToCart(cartItem);
-    alert("Draft berhasil masuk keranjang! 🛒");
+    
+    showToast("Draft berhasil masuk keranjang! 🛒", "success");
   };
 
   return (
@@ -67,10 +69,8 @@ export default function DraftListPage() {
       
       <div className="max-w-6xl mx-auto px-6 py-40">
         
-
         <div className="flex flex-col md:flex-row justify-between items-end mb-8 gap-4">
             <div>
-           
                 <Link href={`/custom/${params.id}`} className="text-gray-400 text-sm hover:text-dark-green mb-2 flex items-center gap-1">
                     <ArrowLeft size={14}/> Back to Builder
                 </Link>
@@ -78,7 +78,6 @@ export default function DraftListPage() {
                 <p className="text-gray-500 mt-2">Lanjutkan kreasimu yang tertunda.</p>
             </div>
 
-   
             <Link 
                 href={`/custom/${params.id}`} 
                 className="px-6 py-3 bg-dark-green text-white rounded-full font-bold hover:bg-sage-green transition shadow-lg flex items-center gap-2"
@@ -87,7 +86,6 @@ export default function DraftListPage() {
             </Link>
         </div>
 
-      
         {drafts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {drafts.map((draft) => (
@@ -128,13 +126,11 @@ export default function DraftListPage() {
                                 </button>
                             </div>
                             
-                            {/* Menampilkan Nama Toko Asal Draft */}
                             <p className="text-xs text-sage-green font-bold uppercase tracking-wider mb-1">
                                 {draft.shop?.name || "Unknown Store"}
                             </p>
                             <p className="text-[10px] text-gray-400 mb-4">Modified: {draft.date}</p>
                             
-                            {/* --- FOOTER CARD (Price & Add to Cart) --- */}
                             <div className="mt-auto pt-3 border-t border-gray-100 flex justify-between items-center">
                                 <div>
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{draft.items.length} Items</p>
@@ -143,7 +139,6 @@ export default function DraftListPage() {
                                     </p>
                                 </div>
 
-                                {/* BUTTON ADD TO CART */}
                                 <button 
                                     onClick={() => handleAddToCart(draft)}
                                     className="w-10 h-10 rounded-full bg-gray-100 hover:bg-dark-green hover:text-white text-dark-green flex items-center justify-center transition-all shadow-sm active:scale-95"
@@ -157,7 +152,6 @@ export default function DraftListPage() {
                 ))}
             </div>
         ) : (
-      
             <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-gray-200">
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">📝</div>
                 <h3 className="text-xl font-serif font-bold text-dark-green mb-2">Belum ada Draft</h3>

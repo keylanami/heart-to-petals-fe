@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [passMatch, setPassMatch] = useState(false);
 
-  // Real-time check password match
+
   useEffect(() => {
     if (formData.confirmPassword) {
       if (formData.password !== formData.confirmPassword) {
@@ -50,7 +50,7 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen bg-[#F3F4F6] relative flex items-center justify-center p-6 font-sans">
       
-      {/* Background Texture (Subtle Chaos) */}
+    
       <div className="absolute inset-0 opacity-40 pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(#1A2F24 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}>
       </div>
@@ -61,7 +61,7 @@ export default function RegisterPage() {
         transition={{ duration: 0.4 }}
         className="bg-white w-full max-w-lg rounded-xl shadow-2xl border border-gray-200 overflow-hidden relative z-10"
       >
-        {/* Header Section */}
+        
         <div className="bg-[#1A2F24] p-8 text-center relative">
             <Link href="/" className="absolute top-8 left-8 text-white/50 hover:text-white transition-colors">
                 <ArrowLeft size={20} />
@@ -75,7 +75,7 @@ export default function RegisterPage() {
         <div className="p-8 md:p-10">
             <form onSubmit={handleSubmit} className="space-y-5">
                 
-                {/* NAME */}
+      
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Full Name</label>
                     <div className="relative group">
@@ -91,7 +91,7 @@ export default function RegisterPage() {
                     </div>
                 </div>
 
-                {/* EMAIL */}
+                
                 <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Email Address</label>
                     <div className="relative group">
@@ -107,7 +107,7 @@ export default function RegisterPage() {
                     </div>
                 </div>
 
-                {/* PASSWORD ROW */}
+               
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                     <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Password</label>
@@ -146,7 +146,7 @@ export default function RegisterPage() {
                     </div>
                 </div>
 
-                {/* Error Message */}
+                
                 {error && (
                     <motion.p initial={{opacity:0, height:0}} animate={{opacity:1, height:'auto'}} className="text-red-500 text-xs font-medium mt-1">
                         * {error}
