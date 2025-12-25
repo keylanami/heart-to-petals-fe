@@ -75,21 +75,44 @@ export const SHOPS = [
 export const allItems = [
   {
     id: 1,
-    shop: SHOPS[0], 
+    shop: SHOPS[0],
     type: "product",
     title: "Head Over Heels",
     price: 850000,
     image: "/assets/bouquet/peace/crimson_promise.png",
-    category: "Warm", tag: "Romance", desc: "Cinta yang meledak-ledak dan penuh gairah.", theme: "light", isBestSeller: true
+    category: "Warm",
+    tag: "Romance",
+    theme: "light",
+    isBestSeller: true,
+    desc: "Cinta yang meledak-ledak dan penuh afeksi. Cocok untuk menyatakan perasaan yang mendalam.",
+    story: "Terinspirasi dari kisah cinta klasik yang tak lekang oleh waktu. Merah melambangkan keberanian mencintai.",
+    care: "Potong ujung batang 1cm setiap hari, ganti air dingin, dan jauhkan dari sinar matahari langsung.",
+    composition: [
+        "Mawar Merah (Red Rose) - 10 tangkai",
+        "Baby Breath - Filler",
+        "Daun Ruscus - Greenery",
+        "Pita Satin Premium Maroon"
+    ]
   },
   {
     id: 2,
-    shop: SHOPS[0], 
+    shop: SHOPS[0],
     type: "product",
-    title: "Forgive Me",
-    price: 550000,
-    image: "/assets/bouquet/regret/sweet_apology.png",
-    category: "Gloomy", tag: "Apology", desc: "Sampaikan maaf yang tulus ketika kata tak lagi cukup.", theme: "dark",
+    title: "Morning Dew",
+    price: 450000,
+    image: "/assets/bouquet/peace/morning_dew.png", 
+    category: "Peace",
+    tag: "Friendship",
+    theme: "light",
+    isBestSeller: false,
+    desc: "Kesegaran pagi hari yang membawa ketenangan.",
+    story: "Diciptakan untuk menyapa teman lama dengan kehangatan yang tidak berlebihan.",
+    care: "Semprotkan air (mist) ke kelopak bunga tulip agar tetap segar.",
+    composition: [
+        "Tulip Putih - 5 tangkai",
+        "Lily of the Valley - 3 tangkai",
+        "Kertas Wrapping Transparan"
+    ]
   },
   {
     id: 3,
