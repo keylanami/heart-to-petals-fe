@@ -40,6 +40,11 @@ const itemVariants = {
   }
 };
 
+const searchResult = allItems.filter(item => {
+   const matchTitle = item.title.toLowerCase().includes(keyword);
+   const matchFlower = item.composition?.some(flower => flower.toLowerCase().includes(keyword));
+   return matchTitle || matchFlower;
+});
 
 const ShopSelectionModal = ({ isOpen, onClose }) => {
     // Filter hanya toko yang bisa custom

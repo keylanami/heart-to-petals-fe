@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import Link from "next/link"; // Jangan lupa import Link
+import Link from "next/link";
 import { allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 import { useToast } from "@/app/context/ToastContext";
@@ -199,7 +199,7 @@ export default function ProductDetailPage() {
                 <div className="px-2 pb-2 min-h-[120px] text-sm text-gray-600">
                   <AnimatePresence mode="wait">
                     
-                    {/* TAB STORY */}
+                  
                     {activeTab === "story" && (
                       <motion.div key="story" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex gap-3 items-start">
                         <BookOpen size={18} className="text-sage-green shrink-0 mt-0.5" />
@@ -207,7 +207,7 @@ export default function ProductDetailPage() {
                       </motion.div>
                     )}
 
-                    {/* TAB COMPOSITION */}
+                  
                     {activeTab === "composition" && (
                       <motion.div key="composition" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
                         <ul className="grid grid-cols-1 gap-2">
@@ -223,7 +223,7 @@ export default function ProductDetailPage() {
                       </motion.div>
                     )}
 
-                    {/* TAB CARE */}
+                  
                     {activeTab === "care" && (
                       <motion.div key="care" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex gap-3 items-start">
                         <Droplets size={18} className="text-blue-400 shrink-0 mt-0.5" />
@@ -231,7 +231,7 @@ export default function ProductDetailPage() {
                       </motion.div>
                     )}
 
-                    {/* TAB REVIEWS */}
+                   
                     {activeTab === "reviews" && (
                         <motion.div key="reviews" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
                             <form onSubmit={handleSubmitReview} className="mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
@@ -315,7 +315,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* --- REKOMENDASI PRODUK (YOU MIGHT ALSO LIKE) - DIISI LOGIC --- */}
+    
         <div className="mt-20 text-center">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">You might also like</p>
           
