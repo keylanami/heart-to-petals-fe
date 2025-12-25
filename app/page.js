@@ -16,7 +16,6 @@ import { allItems } from "@/app/utils/shop";
 import { SHOPS } from "./utils/tenants";
 import { PROMOS } from "./utils/data";
 
-// --- KOMPONEN BARU: DASHBOARD PRODUCT CARD (Gallery Style) ---
 const DashboardProductCard = ({ item }) => {
   return (
     <Link
@@ -108,12 +107,12 @@ const [isClient, setIsClient] = useState(false);
   );
 };
 
-// --- MAIN DASHBOARD PAGE ---
+
 export default function DashboardPage() {
   const [currentPromo, setCurrentPromo] = useState(0);
   const carouselRef = useRef(null);
 
-  // Auto Slide Promo
+ 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentPromo((prev) => (prev + 1) % PROMOS.length);
@@ -121,9 +120,9 @@ export default function DashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
-  // Data Filter
+
   const bestSellers = allItems.filter((i) => i.type !== "promo").slice(0, 5);
-  // Pastikan data 'nearestShops' juga diurutkan berdasarkan jarak (string "1.2 km" perlu diparse kalau mau akurat, ini simulasi aja)
+  
   const nearestShops = SHOPS.slice(0, 4);
 
   return (
