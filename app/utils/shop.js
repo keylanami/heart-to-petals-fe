@@ -4,7 +4,7 @@ export const SHOPS = [
     id: 101,
     name: "Rosy Garden Bandung",
     location: "Dago, Bandung",
-    image: "/assets/flowershop/rosy_garden.png", // Path disesuaikan absolute
+    image: "/assets/flowershop/rosy_garden.png", 
     rating: 4.9,
     reviewCount: 1240, 
     distance: "1.2 km",
@@ -67,6 +67,9 @@ export const SHOPS = [
     openTime: "08.00 - 20.00"
   }
 ];
+
+
+
 
 // DATA PRODUK (allItems)
 export const allItems = [
@@ -217,8 +220,4 @@ export const allItems = [
     category: "Warm", tag: "Peace", desc: "Penyesalan terdalam di tengah malam yang sunyi.", theme: "dark",
   },
 ];
-// PROMOS (biar lengkap)
-export const PROMOS = [
-  { id: 1, title: "Xmas Sale", bg: "bg-[#2F4F4F]", text: "text-white", image: "/assets/promo1.jpg" },
-  { id: 2, title: "New Year", bg: "bg-[#8FBC8F]", text: "text-dark-green", image: "/assets/promo2.jpg" }
-];
+

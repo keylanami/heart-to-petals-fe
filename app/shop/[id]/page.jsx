@@ -17,6 +17,7 @@ import Footer from "@/components/Footer";
 import Link from "next/link";
 import { allItems, SHOPS } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
+import { useToast } from "@/app/context/ToastContext";
 
 
 const containerVariants = {
@@ -32,13 +33,14 @@ const itemVariants = {
 
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
+  const { showToast } = useToast();;
   const { addToCart } = useCart();
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
     addToCart(product, 1);
-    alert(`${product.title} masuk keranjang!`);
+    showToast(`${product.title} masuk keranjang!`);
   };
 
   return (

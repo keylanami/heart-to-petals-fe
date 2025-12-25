@@ -184,6 +184,7 @@ export default function CustomBuilder() {
 
     try {
         const existingDrafts = JSON.parse(localStorage.getItem("flowerDrafts") || "[]");
+
         if (currentDraftId) {
             const updatedDrafts = existingDrafts.map(d => d.id === currentDraftId ? { ...d, ...draftPayload } : d);
             localStorage.setItem("flowerDrafts", JSON.stringify(updatedDrafts));
@@ -191,12 +192,11 @@ export default function CustomBuilder() {
             const newDraft = { id: Date.now(), ...draftPayload };
             localStorage.setItem("flowerDrafts", JSON.stringify([newDraft, ...existingDrafts]));
         }
-        
-        // 4. TOAST SUKSES SEBELUM PINDAH HALAMAN
+
         showToast("Draft berhasil disimpan!", "success");
         router.push(`/custom/${activeShop.id}/drafts`);
+        
     } catch (e) {
-        // 5. TOAST ERROR
         showToast("Gagal menyimpan draft!", "error");
     }
   };

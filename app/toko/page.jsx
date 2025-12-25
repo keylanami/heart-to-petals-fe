@@ -19,9 +19,9 @@ import {
 import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 import { useRouter } from "next/navigation";
-// import { useToast } from "../context/ToastContext";
+import { useToast } from "@/app/context/ToastContext"; 
 
-// const { showToast } = useToast();
+
 
 const pageVariants = {
   hidden: { opacity: 0 },
@@ -158,11 +158,12 @@ const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
   const { addToCart } = useCart();
   const router = useRouter();
+  const { showToast } = useToast();
 
   const handleAddToCart = (e) => {
     e.preventDefault(); e.stopPropagation();
     addToCart(product, 1);
-    alert(`${product.title} masuk keranjang!`);
+    showToast(`${product.title} masuk keranjang!`);
   };
 
   const handleCheckout = (e) => {

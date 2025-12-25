@@ -1,5 +1,3 @@
-// ... (SHOPS dan allItems yang sudah ada biarkan)
-
 // TAMBAHAN 1: DATA PROMO CAROUSEL (Xmas Edition)
 export const PROMOS = [
   {

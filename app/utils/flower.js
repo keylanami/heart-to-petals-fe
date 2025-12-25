@@ -1,4 +1,4 @@
-// Kita asumsikan ID Toko sesuai dengan data di utils/shop.js
+// id toko sesuai yaa sama di shop.js
 // 101: Rosy Garden
 // 102: Eternal Florist
 // 103: The Flower Studio
