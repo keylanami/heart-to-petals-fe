@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin,
   Star,
-  ArrowRight,
   Palette,
   Package,
   ShoppingBag,
@@ -15,11 +14,13 @@ import {
   Sparkles,
   Store,
   X,
-  ArrowLeft 
+  ArrowLeft,
+  ArrowRight,
+  Search
 } from "lucide-react";
 import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useToast } from "@/app/context/ToastContext"; 
 
 const pageVariants = {
@@ -39,7 +40,7 @@ const itemVariants = {
   }
 };
 
-
+// --- COMPONENT: MODAL PILIH TOKO ---
 const ShopSelectionModal = ({ isOpen, onClose }) => {
     const customShops = SHOPS.filter(shop => shop.can_customize);
   
@@ -104,7 +105,7 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
     );
   };
 
-
+// --- COMPONENT: TOP SHOP CARD ---
 const TopShopCard = ({ shop }) => (
   <motion.div variants={itemVariants}>
     <Link
@@ -147,7 +148,7 @@ const TopShopCard = ({ shop }) => (
   </motion.div>
 );
 
-
+// --- COMPONENT: BENTO CARD ---
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
   const { addToCart } = useCart();
@@ -214,7 +215,7 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
-
+// --- COMPONENT: PROMO CARD ---
 const PromoCard = ({ className, onClick }) => (
   <motion.div
     layout
@@ -239,10 +240,14 @@ const PromoCard = ({ className, onClick }) => (
   </motion.div>
 );
 
-
+// --- MAIN PAGE: TENANT LIST ---
 export default function TenantListPage() {
   const [isModalOpen, setIsModalOpen] = useState(false); 
   const topSectionRef = useRef(null); 
+  
+  // 1. STATE SEARCH
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const handleStartCustom = () => {
     topSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -262,13 +267,28 @@ export default function TenantListPage() {
     return pattern[index % 7];
   };
 
+  // 2. LOGIC FILTERING
+  const filteredProducts = allItems.filter(item => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    
+    const matchTitle = (item.title || "").toLowerCase().includes(q);
+    const matchTag = (item.tag || "").toLowerCase().includes(q);
+    const matchCat = (item.category || "").toLowerCase().includes(q);
+    const matchComp = item.composition?.some(f => (f || "").toLowerCase().includes(q));
+
+    return matchTitle || matchTag || matchCat || matchComp;
+  });
+
   return (
     <main className="bg-cream-bg min-h-screen">
       <Navbar />
       
       <ShopSelectionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
+
       <div ref={topSectionRef} className="pt-36 pb-24 px-4 md:px-6 max-w-7xl mx-auto">
-    
+        
+        {/* HEADER */}
         <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -279,36 +299,86 @@ export default function TenantListPage() {
           <h1 className="text-5xl md:text-7xl font-serif text-dark-green mb-6 tracking-tight">
             Marketplace <span className="italic font-light text-sage-green">&</span> Community
           </h1>
-          <p className="text-gray-500 max-w-lg mx-auto text-lg font-light leading-relaxed">
+          <p className="text-gray-500 max-w-lg mx-auto text-lg font-light leading-relaxed mb-8">
             Jelajahi karya terbaik dari florist lokal pilihan kami.
           </p>
+
+          {/* 3. SEARCH BAR UI */}
+          <motion.div 
+            className="relative mx-auto z-30"
+            initial={false}
+            animate={{ 
+                width: isSearchFocused || searchQuery.length > 0 ? "100%" : "280px",
+                maxWidth: isSearchFocused || searchQuery.length > 0 ? "600px" : "280px"
+            }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
+            <div className="relative w-full">
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                    <Search className="text-gray-400" size={20} />
+                </div>
+                <input 
+                    type="text" 
+                    className="w-full pl-12 pr-10 py-4 bg-white rounded-full border border-gray-100 shadow-xl focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all placeholder:text-gray-400 text-dark-green font-medium"
+                    placeholder="Cari bunga (Mawar, Tulip, Romance)..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchFocused(true)}
+                    onBlur={() => setIsSearchFocused(false)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            e.currentTarget.blur();
+                        }
+                    }}
+                />
+                <AnimatePresence>
+                    {searchQuery && (
+                        <motion.button 
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            onClick={() => setSearchQuery("")}
+                            className="absolute inset-y-0 right-4 flex items-center text-gray-400 hover:text-dark-green transition-colors"
+                        >
+                            <X size={18} />
+                        </motion.button>
+                    )}
+                </AnimatePresence>
+            </div>
+          </motion.div>
+
         </motion.div>
 
         
-        <motion.section 
-            variants={pageVariants}
-            initial="hidden"
-            animate="show"
-            className="mb-24"
-        >
-          <motion.div variants={itemVariants} className="flex items-end justify-between mb-8 px-2">
-            <h2 className="text-2xl font-serif font-bold text-dark-green flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-dark-green text-white flex items-center justify-center text-xs">1</span>
-              Top Visited <span className="italic font-light text-sage-green">Florists</span>
-            </h2>
-          </motion.div>
+        {/* 4. CONDITIONAL RENDERING TOKO
+            Jika search ada isinya, SEMBUNYIKAN Carousel Toko 
+        */}
+        {!searchQuery && (
+            <motion.section 
+                variants={pageVariants}
+                initial="hidden"
+                animate="show"
+                className="mb-24"
+            >
+            <motion.div variants={itemVariants} className="flex items-end justify-between mb-8 px-2">
+                <h2 className="text-2xl font-serif font-bold text-dark-green flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-dark-green text-white flex items-center justify-center text-xs">1</span>
+                Top Visited <span className="italic font-light text-sage-green">Florists</span>
+                </h2>
+            </motion.div>
 
-          <motion.div 
-            className="flex gap-6 overflow-x-auto pb-10 -mx-4 px-4 md:mx-0 md:px-0 custom-scrollbar"
-            variants={pageVariants}
-          >
-            {SHOPS.map((shop) => (
-              <TopShopCard key={shop.id} shop={shop} />
-            ))}
-          </motion.div>
-        </motion.section>
+            <motion.div 
+                className="flex gap-6 overflow-x-auto pb-10 -mx-4 px-4 md:mx-0 md:px-0 custom-scrollbar"
+                variants={pageVariants}
+            >
+                {SHOPS.map((shop) => (
+                <TopShopCard key={shop.id} shop={shop} />
+                ))}
+            </motion.div>
+            </motion.section>
+        )}
 
-        {/* SECTION 2: ALL COLLECTIONS */}
+        {/* SECTION 2: ALL COLLECTIONS (FILTERED) */}
         <motion.section
             variants={pageVariants}
             initial="hidden"
@@ -316,37 +386,55 @@ export default function TenantListPage() {
         >
           <motion.div variants={itemVariants} className="flex items-end justify-between mb-10 px-2">
             <h2 className="text-2xl font-serif font-bold text-dark-green flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-dark-green text-white flex items-center justify-center text-xs">2</span>
-              All Collections <span className="italic font-light text-sage-green">Showcase</span>
+              {/* Ubah nomor urut jadi dinamis, kalau lagi search, jadi 1 */}
+              <span className="w-6 h-6 rounded-full bg-dark-green text-white flex items-center justify-center text-xs">
+                  {searchQuery ? "1" : "2"}
+              </span>
+              {searchQuery ? (
+                  <span>Search Results <span className="italic font-light text-sage-green">Found</span></span>
+              ) : (
+                  <span>All Collections <span className="italic font-light text-sage-green">Showcase</span></span>
+              )}
             </h2>
           </motion.div>
 
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-4 gap-6 grid-flow-dense"
-            variants={pageVariants}
-          >
-            <AnimatePresence>
-                {allItems.map((item, index) => {
-                if (item.type === "promo") {
+          {filteredProducts.length > 0 ? (
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-4 gap-6 grid-flow-dense"
+                variants={pageVariants}
+              >
+                <AnimatePresence>
+                    {filteredProducts.map((item, index) => {
+                    if (item.type === "promo") {
+                        return (
+                            <PromoCard 
+                                key={item.id} 
+                                className={getBentoClass(index)} 
+                                onClick={handleStartCustom} 
+                            />
+                        );
+                    }
                     return (
-                        <PromoCard 
-                            key={item.id} 
-                            className={getBentoClass(index)} 
-                            onClick={handleStartCustom} 
+                        <BentoCard
+                        key={item.id}
+                        product={item}
+                        index={index}
+                        className={getBentoClass(index)}
                         />
                     );
-                }
-                return (
-                    <BentoCard
-                    key={item.id}
-                    product={item}
-                    index={index}
-                    className={getBentoClass(index)}
-                    />
-                );
-                })}
-            </AnimatePresence>
-          </motion.div>
+                    })}
+                </AnimatePresence>
+              </motion.div>
+          ) : (
+              <div className="text-center py-20 bg-white rounded-3xl border border-dashed border-gray-200">
+                  <p className="text-gray-400 font-serif italic text-lg">
+                      Yah, tidak ada bunga yang cocok dengan "{searchQuery}" 🥀
+                  </p>
+                  <button onClick={() => setSearchQuery("")} className="text-sage-green text-sm font-bold mt-2 underline">
+                      Reset Pencarian
+                  </button>
+              </div>
+          )}
         </motion.section>
       </div>
       <Footer />
