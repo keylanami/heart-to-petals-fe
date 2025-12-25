@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react"; // Tambah useEffect
+import { useState, useEffect } from "react"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { useCart } from "@/app/context/CartContext";
 import Navbar from "@/components/Navbar";
@@ -73,7 +73,7 @@ const CartPage = () => {
       maximumSignificantDigits: 3,
     }).format(num);
 
-  // Logic Quantity (Update/Delete)
+  
   const decreaseQty = (item) => {
     if (item.qty > 1) {
       addToCart(item, -1);
@@ -85,7 +85,6 @@ const CartPage = () => {
   const handleCheckout = () => {
     // 1. Simpan ID item yang dipilih ke LocalStorage sementara
     localStorage.setItem("checkoutIds", JSON.stringify(selectedItems));
-
     // 2. Pindah ke halaman Checkout
     router.push("/checkout");
   };

@@ -1,8 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-// Pastikan path import ini benar. Kalau satu folder, "./ToastContext" oke.
-// Kalau ragu, pakai absolute path: "@/app/context/ToastContext"
 import { useToast } from "@/app/context/ToastContext"; 
 
 const AuthContext = createContext();
@@ -10,9 +8,8 @@ const AuthContext = createContext();
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const router = useRouter();
-  const { showToast } = useToast(); // Panggil Hook Toast
+  const { showToast } = useToast(); 
 
-  // ... (Helper Storage Aman tetap sama) ...
   const getStorage = (key) => typeof window !== "undefined" ? localStorage.getItem(key) : null;
   const setStorage = (key, value) => typeof window !== "undefined" && localStorage.setItem(key, value);
   const removeStorage = (key) => typeof window !== "undefined" && localStorage.removeItem(key);
@@ -41,7 +38,6 @@ export function AuthProvider({ children }) {
       existingUsers.push(newUser);
       setStorage("users", JSON.stringify(existingUsers));
       
-      // 🔴 PERBAIKAN DISINI: showToasts -> showToast
       showToast("Register Berhasil! Silakan Login.", "success");
       
       router.push("/login");
