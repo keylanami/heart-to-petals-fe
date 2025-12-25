@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react"; // 1. Import Hooks
+import { useState, useRef } from "react"; 
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
@@ -14,14 +14,13 @@ import {
   ArrowUpRight,
   Sparkles,
   Store,
-  X, // Icon Close
+  X,
+  ArrowLeft 
 } from "lucide-react";
 import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useToast } from "@/app/context/ToastContext"; 
-
-
 
 const pageVariants = {
   hidden: { opacity: 0 },
@@ -40,21 +39,14 @@ const itemVariants = {
   }
 };
 
-const searchResult = allItems.filter(item => {
-   const matchTitle = item.title.toLowerCase().includes(keyword);
-   const matchFlower = item.composition?.some(flower => flower.toLowerCase().includes(keyword));
-   return matchTitle || matchFlower;
-});
 
 const ShopSelectionModal = ({ isOpen, onClose }) => {
-    // Filter hanya toko yang bisa custom
     const customShops = SHOPS.filter(shop => shop.can_customize);
   
     return (
       <AnimatePresence>
         {isOpen && (
           <>
-        
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -63,14 +55,12 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
               className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
             />
             
-           
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               className="fixed z-[70] bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             >
-           
               <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-cream-bg">
                 <div>
                     <h3 className="font-serif text-2xl font-bold text-dark-green">Pilih Florist</h3>
@@ -81,7 +71,6 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
                 </button>
               </div>
   
-
               <div className="p-6 overflow-y-auto custom-scrollbar bg-white">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {customShops.map((shop) => (
@@ -115,7 +104,7 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
     );
   };
 
-// --- COMPONENT: TOP SHOP CARD ---
+
 const TopShopCard = ({ shop }) => (
   <motion.div variants={itemVariants}>
     <Link
@@ -158,17 +147,18 @@ const TopShopCard = ({ shop }) => (
   </motion.div>
 );
 
-// --- COMPONENT: BENTO CARD ---
+
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
   const { addToCart } = useCart();
   const router = useRouter();
-  const { showToast } = useToast();
+  const { showToast } = useToast(); 
 
   const handleAddToCart = (e) => {
-    e.preventDefault(); e.stopPropagation();
+    e.preventDefault();
+    e.stopPropagation();
     addToCart(product, 1);
-    showToast(`${product.title} masuk keranjang!`);
+    showToast(`${product.title} masuk keranjang!`, "success"); 
   };
 
   const handleCheckout = (e) => {
@@ -224,8 +214,7 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
-// --- COMPONENT: PROMO CARD (DIPERBARUI) ---
-// Sekarang menerima props "onClick" untuk memicu event custom
+
 const PromoCard = ({ className, onClick }) => (
   <motion.div
     layout
@@ -238,7 +227,6 @@ const PromoCard = ({ className, onClick }) => (
       Punya Cerita <br /> <span className="italic text-cream-bg font-light">Sendiri?</span>
     </h3>
     
-
     <button
       onClick={onClick}
       className="relative z-10 group/btn flex items-center gap-3 bg-cream-bg text-dark-green px-8 py-4 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-white transition-all hover:scale-105 shadow-xl cursor-pointer"
@@ -251,15 +239,13 @@ const PromoCard = ({ className, onClick }) => (
   </motion.div>
 );
 
-// --- MAIN PAGE ---
+
 export default function TenantListPage() {
-  const [isModalOpen, setIsModalOpen] = useState(false); // State Modal
-  const topSectionRef = useRef(null); // Ref untuk scroll
+  const [isModalOpen, setIsModalOpen] = useState(false); 
+  const topSectionRef = useRef(null); 
 
   const handleStartCustom = () => {
-    // 1. Scroll ke atas (Smooth)
     topSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
-    // 2. Buka Modal
     setIsModalOpen(true);
   };
 
@@ -280,20 +266,9 @@ export default function TenantListPage() {
     <main className="bg-cream-bg min-h-screen">
       <Navbar />
       
-      {/* MODAL */}
       <ShopSelectionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
-
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar { height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(143, 188, 143, 0.1); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1A2F24; border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #2F4F4F; }
-      `}</style>
-
-      {/* Tambahkan ref di sini agar scroll mentok ke atas konten */}
       <div ref={topSectionRef} className="pt-36 pb-24 px-4 md:px-6 max-w-7xl mx-auto">
-        
-        {/* HEADER */}
+    
         <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -357,7 +332,7 @@ export default function TenantListPage() {
                         <PromoCard 
                             key={item.id} 
                             className={getBentoClass(index)} 
-                            onClick={handleStartCustom} // Pass fungsi handler di sini
+                            onClick={handleStartCustom} 
                         />
                     );
                 }
