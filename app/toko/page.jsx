@@ -233,7 +233,7 @@ const PromoCard = ({ className, onClick }) => (
       Punya Cerita <br /> <span className="italic text-cream-bg font-light">Sendiri?</span>
     </h3>
     
-    {/* Menggunakan BUTTON dengan onClick, bukan Link */}
+
     <button
       onClick={onClick}
       className="relative z-10 group/btn flex items-center gap-3 bg-cream-bg text-dark-green px-8 py-4 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-white transition-all hover:scale-105 shadow-xl cursor-pointer"
