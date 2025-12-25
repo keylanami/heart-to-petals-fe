@@ -7,7 +7,7 @@ export const SHOPS = [
     image: "/assets/flowershop/rosy_garden.png", 
     rating: 4.9,
     reviewCount: 1240, 
-    distance: "1.2 km",
+    distance: "1.2 km", 
     can_customize: true, 
     openTime: "08.00 - 20.00"
   },
