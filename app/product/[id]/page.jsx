@@ -35,20 +35,18 @@ export default function ProductDetailPage() {
 
   // --- STATE REVIEW ---
   const [reviews, setReviews] = useState([]);
-  const [newReview, setNewReview] = useState({ rating: 5, text: "" });
+  const [newReview, setNewReview] = useState({ rating: 0, text: "" });
   const [hoverRating, setHoverRating] = useState(0);
 
   const product = allItems.find((p) => String(p.id) === String(id));
 
   // --- LOGIC REKOMENDASI PRODUK (You Might Also Like) ---
-  // Filter produk dengan kategori sama, tapi bukan produk yang sedang dibuka
   const relatedProducts = product 
     ? allItems
         .filter((p) => p.category === product.category && String(p.id) !== String(id))
         .slice(0, 3) // Ambil maksimal 3
     : [];
 
-  // Jika hasil filter < 3 (misal cuma ada 1 produk di kategori itu), isi sisanya dengan produk random
   if (product && relatedProducts.length < 3) {
       const others = allItems.filter(p => String(p.id) !== String(id) && p.category !== product.category);
       while (relatedProducts.length < 3 && others.length > 0) {
