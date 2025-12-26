@@ -1,11 +1,12 @@
 "use client";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext"; 
+import { useOrder } from "@/app/context/OrderContext"; 
+import { useToast } from "@/app/context/ToastContext";
 import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, AlertTriangle, LogIn, LogOut } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link"; 
-import { useToast } from "@/app/context/ToastContext";
 import { motion, AnimatePresence } from "framer-motion";
 
 const shippingOptions = [
@@ -22,13 +23,13 @@ function CheckoutContent() {
   const [isClient, setIsClient] = useState(false);
   const [shippingSelection, setShippingSelection] = useState({});
   const { showToast } = useToast();
+  const { addOrder } = useOrder(); 
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
 
   const isDirectBuy = searchParams.get("direct") === "true";
   const directId = searchParams.get("id");
@@ -37,7 +38,6 @@ function CheckoutContent() {
     ? cart.filter(item => String(item.id) === String(directId))
     : cart;
 
- 
   const groupedCart = displayItems.reduce((acc, item) => {
     const shopId = item.shop?.id || "unknown";
     if (!acc[shopId]) {
@@ -69,7 +69,6 @@ function CheckoutContent() {
     setShippingSelection((prev) => ({ ...prev, [shopId]: option }));
   };
 
-
   const subtotal = displayItems.reduce((acc, item) => acc + (item.price || 0) * (item.qty || item.quantity || 1), 0);
   
   const totalShipping = shopKeys.reduce((acc, shopId) => {
@@ -81,9 +80,6 @@ function CheckoutContent() {
   const grandTotal = subtotal + totalShipping + serviceFee;
 
   const toRupiah = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(num || 0);
-
-
-
 
   const handleCancelClick = () => {
     setIsCancelModalOpen(true); 
@@ -104,8 +100,20 @@ function CheckoutContent() {
         return;
     }
 
-
     await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const itemsToBuy = isDirectBuy && directId 
+        ? cart.filter(item => String(item.id) === String(directId))
+        : cart;
+    
+    const newOrderData = {
+        customer: user.name,
+        items: itemsToBuy,
+        total: grandTotal, 
+        type: itemsToBuy.some(i => i.can_customize) ? "Custom" : "Catalog", 
+    };
+
+    addOrder(newOrderData); 
 
     if (isDirectBuy && directId) {
         removeFromCart(parseInt(directId));
@@ -119,8 +127,7 @@ function CheckoutContent() {
 
   return (
     <main className="bg-gray-50 min-h-screen pb-32 font-sans">
-      
-
+   
       <header className="fixed top-0 left-0 w-full bg-white border-b border-gray-100 px-4 md:px-8 py-4 z-50 flex items-center justify-between shadow-sm">
         <button
           onClick={handleCancelClick}
@@ -134,7 +141,6 @@ function CheckoutContent() {
         <div className="w-10"></div>
       </header>
 
-   
       <div className="pt-28 px-4 md:px-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
         <div className="flex-1 space-y-6">
           <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
@@ -149,7 +155,7 @@ function CheckoutContent() {
                         <span className="text-xs text-sage-green font-normal underline">Ubah</span>
                     </p>
                     <p className="text-sm text-gray-600">
-                        Jl. Dago Asri No. 102, Coblong, Bandung, Jawa Barat, 40135
+                        {user.address?.street || "Jl. Dago Asri No. 102"}, {user.address?.city || "Bandung"}, {user.address?.zip || "40135"}
                     </p>
                     <p className="text-sm text-gray-500 mt-1">{user.email}</p>
                 </div>
@@ -233,7 +239,6 @@ function CheckoutContent() {
                     ))}
                   </div>
 
-              
                   <div className="mt-6 pt-4 border-t border-dashed border-gray-200 bg-blue-50/30 -mx-6 px-6 pb-4 rounded-b-[2rem]">
                     <div className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-3 pt-3">
                       <Truck size={16} />
@@ -289,7 +294,7 @@ function CheckoutContent() {
           )}
         </div>
 
-        {/* RIGHT COLUMN (SUMMARY) */}
+
         <div className="lg:w-[380px]">
           <div className="bg-white p-6 rounded-[2rem] shadow-lg border border-gray-100 sticky top-28">
             <h3 className="font-serif font-bold text-xl text-dark-green mb-6">
@@ -335,7 +340,7 @@ function CheckoutContent() {
         </div>
       </div>
 
-    
+
       <AnimatePresence>
         {isCancelModalOpen && (
             <>
