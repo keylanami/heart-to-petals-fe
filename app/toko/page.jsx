@@ -140,12 +140,12 @@ const TopShopCard = ({ shop }) => (
 
         <div className="absolute top-4 left-4 z-10">
           {shop.can_customize ? (
-            <div className="flex items-center gap-1.5 bg-sage-green/90 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full text-[9px] font-bold text-white shadow-sm tracking-widest uppercase">
+            <div className="flex items-center gap-1.5 bg-white/40 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full text-[9px] font-bold text-white shadow-sm tracking-widest uppercase">
               <Palette size={10} /> Custom
             </div>
           ) : (
             <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full text-[9px] font-bold text-white shadow-sm tracking-widest uppercase">
-              <Package size={10} /> Ready
+              <Package size={10} /> 
             </div>
           )}
         </div>
