@@ -60,7 +60,7 @@ export default function ProductDetailPage() {
     }
   }
 
-  // 1. Load Review
+  
   useEffect(() => {
     if (product) {
       const storageKey = `reviews_${product.id}`;
@@ -89,7 +89,7 @@ export default function ProductDetailPage() {
     }
   }, [product]);
 
-  // 2. Submit Review
+
   const handleSubmitReview = (e) => {
     e.preventDefault();
     if (!newReview.text.trim()) return;
@@ -141,6 +141,12 @@ export default function ProductDetailPage() {
   }).format(product.price);
 
   const handleAddToCart = () => {
+    if (!user) {
+        showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+        router.push("/login");
+        return;
+    }
+    
     addToCart(product, qty);
     showToast(
       `Berhasil menambahkan ${qty}x ${product.title} ke keranjang!`,

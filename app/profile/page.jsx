@@ -82,7 +82,7 @@ export default function ProfilePage() {
     if (window.confirm("Yakin mau keluar?")) {
       logout();
       showToast("Sampai jumpa lagi! 👋", "info");
-      router.push("/");
+      router.push("/get-started");
     }
   };
 

@@ -96,7 +96,7 @@ function CheckoutContent() {
   const handlePayment = async () => {
     if (!user) {
         showToast("Login terlebih dahulu untuk melanjutkan pembayaran.", "error");
-        router.push("/login");
+        router.push("/get-started");
         return;
     }
 
