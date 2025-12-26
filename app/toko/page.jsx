@@ -22,6 +22,7 @@ import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/app/context/ToastContext";
+import { useAuth } from "../context/AuthContext";
 
 const pageVariants = {
   hidden: { opacity: 0 },
@@ -178,17 +179,33 @@ const BentoCard = ({ product, index, className }) => {
   const { addToCart } = useCart();
   const router = useRouter();
   const { showToast } = useToast();
+  const { user } = useAuth();
+
+  
+
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!user) {
+        showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+        router.push("/login");
+        return;
+    }
     addToCart(product, 1);
-    showToast(`${product.title} masuk keranjang!`, "success");
+    showToast(`${product.title} masuk keranjang!`, "success"); 
   };
 
   const handleCheckout = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!user) {
+        showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+        router.push("/login");
+        return;
+    }
     addToCart(product, 1);
     router.push(`/checkout?direct=true&id=${product.id}`);
   };
