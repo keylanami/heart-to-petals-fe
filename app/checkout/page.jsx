@@ -1,11 +1,12 @@
 "use client";
 import { useCart } from "@/app/context/CartContext";
-import { useAuth } from "@/app/context/AuthContext"; // 1. Import Auth
-import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, AlertTriangle, LogIn } from "lucide-react";
+import { useAuth } from "@/app/context/AuthContext"; 
+import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, AlertTriangle, LogIn, LogOut } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-import Link from "next/link"; // 2. Import Link buat tombol login
-import { useToast } from "../context/ToastContext";
+import Link from "next/link"; 
+import { useToast } from "@/app/context/ToastContext";
+import { motion, AnimatePresence } from "framer-motion";
 
 const shippingOptions = [
   { name: "Instant", cost: 25000, eta: "3-6 Jam" },
@@ -15,13 +16,19 @@ const shippingOptions = [
 
 function CheckoutContent() {
   const { cart, removeFromCart, clearCart } = useCart();
-  const { user } = useAuth(); // 3. Ambil data User
+  const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
   const [shippingSelection, setShippingSelection] = useState({});
   const { showToast } = useToast();
-  
+
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   const isDirectBuy = searchParams.get("direct") === "true";
   const directId = searchParams.get("id");
@@ -30,10 +37,7 @@ function CheckoutContent() {
     ? cart.filter(item => String(item.id) === String(directId))
     : cart;
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
+ 
   const groupedCart = displayItems.reduce((acc, item) => {
     const shopId = item.shop?.id || "unknown";
     if (!acc[shopId]) {
@@ -65,6 +69,7 @@ function CheckoutContent() {
     setShippingSelection((prev) => ({ ...prev, [shopId]: option }));
   };
 
+
   const subtotal = displayItems.reduce((acc, item) => acc + (item.price || 0) * (item.qty || item.quantity || 1), 0);
   
   const totalShipping = shopKeys.reduce((acc, shopId) => {
@@ -77,13 +82,20 @@ function CheckoutContent() {
 
   const toRupiah = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(num || 0);
 
-  const handleCancelOrder = () => {
-    if (window.confirm("Yakin batalkan pesanan? Keranjang kamu masih tersimpan kok.")) {
-      router.back();
-    }
+
+
+
+  const handleCancelClick = () => {
+    setIsCancelModalOpen(true); 
   };
 
-  
+  const confirmCancelOrder = () => {
+    setIsCancelModalOpen(false);
+    router.back();
+    setTimeout(() => {
+        showToast("Pesanan dibatalkan. Keranjang aman! 👌", "info");
+    }, 200);
+  };
 
   const handlePayment = async () => {
     if (!user) {
@@ -91,6 +103,7 @@ function CheckoutContent() {
         router.push("/login");
         return;
     }
+
 
     await new Promise(resolve => setTimeout(resolve, 1000));
 
@@ -106,9 +119,11 @@ function CheckoutContent() {
 
   return (
     <main className="bg-gray-50 min-h-screen pb-32 font-sans">
+      
+
       <header className="fixed top-0 left-0 w-full bg-white border-b border-gray-100 px-4 md:px-8 py-4 z-50 flex items-center justify-between shadow-sm">
         <button
-          onClick={handleCancelOrder}
+          onClick={handleCancelClick}
           className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors font-bold text-sm"
         >
           <ArrowLeft size={18} /> Batal
@@ -119,17 +134,15 @@ function CheckoutContent() {
         <div className="w-10"></div>
       </header>
 
+   
       <div className="pt-28 px-4 md:px-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
         <div className="flex-1 space-y-6">
-          
-          {/* --- SECTION ALAMAT (DENGAN LOGIC LOGIN) --- */}
           <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
             <h2 className="font-bold text-lg text-dark-green mb-4 flex items-center gap-2">
               <MapPin size={18} /> Alamat Pengiriman
             </h2>
             
             {user ? (
-             
                 <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 group cursor-pointer hover:border-sage-green transition-colors">
                     <p className="font-bold text-gray-900 mb-1 flex justify-between">
                         {user.name} (Rumah) 
@@ -141,8 +154,7 @@ function CheckoutContent() {
                     <p className="text-sm text-gray-500 mt-1">{user.email}</p>
                 </div>
             ) : (
- 
-                <div className="bg-yellow-50 p-5 rounded-2xl border border-yellow-50">
+                <div className="bg-yellow-50 p-5 rounded-2xl border border-yellow-100">
                     <div className="flex items-start gap-3 mb-4">
                         <AlertTriangle className="text-yellow-600 shrink-0 mt-0.5" size={20}/>
                         <div>
@@ -221,6 +233,7 @@ function CheckoutContent() {
                     ))}
                   </div>
 
+              
                   <div className="mt-6 pt-4 border-t border-dashed border-gray-200 bg-blue-50/30 -mx-6 px-6 pb-4 rounded-b-[2rem]">
                     <div className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-3 pt-3">
                       <Truck size={16} />
@@ -276,6 +289,7 @@ function CheckoutContent() {
           )}
         </div>
 
+        {/* RIGHT COLUMN (SUMMARY) */}
         <div className="lg:w-[380px]">
           <div className="bg-white p-6 rounded-[2rem] shadow-lg border border-gray-100 sticky top-28">
             <h3 className="font-serif font-bold text-xl text-dark-green mb-6">
@@ -320,6 +334,55 @@ function CheckoutContent() {
           </div>
         </div>
       </div>
+
+    
+      <AnimatePresence>
+        {isCancelModalOpen && (
+            <>
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsCancelModalOpen(false)}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            />
+            
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                className="fixed z-[70] bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 text-center"
+            >
+                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                    <LogOut size={28} className="ml-1" /> 
+                </div>
+                
+                <h3 className="font-serif text-2xl font-bold text-dark-green mb-2">
+                    Yakin mau batal?
+                </h3>
+                <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                    Pesananmu belum tersimpan loh. Tenang aja, isi keranjangmu gak akan hilang kok!
+                </p>
+
+                <div className="flex gap-3">
+                    <button 
+                        onClick={() => setIsCancelModalOpen(false)}
+                        className="flex-1 py-3 rounded-full font-bold text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+                    >
+                        Gak Jadi
+                    </button>
+                    <button 
+                        onClick={confirmCancelOrder}
+                        className="flex-1 py-3 rounded-full font-bold text-sm bg-red-600 text-white hover:bg-red-300 shadow-lg hover:shadow-red-500/30 transition"
+                    >
+                        Ya, Batalkan
+                    </button>
+                </div>
+            </motion.div>
+            </>
+        )}
+      </AnimatePresence>
+
     </main>
   );
 }

@@ -20,9 +20,8 @@ export default function OrderSuccessPage() {
 
   return (
     <main className="bg-[#F5F5F5] min-h-screen">
-      <Navbar />
 
-      <div className="max-w-xl mx-auto px-6 pt-32 pb-20">
+      <div className="max-w-xl mx-auto px-6 pt-16 pb-20">
         
         <motion.div 
             initial={{ opacity: 0, y: 20 }}
