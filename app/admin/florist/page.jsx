@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link"; // 1. Import Link
 import { 
-  LayoutDashboard, Package, Palette, ShoppingBag, Plus, Check, X, DollarSign, Search
-} from "lucide-react";
+  LayoutDashboard, Package, Palette, ShoppingBag, Plus, Check, X, DollarSign, Search, User, ArrowLeft 
+} from "lucide-react"; // 2. Tambah icon User & ArrowLeft
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/app/context/ToastContext";
 import { useOrder } from "@/app/context/OrderContext"; 
@@ -16,8 +17,7 @@ export default function FloristAdminPage() {
   const { orders, updateOrderStatus } = useOrder();
   const { inventory, updateStock, addItem } = useInventory();
 
-  // Filter Order sesuai Shop ID (Simulasi kita login sebagai Shop ID 1)
-  // Karena data dummy cart user belum ada shopID yang konsisten, kita tampilin semua dulu aja buat demo.
+  // Filter Order sesuai Shop ID
   const myOrders = orders; 
 
   // State Modal Tambah Produk
@@ -231,11 +231,13 @@ export default function FloristAdminPage() {
 
   return (
     <div className="bg-cream-bg min-h-screen font-sans flex">
-      <aside className="w-64 bg-white border-r border-gray-200 fixed h-full z-10 hidden md:block">
+      <aside className="w-64 bg-white border-r border-gray-200 fixed h-full z-10 hidden md:flex flex-col">
+      
         <div className="p-6 border-b border-gray-100">
           <h1 className="font-serif font-bold text-xl text-dark-green">Florist Admin</h1>
         </div>
-        <nav className="p-4 space-y-2">
+        
+        <nav className="p-4 space-y-2 flex-1"> 
           <button onClick={() => setActiveTab("overview")} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition ${activeTab === "overview" ? "bg-dark-green text-white" : "text-gray-500 hover:bg-gray-50"}`}>
             <LayoutDashboard size={18} /> Overview
           </button>
@@ -246,9 +248,27 @@ export default function FloristAdminPage() {
             <Package size={18} /> Inventory
           </button>
         </nav>
+
+        <div className="p-4 border-t border-gray-100">
+        <Link href="/profile">
+            <div className="flex items-center gap-3 mb-4 px-3 rounded-2xl border border-gray-200 p-2">
+                <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-dark-green border border-green-100">
+                    <User size={20} />
+                </div>
+                <div>
+                    <p className="text-sm font-bold text-dark-green leading-none mb-1">Florist Admin</p>
+                    <p className="text-xs text-gray-400">Store Manager</p>
+                </div>
+            </div>
+        </Link>
+
+            <Link href="/" className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-white hover:text-dark-green hover:shadow-md transition-all text-sm font-bold group bg-gray-50">
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                Back to Site
+            </Link>
+        </div>
+
       </aside>
-
-
       <main className="flex-1 md:ml-64 p-8">
         <div className="mb-8"><h1 className="text-2xl font-bold capitalize">{activeTab}</h1></div>
         <motion.div key={activeTab} initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -257,7 +277,6 @@ export default function FloristAdminPage() {
             {activeTab === "inventory" && <InventoryView />}
         </motion.div>
       </main>
-
 
       <AnimatePresence>
         {isAddModalOpen && (

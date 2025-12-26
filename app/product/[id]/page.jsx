@@ -146,6 +146,11 @@ export default function ProductDetailPage() {
         router.push("/login");
         return;
     }
+
+    if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
+        showToast("Gunakan akun user untuk belanja!", "error");
+        return;
+    }
     
     addToCart(product, qty);
     showToast(

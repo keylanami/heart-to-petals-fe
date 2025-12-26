@@ -193,6 +193,12 @@ const BentoCard = ({ product, index, className }) => {
         router.push("/login");
         return;
     }
+
+    if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
+        showToast("Gunakan akun user untuk belanja!", "error");
+        return;
+    }
+
     addToCart(product, 1);
     showToast(`${product.title} masuk keranjang!`, "success"); 
   };
@@ -206,6 +212,12 @@ const BentoCard = ({ product, index, className }) => {
         router.push("/login");
         return;
     }
+
+    if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
+        showToast("Gunakan akun user untuk belanja!", "error");
+        return;
+    }
+    
     addToCart(product, 1);
     router.push(`/checkout?direct=true&id=${product.id}`);
   };

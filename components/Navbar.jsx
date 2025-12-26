@@ -4,7 +4,7 @@ import { usePathname, useParams, useRouter } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext"; 
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingBag, FileText, User as UserIcon, Settings, LogIn } from "lucide-react"; // Ganti LogOut jadi Settings, tambah LogIn
+import { ShoppingBag, FileText, User as UserIcon, Settings, LogIn, LayoutDashboard } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/app/context/ToastContext";
 
@@ -18,6 +18,8 @@ const Navbar = () => {
 
   const [scrolled, setScrolled] = useState(false);
   const [isClient, setIsClient] = useState(false);
+
+  const isAdmin = user?.role === 'tenant' || user?.role === 'superadmin';
 
   useEffect(() => {
     setIsClient(true);
@@ -98,33 +100,51 @@ const Navbar = () => {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">    
-          <button onClick={handleCartClick} className={iconBtnClass}>
-            <ShoppingBag size={18} />
-            <span className="hidden sm:inline">Cart</span>
-            
-            <AnimatePresence>
-              {isClient && totalItems > 0 && (
-                <motion.span 
-                  key={totalItems}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  exit={{ scale: 0 }}
-                  className="absolute -top-1 -right-1 sm:top-0 sm:right-0 sm:relative sm:ml-1 bg-sage-green text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full shadow-sm border border-white"
-                >
-                  {totalItems}
-                </motion.span>
-              )}
-            </AnimatePresence>
-          </button>
+          
+          {!isAdmin && (
+            <button onClick={handleCartClick} className={iconBtnClass}>
+                <ShoppingBag size={18} />
+                <span className="hidden sm:inline">Cart</span>
+                
+                <AnimatePresence>
+                {isClient && totalItems > 0 && (
+                    <motion.span 
+                    key={totalItems}
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="absolute -top-1 -right-1 sm:top-0 sm:right-0 sm:relative sm:ml-1 bg-sage-green text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full shadow-sm border border-white"
+                    >
+                    {totalItems}
+                    </motion.span>
+                )}
+                </AnimatePresence>
+            </button>
+          )}
 
           {isClient && user ? (
               <>
-                <Link href={draftLink}> 
-                    <button className={`${iconBtnClass} hidden sm:flex`}>
-                        <FileText size={18} />
-                        <span className="hidden sm:inline">Drafts</span>
+                
+                {isAdmin && (
+                    <button 
+                        onClick={() => router.push(user.role === 'tenant' ? '/admin/florist' : '/admin/super')}
+                        className={`${iconBtnClass} hidden sm:flex border-sage-green/50 bg-sage-green/10 text-dark-green`}
+                        title="Masuk ke Dashboard Toko"
+                    >
+                        <LayoutDashboard size={18} />
+                        <span className="hidden sm:inline">Dashboard</span>
                     </button>
-                </Link>
+                )}
+
+                {!isAdmin && (
+                    <Link href={draftLink}> 
+                        <button className={`${iconBtnClass} hidden sm:flex`}>
+                            <FileText size={18} />
+                            <span className="hidden sm:inline">Drafts</span>
+                        </button>
+                    </Link>
+                )}
+
                 <Link href="/profile">
                     <div 
                       className={`
@@ -137,7 +157,7 @@ const Navbar = () => {
                     >
                       <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white shadow-sm group-hover:scale-105 transition-transform duration-300 bg-gray-200 flex items-center justify-center text-gray-400">
                           <span className="text-[10px] font-bold text-gray-500">
-                            {user.name.charAt(0).toUpperCase()}
+                            {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon size={16} />}
                           </span>
                       </div>
 
@@ -154,10 +174,11 @@ const Navbar = () => {
                 </Link>
              </>
           ) : (
-             <div className="flex items-center ml-2">
+             <div className="flex items-center ml-2 gap-2">
+              
                 <Link href="/get-started">
                     <button className={loginBtnClass}>
-                        Getting started
+                        Get Started
                     </button>
                 </Link>
              </div>
