@@ -13,7 +13,7 @@ const Navbar = () => {
   const pathname = usePathname();
   const params = useParams();
   const { totalItems } = useCart();
-  const { user } = useAuth(); // Kita gak butuh logout disini lagi
+  const { user } = useAuth();
   const { showToast } = useToast();
 
   const [scrolled, setScrolled] = useState(false);
@@ -48,7 +48,7 @@ const Navbar = () => {
   ? `/custom/${params.id}/drafts` 
   : `/custom/101/drafts`;
 
-  // Style dasar tombol icon
+
   const iconBtnClass = `h-10 w-10 sm:w-auto sm:px-4 border rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 relative ${
     scrolled 
       ? "border-gray-200 text-gray-600 hover:border-dark-green hover:text-dark-green bg-transparent" 

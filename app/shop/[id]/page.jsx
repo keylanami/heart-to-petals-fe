@@ -18,6 +18,7 @@ import Link from "next/link";
 import { allItems, SHOPS } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 import { useToast } from "@/app/context/ToastContext";
+import { useAuth } from "@/app/context/AuthContext";
 
 
 const containerVariants = {
@@ -35,10 +36,18 @@ const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
   const { showToast } = useToast();;
   const { addToCart } = useCart();
+  const { user } = useAuth();
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!user) {
+        showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+        router.push("/login");
+        return;
+    }
+
     addToCart(product, 1);
     showToast(`${product.title} masuk keranjang!`);
   };
@@ -108,6 +117,7 @@ const BentoCard = ({ product, index, className }) => {
                 <ShoppingBag size={14} /> Add
               </button>
               <button
+                onClick={handleAddToCart}
                 className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
                   isDark
                     ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
@@ -306,7 +316,7 @@ export default function ShopEtalasePage() {
             {filteredItems.map((item, index) => {
               if (item.type === "promo") {
                 return (
-                  // PENTING: Pass 'shopId' ke PromoCard
+              
                   <PromoCard 
                     key={item.id} 
                     className={getBentoClass(index)} 
