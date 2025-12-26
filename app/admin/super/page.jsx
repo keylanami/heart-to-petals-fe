@@ -1,16 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
 import { 
-  LayoutGrid, Map, Store, Check, X, Trash2, Search, MapPin, TrendingUp, Users, AlertCircle
-} from "lucide-react";
+  LayoutGrid, Map, Store, Check, X, Trash2, Search, MapPin, TrendingUp, Users, AlertCircle, User, ArrowLeft 
+} from "lucide-react"; // Import icon User & ArrowLeft
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/app/context/ToastContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useAuth } from "@/app/context/AuthContext"; // IMPORT useAuth
 
 export default function SuperAdminPage() {
   const [activeTab, setActiveTab] = useState("requests"); 
   const { showToast } = useToast();
   const router = useRouter();
+  
+  // AMBIL USER DARI CONTEXT
+  const { user } = useAuth(); // Biar sidebar profile dinamis
 
   const [tenants, setTenants] = useState([]);
   const [pendingTenants, setPendingTenants] = useState([]);
@@ -86,7 +91,7 @@ export default function SuperAdminPage() {
                         key={t.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-amber-400 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+                        className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-yellow-400 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
                     >
                         <div>
                             <div className="flex items-center gap-2 mb-1">
@@ -257,6 +262,25 @@ export default function SuperAdminPage() {
             <Map size={18} /> Live Map
           </button>
         </nav>
+
+        <div className="p-4 border-t border-gray-100 absolute bottom-0 w-full bg-white">
+            <Link href="/profile">
+                <div className="flex items-center gap-3 mb-4 px-3 rounded-2xl border border-gray-200 p-2 cursor-pointer hover:bg-gray-50 transition">
+                    <div className="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-dark-green border border-green-100">
+                        <User size={20} />
+                    </div>
+                    <div className="overflow-hidden">
+                        <p className="text-sm font-bold text-dark-green leading-none mb-1 truncate">{user ? user.name : "Super Admin"}</p>
+                        <p className="text-xs text-gray-400">super@admin.com</p>
+                    </div>
+                </div>
+            </Link>
+
+            <Link href="/" className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-gray-200 text-gray-500 hover:bg-white hover:text-dark-green hover:shadow-md transition-all text-sm font-bold group bg-gray-50">
+                <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
+                Back to Site
+            </Link>
+        </div>
       </aside>
 
 
@@ -268,15 +292,7 @@ export default function SuperAdminPage() {
                 </h1>
                 <p className="text-sm text-gray-500">Superadmin Control Panel</p>
             </div>
-            <div className="flex items-center gap-3">
-                <span className="text-xs text-right hidden sm:block">
-                    <p className="font-bold text-dark-green">Administrator</p>
-                    <p className="text-gray-400">super@admin.com</p>
-                </span>
-                <div className="w-10 h-10 bg-gradient-to-br from-dark-green to-sage-green rounded-full flex items-center justify-center text-white font-bold shadow-lg border-2 border-white">
-                    SA
-                </div>
-            </div>
+            
         </div>
 
         <motion.div
