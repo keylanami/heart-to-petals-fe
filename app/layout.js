@@ -2,7 +2,9 @@ import { ToastProvider } from "./context/ToastContext";
 import { Inter, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { CartProvider } from "./context/CartContext";
-import { AuthProvider } from "./context/AuthContext"; 
+import { AuthProvider } from "./context/AuthContext";
+import { OrderProvider } from "@/app/context/OrderContext";
+import { InventoryProvider } from "@/app/context/InventoryContext";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const playfair = Playfair_Display({
@@ -22,7 +24,11 @@ export default function RootLayout({ children }) {
         <ToastProvider>
           <AuthProvider>
             <CartProvider>
-              {children}
+              <InventoryProvider>
+                <OrderProvider>
+                  {children}
+                  </OrderProvider>
+              </InventoryProvider>
             </CartProvider>
           </AuthProvider>
         </ToastProvider>
