@@ -1,24 +1,38 @@
 "use client";
 import Link from "next/link";
-import { usePathname, useParams } from "next/navigation";
+import { usePathname, useParams, useRouter } from "next/navigation";
 import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingBag, FileText, LogOut, User as UserIcon } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useToast } from "@/app/context/ToastContext";
 
 const Navbar = () => {
+  const router = useRouter();
   const pathname = usePathname();
   const params = useParams();
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
-  
+  const { showToast } = useToast();
+
   const [scrolled, setScrolled] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  const handleCartClick = (e) => {
+    e.preventDefault();
+    
+    if (!user) {
+      showToast("Eits, login dulu buat liat keranjang! 🛒", "error");
+      router.push("/login");
+    } else {
+      router.push("/cart");
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -48,7 +62,7 @@ const Navbar = () => {
       : "border-dark-green text-dark-green hover:bg-dark-green/10"
   }`;
 
-  // Style untuk tombol Sign Up (Primary - Solid)
+
   const signUpBtnClass = `h-10 px-6 rounded-full text-sm font-bold border transition-all duration-300 flex items-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${
     scrolled
       ? "bg-dark-green border-dark-green text-white hover:bg-sage-green hover:border-sage-green"
@@ -91,7 +105,7 @@ const Navbar = () => {
         <div className="flex items-center gap-2 sm:gap-3">    
 
           <Link href="/cart"> 
-            <button className={iconBtnClass}>
+            <button onClick={handleCartClick} className={iconBtnClass}>
               <ShoppingBag size={18} />
               <span className="hidden sm:inline">Cart</span>
               
