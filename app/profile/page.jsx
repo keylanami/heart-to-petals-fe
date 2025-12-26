@@ -24,7 +24,7 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("personal");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Form States
+ 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -36,7 +36,6 @@ export default function ProfilePage() {
     label: "",
   });
 
-  // Isi form pas user data tersedia
   useEffect(() => {
     if (user) {
       setFormData({
@@ -50,7 +49,7 @@ export default function ProfilePage() {
         label: user.address?.label || "Rumah",
       });
     } else {
-      router.push("/login"); // Proteksi kalau belum login
+      router.push("/get-started"); 
     }
   }, [user, router]);
 
@@ -118,7 +117,6 @@ export default function ProfilePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* SIDEBAR NAVIGATION */}
           <div className="md:col-span-1 space-y-2">
             {[
               { id: "personal", label: "Personal Info", icon: User },
@@ -151,7 +149,6 @@ export default function ProfilePage() {
             </button>
           </div>
 
-          {/* MAIN CONTENT FORM */}
           <div className="md:col-span-3">
             <motion.div
               key={activeTab}
@@ -160,7 +157,7 @@ export default function ProfilePage() {
               transition={{ duration: 0.3 }}
               className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden"
             >
-              {/* TAB: PERSONAL INFO */}
+
               {activeTab === "personal" && (
                 <form onSubmit={handleSave} className="space-y-6">
                   <h2 className="text-xl font-bold text-dark-green mb-6 border-b border-gray-100 pb-4">
@@ -229,7 +226,6 @@ export default function ProfilePage() {
                 </form>
               )}
 
-              {/* TAB: ADDRESS (Ini yang nyambung ke Checkout) */}
               {activeTab === "address" && (
                 <form onSubmit={handleSave} className="space-y-6">
                   <h2 className="text-xl font-bold text-dark-green mb-6 border-b border-gray-100 pb-4">
@@ -333,7 +329,7 @@ export default function ProfilePage() {
                 </form>
               )}
 
-              {/* TAB: SECURITY */}
+
               {activeTab === "security" && (
                 <div className="space-y-6">
                   <h2 className="text-xl font-bold text-dark-green mb-6 border-b border-gray-100 pb-4">
