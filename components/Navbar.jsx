@@ -77,13 +77,11 @@ const Navbar = () => {
                 : "bg-cream-bg/80 backdrop-blur-md border border-dark-green/20 shadow-sm"}
         `}
       >
-        
-        {/* LOGO */}
+    
         <Link href="/" className="text-xl md:text-2xl font-serif font-bold tracking-tight text-dark-green flex-shrink-0">
           HeartToPetals.
         </Link>
 
-        {/* CENTER LINKS */}
         <div className="hidden md:flex absolute left-1/2 transform -translate-x-1/2 space-x-8 text-sm font-bold tracking-wide text-dark-green">
           {navLinks.map((link) => (
             <Link 
@@ -99,10 +97,7 @@ const Navbar = () => {
           ))}
         </div>
 
-        {/* RIGHT ACTIONS */}
         <div className="flex items-center gap-2 sm:gap-3">    
-
-          {/* CART BUTTON */}
           <button onClick={handleCartClick} className={iconBtnClass}>
             <ShoppingBag size={18} />
             <span className="hidden sm:inline">Cart</span>
@@ -124,15 +119,12 @@ const Navbar = () => {
 
           {isClient && user ? (
               <>
-                {/* DRAFT BUTTON */}
                 <Link href={draftLink}> 
                     <button className={`${iconBtnClass} hidden sm:flex`}>
                         <FileText size={18} />
                         <span className="hidden sm:inline">Drafts</span>
                     </button>
                 </Link>
-
-                {/* USER PROFILE PILL (MENUJU KE /PROFILE) */}
                 <Link href="/profile">
                     <div 
                       className={`
@@ -143,9 +135,7 @@ const Navbar = () => {
                       `}
                       title="Go to Profile Settings"
                     >
-                      {/* Avatar */}
                       <div className="relative w-8 h-8 rounded-full overflow-hidden border border-white shadow-sm group-hover:scale-105 transition-transform duration-300 bg-gray-200 flex items-center justify-center text-gray-400">
-                          {/* Kalau mau nampilin inisial user */}
                           <span className="text-[10px] font-bold text-gray-500">
                             {user.name.charAt(0).toUpperCase()}
                           </span>
@@ -159,23 +149,15 @@ const Navbar = () => {
                             {user.name.split(' ')[0]}
                           </span>
                       </div>
-                      
-                      {/* Icon Settings muncul pas hover */}
                       <Settings size={14} className="hidden group-hover:block text-sage-green animate-in fade-in zoom-in duration-200" />
                    </div>
                 </Link>
              </>
           ) : (
-             // --- IF NOT LOGGED IN ---
              <div className="flex items-center gap-2 ml-2">
-                <Link href="/login">
+                <Link href="/get-started">
                     <button className={loginBtnClass}>
-                        Log In
-                    </button>
-                </Link>
-                <Link href="/register" className="hidden sm:block">
-                    <button className={signUpBtnClass}>
-                        Sign Up
+                        Getting started
                     </button>
                 </Link>
              </div>
