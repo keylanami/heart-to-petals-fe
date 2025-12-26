@@ -105,7 +105,7 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
     );
   };
 
-// --- COMPONENT: TOP SHOP CARD ---
+
 const TopShopCard = ({ shop }) => (
   <motion.div variants={itemVariants}>
     <Link
@@ -148,7 +148,7 @@ const TopShopCard = ({ shop }) => (
   </motion.div>
 );
 
-// --- COMPONENT: BENTO CARD ---
+
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
   const { addToCart } = useCart();
@@ -215,7 +215,7 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
-// --- COMPONENT: PROMO CARD ---
+
 const PromoCard = ({ className, onClick }) => (
   <motion.div
     layout
@@ -240,16 +240,12 @@ const PromoCard = ({ className, onClick }) => (
   </motion.div>
 );
 
-// --- MAIN PAGE: TENANT LIST ---
+
 export default function TenantListPage() {
   const [isModalOpen, setIsModalOpen] = useState(false); 
   const topSectionRef = useRef(null); 
-  
-  // 1. STATE SEARCH
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-
-  // 2. CHECK STATUS PENCARIAN (PENTING: Gunakan TRIM)
   const isSearching = searchQuery.trim().length > 0;
 
   const handleStartCustom = () => {
@@ -270,9 +266,9 @@ export default function TenantListPage() {
     return pattern[index % 7];
   };
 
-  // 3. LOGIC FILTERING (Safe Check & Trim)
+ 
   const filteredProducts = allItems.filter(item => {
-    if (!isSearching) return true; // Kalau kosong/spasi doang, return semua
+    if (!isSearching) return true;
     
     const q = searchQuery.toLowerCase().trim();
     
@@ -292,7 +288,6 @@ export default function TenantListPage() {
 
       <div ref={topSectionRef} className="pt-36 pb-24 px-4 md:px-6 max-w-7xl mx-auto">
         
-        {/* HEADER */}
         <motion.div 
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -307,13 +302,13 @@ export default function TenantListPage() {
             Jelajahi karya terbaik dari florist lokal pilihan kami.
           </p>
 
-          {/* SEARCH BAR ANIMATED */}
+          
           <motion.div 
             className="relative mx-auto z-30"
             initial={false}
             animate={{ 
                 width: isSearchFocused || isSearching ? "100%" : "280px",
-                maxWidth: isSearchFocused || isSearching ? "600px" : "280px"
+                maxWidth: isSearchFocused || isSearching ? "800px" : "280px"
             }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
@@ -405,6 +400,7 @@ export default function TenantListPage() {
               <motion.div
                 className="grid grid-cols-1 md:grid-cols-4 gap-6 grid-flow-dense"
                 variants={pageVariants}
+                key={searchQuery ? "search-mode" : "default-mode"}
               >
                 <AnimatePresence>
                     {filteredProducts.map((item, index) => {
