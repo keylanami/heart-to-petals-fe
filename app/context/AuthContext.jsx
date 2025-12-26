@@ -126,7 +126,7 @@ export function AuthProvider({ children }) {
     removeStorage("currentUser");
     setUser(null);
     showToast("Berhasil Logout", "info");
-    router.push("/login");
+    router.push("/get-started");
   };
 
   const updateUser = (newUserData) => {
