@@ -249,6 +249,9 @@ export default function TenantListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
 
+  // 2. CHECK STATUS PENCARIAN (PENTING: Gunakan TRIM)
+  const isSearching = searchQuery.trim().length > 0;
+
   const handleStartCustom = () => {
     topSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
     setIsModalOpen(true);
@@ -267,10 +270,11 @@ export default function TenantListPage() {
     return pattern[index % 7];
   };
 
-  // 2. LOGIC FILTERING
+  // 3. LOGIC FILTERING (Safe Check & Trim)
   const filteredProducts = allItems.filter(item => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
+    if (!isSearching) return true; // Kalau kosong/spasi doang, return semua
+    
+    const q = searchQuery.toLowerCase().trim();
     
     const matchTitle = (item.title || "").toLowerCase().includes(q);
     const matchTag = (item.tag || "").toLowerCase().includes(q);
@@ -303,13 +307,13 @@ export default function TenantListPage() {
             Jelajahi karya terbaik dari florist lokal pilihan kami.
           </p>
 
-          {/* 3. SEARCH BAR UI */}
+          {/* SEARCH BAR ANIMATED */}
           <motion.div 
             className="relative mx-auto z-30"
             initial={false}
             animate={{ 
-                width: isSearchFocused || searchQuery.length > 0 ? "100%" : "280px",
-                maxWidth: isSearchFocused || searchQuery.length > 0 ? "600px" : "280px"
+                width: isSearchFocused || isSearching ? "100%" : "280px",
+                maxWidth: isSearchFocused || isSearching ? "600px" : "280px"
             }}
             transition={{ type: "spring", stiffness: 300, damping: 25 }}
           >
@@ -317,6 +321,7 @@ export default function TenantListPage() {
                 <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                     <Search className="text-gray-400" size={20} />
                 </div>
+                
                 <input 
                     type="text" 
                     className="w-full pl-12 pr-10 py-4 bg-white rounded-full border border-gray-100 shadow-xl focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all placeholder:text-gray-400 text-dark-green font-medium"
@@ -331,8 +336,9 @@ export default function TenantListPage() {
                         }
                     }}
                 />
+                
                 <AnimatePresence>
-                    {searchQuery && (
+                    {isSearching && (
                         <motion.button 
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -350,10 +356,8 @@ export default function TenantListPage() {
         </motion.div>
 
         
-        {/* 4. CONDITIONAL RENDERING TOKO
-            Jika search ada isinya, SEMBUNYIKAN Carousel Toko 
-        */}
-        {!searchQuery && (
+        {/* 4. CAROUSEL TOKO (HILANG JIKA SEARCHING) */}
+        {!isSearching && (
             <motion.section 
                 variants={pageVariants}
                 initial="hidden"
@@ -378,7 +382,7 @@ export default function TenantListPage() {
             </motion.section>
         )}
 
-        {/* SECTION 2: ALL COLLECTIONS (FILTERED) */}
+        {/* SECTION 2: ALL COLLECTIONS / SEARCH RESULTS */}
         <motion.section
             variants={pageVariants}
             initial="hidden"
@@ -386,11 +390,10 @@ export default function TenantListPage() {
         >
           <motion.div variants={itemVariants} className="flex items-end justify-between mb-10 px-2">
             <h2 className="text-2xl font-serif font-bold text-dark-green flex items-center gap-2">
-              {/* Ubah nomor urut jadi dinamis, kalau lagi search, jadi 1 */}
               <span className="w-6 h-6 rounded-full bg-dark-green text-white flex items-center justify-center text-xs">
-                  {searchQuery ? "1" : "2"}
+                  {isSearching ? "1" : "2"}
               </span>
-              {searchQuery ? (
+              {isSearching ? (
                   <span>Search Results <span className="italic font-light text-sage-green">Found</span></span>
               ) : (
                   <span>All Collections <span className="italic font-light text-sage-green">Showcase</span></span>
