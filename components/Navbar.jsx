@@ -57,8 +57,8 @@ const Navbar = () => {
 
   const loginBtnClass = `h-10 px-6 rounded-full text-sm font-bold border transition-all duration-300 flex items-center ${
     scrolled
-      ? "border-gray-300 text-gray-600 hover:border-dark-green hover:text-dark-green"
-      : "border-dark-green text-dark-green hover:bg-dark-green/10"
+      ? "border-gray-200 text-gray-600 hover:border-dark-green hover:text-dark-green"
+      : "border-dark-green bg-dark-green text-white hover:text-dark-green hover:bg-dark-green/50"
   }`;
 
   const signUpBtnClass = `h-10 px-6 rounded-full text-sm font-bold border transition-all duration-300 flex items-center shadow-lg hover:shadow-xl hover:-translate-y-0.5 ${
@@ -128,7 +128,7 @@ const Navbar = () => {
                 <Link href="/profile">
                     <div 
                       className={`
-                        h-10 cursor-pointer flex items-center gap-3 pl-1 pr-4 rounded-full border transition-all duration-300 group select-none
+                        h-10 cursor-pointer flex items-center gap-2 pl-1 pr-4 rounded-full border transition-all duration-300 group select-none
                         ${scrolled 
                           ? "border-gray-200 bg-gray-50/50 hover:border-dark-green hover:bg-white" 
                           : "border-dark-green/30 bg-white/40 hover:bg-white/80 hover:text-dark-green text-dark-green"}
@@ -154,7 +154,7 @@ const Navbar = () => {
                 </Link>
              </>
           ) : (
-             <div className="flex items-center gap-2 ml-2">
+             <div className="flex items-center ml-2">
                 <Link href="/get-started">
                     <button className={loginBtnClass}>
                         Getting started
