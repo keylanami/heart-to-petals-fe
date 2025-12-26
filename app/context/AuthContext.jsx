@@ -9,7 +9,6 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const router = useRouter();
   const { showToast } = useToast(); 
-
   const getStorage = (key) => typeof window !== "undefined" ? localStorage.getItem(key) : null;
   const setStorage = (key, value) => typeof window !== "undefined" && localStorage.setItem(key, value);
   const removeStorage = (key) => typeof window !== "undefined" && localStorage.removeItem(key);
@@ -33,13 +32,19 @@ export function AuthProvider({ children }) {
         showToast("Email sudah terdaftar!", "error");
         return false;
       }
+      const newUser = { 
+        id: Date.now(), 
+        name, 
+        email, 
+        password,
+        phone: "", 
+        address: { street: "", city: "", province: "", zip: "", label: "Rumah" } 
+      };
 
-      const newUser = { id: Date.now(), name, email, password };
       existingUsers.push(newUser);
       setStorage("users", JSON.stringify(existingUsers));
       
       showToast("Register Berhasil! Silakan Login.", "success");
-      
       router.push("/login");
       return true;
     } catch (e) {
@@ -72,6 +77,7 @@ export function AuthProvider({ children }) {
     }
   };
 
+
   const logout = () => {
     removeStorage("currentUser");
     setUser(null);
@@ -79,8 +85,34 @@ export function AuthProvider({ children }) {
     router.push("/login");
   };
 
+
+  const updateUser = (newUserData) => {
+    if (!user) return;
+
+    try {
+        
+        const updatedUser = { ...user, ...newUserData };
+        setUser(updatedUser);
+        setStorage("currentUser", JSON.stringify(updatedUser));
+        const rawData = getStorage("users");
+        if (rawData) {
+            const users = JSON.parse(rawData);
+            const userIndex = users.findIndex((u) => u.email === user.email);
+            
+            if (userIndex !== -1) {
+                users[userIndex] = updatedUser; 
+                setStorage("users", JSON.stringify(users)); 
+            }
+        }
+
+    } catch (error) {
+        console.error("Gagal update user", error);
+        showToast("Gagal menyimpan perubahan profile", "error");
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, register, login, logout }}>
+    <AuthContext.Provider value={{ user, register, login, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );
