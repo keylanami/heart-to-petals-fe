@@ -4,12 +4,12 @@ export const SHOPS = [
     id: 101,
     name: "Rosy Garden Bandung",
     location: "Dago, Bandung",
-    image: "/assets/flowershop/rosy_garden.png", 
+    image: "/assets/flowershop/rosy_garden.png",
     rating: 4.9,
-    reviewCount: 1240, 
-    distance: "1.2 km", 
-    can_customize: true, 
-    openTime: "08.00 - 20.00"
+    reviewCount: 1240,
+    distance: "1.2 km",
+    can_customize: true,
+    openTime: "08.00 - 20.00",
   },
   {
     id: 102,
@@ -19,8 +19,8 @@ export const SHOPS = [
     rating: 4.7,
     reviewCount: 850,
     distance: "3.5 km",
-    can_customize: false, 
-    openTime: "09.00 - 21.00"
+    can_customize: false,
+    openTime: "09.00 - 21.00",
   },
   {
     id: 103,
@@ -30,8 +30,8 @@ export const SHOPS = [
     rating: 4.8,
     reviewCount: 210,
     distance: "0.8 km",
-    can_customize: true, 
-    openTime: "10.00 - 18.00"
+    can_customize: true,
+    openTime: "10.00 - 18.00",
   },
   {
     id: 104,
@@ -39,10 +39,10 @@ export const SHOPS = [
     location: "Kebon Jeruk, Jakarta Barat",
     image: "/assets/flowershop/sentara_bunga.png",
     rating: 4.5,
-    reviewCount: 5300, 
+    reviewCount: 5300,
     distance: "12 km",
     can_customize: false,
-    openTime: "24 Jam"
+    openTime: "24 Jam",
   },
   {
     id: 105,
@@ -50,10 +50,10 @@ export const SHOPS = [
     location: "SCBD, Jakarta Selatan",
     image: "/assets/flowershop/de_pere.png",
     rating: 5.0,
-    reviewCount: 45, 
+    reviewCount: 45,
     distance: "4.2 km",
     can_customize: true,
-    openTime: "09.00 - 17.00"
+    openTime: "09.00 - 17.00",
   },
   {
     id: 106,
@@ -64,10 +64,9 @@ export const SHOPS = [
     reviewCount: 112,
     distance: "25 km",
     can_customize: true,
-    openTime: "08.00 - 20.00"
-  }
+    openTime: "08.00 - 20.00",
+  },
 ];
-
 
 // DATA PRODUK (allItems)
 export const allItems = [
@@ -83,14 +82,15 @@ export const allItems = [
     theme: "light",
     isBestSeller: true,
     desc: "Cinta yang meledak-ledak dan penuh afeksi. Cocok untuk menyatakan perasaan yang mendalam.",
-    story: "Terinspirasi dari kisah cinta klasik yang tak lekang oleh waktu. Merah melambangkan keberanian mencintai.",
+    story:
+      "Terinspirasi dari kisah cinta klasik yang tak lekang oleh waktu. Merah melambangkan keberanian mencintai.",
     care: "Potong ujung batang 1cm setiap hari, ganti air dingin, dan jauhkan dari sinar matahari langsung.",
-    composition: [
+    flowers: [
       "Mawar Merah (Red Rose) - 10 tangkai",
-      "Baby Breath - Filler", 
-      "Daun Ruscus - Greenery", 
-      "Pita Satin Premium Maroon"
-    ]
+      "Baby Breath - Filler",
+      "Daun Ruscus - Greenery",
+      "Pita Satin Premium Maroon",
+    ],
   },
   {
     id: 2,
@@ -98,19 +98,20 @@ export const allItems = [
     type: "product",
     title: "Sunset Harmony",
     price: 450000,
-    image: "/assets/bouquet/peace/sunset_harmony.png", 
+    image: "/assets/bouquet/peace/sunset_harmony.png",
     category: "Peace",
     tag: "Friendship",
     theme: "light",
     isBestSeller: false,
     desc: "Kesegaran pagi hari yang membawa ketenangan.",
-    story: "Diciptakan untuk menyapa teman lama dengan kehangatan yang tidak berlebihan.",
+    story:
+      "Diciptakan untuk menyapa teman lama dengan kehangatan yang tidak berlebihan.",
     care: "Semprotkan air (mist) ke kelopak bunga tulip agar tetap segar.",
-    composition: [
+    flowers: [
       "White Tulip - 5 tangkai",
       "Lily of the Valley - 3 tangkai",
-      "Transparent Wrapping"
-    ]
+      "Transparent Wrapping",
+    ],
   },
   {
     id: 3,
@@ -124,13 +125,10 @@ export const allItems = [
     theme: "light",
     isBestSeller: false,
     desc: "Menyambut masa depan cerah dengan penuh optimisme.",
-    story: "Bouquet ini melambangkan harapan dan langkah baru menuju masa depan.",
+    story:
+      "Bouquet ini melambangkan harapan dan langkah baru menuju masa depan.",
     care: "Ganti air setiap dua hari.",
-    composition: [
-      "Yellow Tulip",
-      "Gerbera",
-      "Eucalyptus"
-    ]
+    flowers: ["Yellow Tulip", "Gerbera", "Eucalyptus"],
   },
   {
     id: 4,
@@ -144,13 +142,10 @@ export const allItems = [
     theme: "light",
     isBestSeller: true,
     desc: "Ucapan terima kasih yang sederhana namun tulus.",
-    story: "Diciptakan untuk mengungkapkan rasa terima kasih tanpa kata-kata berlebihan.",
+    story:
+      "Diciptakan untuk mengungkapkan rasa terima kasih tanpa kata-kata berlebihan.",
     care: "Letakkan di ruangan sejuk.",
-    composition: [
-      "White Rose",
-      "Lisianthus",
-      "Soft Wrapping"
-    ]
+    flowers: ["White Rose", "Lisianthus", "Soft Wrapping"],
   },
   {
     id: 5,
@@ -166,11 +161,7 @@ export const allItems = [
     desc: "Penghormatan terakhir dengan ketulusan dan kedamaian.",
     story: "Melambangkan kesedihan yang hening namun penuh penghormatan.",
     care: "Jauhkan dari panas dan sinar matahari.",
-    composition: [
-      "Dark Red Rose",
-      "White Lily",
-      "Ruscus"
-    ]
+    flowers: ["Dark Red Rose", "White Lily", "Ruscus"],
   },
   { id: "promo-1", type: "promo" },
   {
@@ -187,11 +178,7 @@ export const allItems = [
     desc: "Penyesalan yang dalam dan sunyi.",
     story: "Terinspirasi dari perasaan yang datang terlambat di tengah malam.",
     care: "Ganti air setiap hari.",
-    composition: [
-      "White Rose",
-      "Freesia",
-      "Purple Lisianthus"
-    ]
+    flowers: ["White Rose", "Freesia", "Purple Lisianthus"],
   },
   {
     id: 7,
@@ -207,11 +194,7 @@ export const allItems = [
     desc: "Harmoni cinta yang tumbuh alami.",
     story: "Seperti taman yang mekar perlahan, cinta pun tumbuh dengan lembut.",
     care: "Potong batang 1-2cm setiap dua hari.",
-    composition: [
-      "Spray Rose",
-      "Sunflower",
-      "Eucalyptus",
-    ]
+    flowers: ["Spray Rose", "Sunflower", "Eucalyptus"],
   },
   {
     id: 8,
@@ -227,9 +210,7 @@ export const allItems = [
     desc: "Romansa yang elegan dan misterius.",
     story: "Cinta yang dalam, gelap, dan memikat seperti malam.",
     care: "Simpan di tempat sejuk.",
-    composition: [
-      "Red Rose",
-    ]
+    flowers: ["Red Rose"],
   },
   {
     id: 9,
@@ -245,11 +226,7 @@ export const allItems = [
     desc: "Cinta lembut penuh harapan.",
     story: "Mewakili mimpi indah tentang cinta yang anggun.",
     care: "Ganti air secara rutin.",
-    composition: [
-      "Pink Peony",
-      "White Peony",
-      "Baby's Breathe"
-    ]
+    flowers: ["Pink Peony", "White Peony", "Baby's Breathe"],
   },
   {
     id: 10,
@@ -265,11 +242,7 @@ export const allItems = [
     desc: "Keselarasan cinta yang hangat.",
     story: "Dua hati yang berjalan seirama dalam kesederhanaan.",
     care: "Hindari ruangan panas.",
-    composition: [
-      "Pink Rose",
-      "Ranunculus",
-      "Eucalyptus"
-    ]
+    flowers: ["Pink Rose", "Ranunculus", "Eucalyptus"],
   },
   {
     id: 11,
@@ -285,11 +258,7 @@ export const allItems = [
     desc: "Ungkapan terima kasih yang hangat.",
     story: "Seperti musim gugur, sederhana namun penuh makna.",
     care: "Ganti air setiap dua hari.",
-    composition: [
-      "Spray Rose",
-      "Sunflower",
-      "Eucalyptus"
-    ]
+    flowers: ["Spray Rose", "Sunflower", "Eucalyptus"],
   },
   {
     id: 12,
@@ -305,11 +274,7 @@ export const allItems = [
     desc: "Simbol rasa syukur dan penghargaan.",
     story: "Terinspirasi dari seseorang yang membawa cahaya dalam hidup.",
     care: "Letakkan di tempat terang.",
-    composition: [
-      "Spray Rose",
-      "Sunflower",
-      "Solidago"
-    ]
+    flowers: ["Spray Rose", "Sunflower", "Solidago"],
   },
   {
     id: 13,
@@ -325,11 +290,7 @@ export const allItems = [
     desc: "Keceriaan sederhana penuh kehangatan.",
     story: "Momen bahagia kecil yang layak dirayakan.",
     care: "Semprot ringan setiap pagi.",
-    composition: [
-      "Yellow Tulip",
-      "Lisianthus",
-      "Spray Rose"
-    ]
+    flowers: ["Yellow Tulip", "Lisianthus", "Spray Rose"],
   },
-  { id: "promo-2", type: "promo" }
+  { id: "promo-2", type: "promo" },
 ];
