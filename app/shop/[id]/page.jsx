@@ -151,7 +151,7 @@ const PromoCard = ({ className, shopId }) => {
         <span className="italic text-cream-bg">Sendiri?</span>
       </h3>
       
-      {/* UPDATE LINK DI SINI: Mengarah ke /custom/[shopId] */}
+  
       <Link
         href={shopId ? `/custom/${shopId}` : "/custom"} 
         className="relative z-10 group/btn flex items-center gap-3 bg-cream-bg text-dark-green px-8 py-4 rounded-full font-bold text-sm hover:bg-white transition-all hover:scale-105 shadow-lg hover:shadow-xl"
@@ -168,16 +168,13 @@ const PromoCard = ({ className, shopId }) => {
   );
 };
 
-// --- MAIN PAGE: STORE FRONT ---
+
 export default function ShopEtalasePage() {
   const { id } = useParams();
   const router = useRouter();
   const [activeMood, setActiveMood] = useState("All");
-
-  // 1. Ambil Data Toko
   const currentShop = SHOPS.find((s) => String(s.id) === String(id));
 
-  // 2. Ambil Barang Toko (DENGAN FILTER PROMO)
   const shopProducts = allItems.filter((item) => {
     if (!currentShop) return false;
     if (item.type === "promo") {
@@ -248,11 +245,10 @@ export default function ShopEtalasePage() {
             </span>
           </div>
 
-          {/* Tombol Custom Header (SUDAH DIPERBAIKI) */}
+        
           {currentShop.can_customize && (
             <div className="mb-10">
               <Link
-                // UPDATE LINK DI SINI: Mengarah ke /custom/[id]
                 href={`/custom/${currentShop.id}`}
                 className="inline-flex items-center gap-2 bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition shadow-lg"
               >
@@ -262,7 +258,7 @@ export default function ShopEtalasePage() {
           )}
         </motion.div>
 
-        {/* Filter Mood */}
+
         <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative mt-4">
           {["All", "Warm", "Gloomy"].map((mood) => {
             const isActive = activeMood === mood;
