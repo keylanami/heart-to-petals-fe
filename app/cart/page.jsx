@@ -184,7 +184,7 @@ const CartPage = () => {
                             </div>
                             <p className="text-xs text-gray-400 mt-1">
                               {item.category
-                                ? `${item.category} Mood`
+                                ? `${item.category}`
                                 : "Custom Bouquet"}{" "}
                               • {item.tag || "Handmade"}
                             </p>

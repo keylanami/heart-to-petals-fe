@@ -5,9 +5,8 @@ const CartContext = createContext();
 
 export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
-  const [isInitialized, setIsInitialized] = useState(false); // GUARD: Biar gak nimpa LocalStorage
+  const [isInitialized, setIsInitialized] = useState(false); 
 
-  // 1. Load data sekali saat mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedCart = localStorage.getItem("myCart");
@@ -18,18 +17,16 @@ export function CartProvider({ children }) {
           console.error("Gagal parse cart:", error);
         }
       }
-      setIsInitialized(true); // Tandai sudah load
+      setIsInitialized(true); 
     }
   }, []);
 
-  // 2. Simpan otomatis tiap cart berubah (TAPI TUNGGU Initialized dulu)
   useEffect(() => {
     if (isInitialized && typeof window !== "undefined") {
       localStorage.setItem("myCart", JSON.stringify(cart));
     }
   }, [cart, isInitialized]);
 
-  // --- ACTIONS ---
 
   const addToCart = (product, quantity = 1) => {
     setCart((prev) => {
