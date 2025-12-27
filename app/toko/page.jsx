@@ -17,6 +17,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Search,
+  Route,
 } from "lucide-react";
 import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
@@ -354,6 +355,7 @@ export default function TenantListPage() {
   const isSearching = searchQuery.trim().length > 0;
   const { user } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
 
   const handleStartCustom = (e) => {
     e?.preventDefault(); 
@@ -365,12 +367,11 @@ export default function TenantListPage() {
     }
 
     if (user && (user.role === "tenant" || user.role === "superadmin")) {
-        showToast("Gunakan akun user untuk belanja!", "error");
+        showToast("Gunakan akun user untuk kustom!", "error");
         return;
     }
 
-    topSectionRef.current?.scrollIntoView({ behavior: "smooth" });
-    setIsModalOpen(true);
+    router.push("/custom/${currentShop.id}");
   };
 
   const getBentoClass = (index) => {

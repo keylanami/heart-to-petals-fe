@@ -139,6 +139,7 @@ const BentoCard = ({ product, index, className }) => {
 const PromoCard = ({ className, shopId }) => {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
 
   const handleStartCustom = (e) => {
     e?.preventDefault();
@@ -154,8 +155,8 @@ const PromoCard = ({ className, shopId }) => {
       return;
     }
 
-    topSectionRef.current?.scrollIntoView({ behavior: "smooth" });
-    setIsModalOpen(true);
+    router.push(shopId ? `/custom/${shopId}` : "/custom");
+    
   };
 
   return (

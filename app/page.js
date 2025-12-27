@@ -410,7 +410,7 @@ export default function DashboardPage() {
 
       <section className="relative pt-36 pb-10 px-4 md:px-6 overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="mb-6 px-2">
+          <div className="mb-10 mt-2 px-2">
             {user ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
@@ -423,7 +423,7 @@ export default function DashboardPage() {
               </motion.div>
             ) : (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
+                <p className="text-xs font-bold text-sage-green uppercase tracking-widest mb-2">
                   Make Someone's Day
                 </p>
                 <h1 className="text-4xl md:text-5xl font-serif font-bold text-dark-green mb-6">
