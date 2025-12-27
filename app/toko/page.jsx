@@ -41,7 +41,6 @@ const itemVariants = {
   },
 };
 
-// --- COMPONENT: MODAL PILIH TOKO ---
 const ShopSelectionModal = ({ isOpen, onClose }) => {
   const customShops = SHOPS.filter((shop) => shop.can_customize);
 
@@ -217,7 +216,7 @@ const BentoCard = ({ product, index, className }) => {
         showToast("Gunakan akun user untuk belanja!", "error");
         return;
     }
-    
+
     addToCart(product, 1);
     router.push(`/checkout?direct=true&id=${product.id}`);
   };
