@@ -405,10 +405,10 @@ export default function DashboardPage() {
   const nearestShops = SHOPS.slice(0, 4);
 
   return (
-    <main className="bg-cream-bg min-h-screen pb-24">
+    <div className="bg-cream-bg min-h-screen flex-col flex">
       <Navbar />
 
-      <section className="relative pt-36 pb-10 px-4 md:px-6 overflow-hidden">
+      <section className="relative pt-36 pb-10 px-4 md:px-6 overflow-hidden flex-1">
         <div className="max-w-7xl mx-auto relative z-10">
           <div className="mb-10 mt-2 px-2">
             {user ? (
@@ -557,7 +557,7 @@ export default function DashboardPage() {
       </section>
 
       <CustomBouquetSection onOpenModal={() => setIsFloristModalOpen(true)} />
-      <section className="mb-16 pl-6 md:pl-0 bg-white py-16 -mx-6 md:mx-0 md:rounded-[3rem]">
+      <section className="pl-6 md:pl-0 bg-white/70 py-16 -mx-6 md:mx-0 md:rounded-t-[6rem]">
         <div className="max-w-7xl mx-auto md:px-6">
           <div className="flex justify-between items-end mb-8 pr-6">
             <div className="w-full">
@@ -609,6 +609,6 @@ export default function DashboardPage() {
         isOpen={isFloristModalOpen}
         onClose={() => setIsFloristModalOpen(false)}
       />
-    </main>
+    </div>
   );
 }
