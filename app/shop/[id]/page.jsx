@@ -20,7 +20,6 @@ import { useCart } from "@/app/context/CartContext";
 import { useToast } from "@/app/context/ToastContext";
 import { useAuth } from "@/app/context/AuthContext";
 
-
 const containerVariants = {
   hidden: { opacity: 0 },
   show: { opacity: 1, transition: { staggerChildren: 0.1 } },
@@ -30,11 +29,9 @@ const itemVariants = {
   show: { opacity: 1, scale: 1 },
 };
 
-
-
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
-  const { showToast } = useToast();;
+  const { showToast } = useToast();
   const { addToCart } = useCart();
   const { user } = useAuth();
 
@@ -43,9 +40,14 @@ const BentoCard = ({ product, index, className }) => {
     e.stopPropagation();
 
     if (!user) {
-        showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
-        router.push("/login");
-        return;
+      showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+      router.push("/login");
+      return;
+    }
+
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return;
     }
 
     addToCart(product, 1);
@@ -134,8 +136,28 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
-
 const PromoCard = ({ className, shopId }) => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+
+  const handleStartCustom = (e) => {
+    e?.preventDefault();
+
+    if (!user) {
+      showToast("Hey, login dulu baru bisa kustom!", "error");
+      router.push("/login");
+      return;
+    }
+
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return;
+    }
+
+    topSectionRef.current?.scrollIntoView({ behavior: "smooth" });
+    setIsModalOpen(true);
+  };
+
   return (
     <motion.div
       layout
@@ -160,10 +182,10 @@ const PromoCard = ({ className, shopId }) => {
         Punya Cerita <br />{" "}
         <span className="italic text-cream-bg">Sendiri?</span>
       </h3>
-      
-  
+
       <Link
-        href={shopId ? `/custom/${shopId}` : "/custom"} 
+        onClick={handleStartCustom}
+        href={shopId ? `/custom/${shopId}` : "/custom"}
         className="relative z-10 group/btn flex items-center gap-3 bg-cream-bg text-dark-green px-8 py-4 rounded-full font-bold text-sm hover:bg-white transition-all hover:scale-105 shadow-lg hover:shadow-xl"
       >
         <span>Mulai Custom Sekarang</span>
@@ -178,12 +200,31 @@ const PromoCard = ({ className, shopId }) => {
   );
 };
 
-
 export default function ShopEtalasePage() {
   const { id } = useParams();
   const router = useRouter();
   const [activeMood, setActiveMood] = useState("All");
   const currentShop = SHOPS.find((s) => String(s.id) === String(id));
+  const { user } = useAuth();
+  const { showToast } = useToast();
+
+  const handleStartCustom = (e) => {
+    e?.preventDefault(); 
+    
+    if (!user) {
+        showToast("Hey, login dulu baru bisa kustom!", "error");
+        router.push("/login");
+        return;
+    }
+
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+        showToast("Gunakan akun user untuk kustom!", "error");
+        return;
+    }
+
+    router.push("/custom/${currentShop.id}");
+  };
+
 
   const shopProducts = allItems.filter((item) => {
     if (!currentShop) return false;
@@ -195,10 +236,10 @@ export default function ShopEtalasePage() {
 
   const filteredItems =
     activeMood === "All"
-    ? shopProducts
-    : shopProducts.filter(
-        (item) => item.type === "promo" || item.category === activeMood
-      );
+      ? shopProducts
+      : shopProducts.filter(
+          (item) => item.type === "promo" || item.category === activeMood
+        );
 
   const getBentoClass = (index) => {
     if (index % 6 === 0) return "md:col-span-2 md:row-span-2 min-h-[640px]";
@@ -255,10 +296,10 @@ export default function ShopEtalasePage() {
             </span>
           </div>
 
-        
           {currentShop.can_customize && (
             <div className="mb-10">
               <Link
+                onClick={handleStartCustom}
                 href={`/custom/${currentShop.id}`}
                 className="inline-flex items-center gap-2 bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition shadow-lg"
               >
@@ -267,7 +308,6 @@ export default function ShopEtalasePage() {
             </div>
           )}
         </motion.div>
-
 
         <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative mt-4">
           {["All", "Warm", "Gloomy"].map((mood) => {
@@ -316,11 +356,10 @@ export default function ShopEtalasePage() {
             {filteredItems.map((item, index) => {
               if (item.type === "promo") {
                 return (
-              
-                  <PromoCard 
-                    key={item.id} 
-                    className={getBentoClass(index)} 
-                    shopId={currentShop.id} 
+                  <PromoCard
+                    key={item.id}
+                    className={getBentoClass(index)}
+                    shopId={currentShop.id}
                   />
                 );
               }

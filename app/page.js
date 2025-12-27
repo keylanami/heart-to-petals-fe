@@ -23,9 +23,9 @@ import { allItems } from "@/app/utils/shop";
 import { SHOPS } from "./utils/tenants";
 import { PROMOS } from "./utils/data";
 import { useAuth } from "./context/AuthContext";
+import { useToast } from "./context/ToastContext";
 
 const FloristSelectionModal = ({ isOpen, onClose }) => {
-  // Filter toko yang bisa custom
   const customShops = SHOPS.filter((shop) => shop.can_customize);
 
   return (
@@ -37,15 +37,15 @@ const FloristSelectionModal = ({ isOpen, onClose }) => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-dark-green/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
           />
-
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             className="fixed z-[70] bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
           >
+            {/* Header */}
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-[#FDFBF7]">
               <div>
                 <h3 className="font-serif text-2xl font-bold text-dark-green">
@@ -273,6 +273,27 @@ const NeighborhoodMap = ({ shops }) => {
 };
 
 const CustomBouquetSection = ({ onOpenModal }) => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const router = useRouter();
+
+  const handleCustomClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!user) {
+      showToast("Hey, login dulu baru bisa kustom!", "error");
+      router.push("/login");
+      return;
+    }
+
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return;
+    }
+    onOpenModal();
+  };
+
   const steps = [
     {
       icon: Flower2,
@@ -351,7 +372,7 @@ const CustomBouquetSection = ({ onOpenModal }) => {
           className="mt-16"
         >
           <button
-            onClick={onOpenModal}
+            onClick={handleCustomClick}
             className="group relative inline-flex items-center gap-3 bg-dark-green text-white px-10 py-4 rounded-full font-bold shadow-xl hover:bg-sage-green transition-all overflow-hidden"
           >
             <span className="relative z-10">Mulai Kustomisasi</span>
@@ -389,7 +410,7 @@ export default function DashboardPage() {
 
       <section className="relative pt-36 pb-10 px-4 md:px-6 overflow-hidden">
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="mb-10 mt-4 px-2">
+          <div className="mb-6 px-2">
             {user ? (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">
@@ -536,7 +557,6 @@ export default function DashboardPage() {
       </section>
 
       <CustomBouquetSection onOpenModal={() => setIsFloristModalOpen(true)} />
-
       <section className="mb-16 pl-6 md:pl-0 bg-white py-16 -mx-6 md:mx-0 md:rounded-[3rem]">
         <div className="max-w-7xl mx-auto md:px-6">
           <div className="flex justify-between items-end mb-8 pr-6">

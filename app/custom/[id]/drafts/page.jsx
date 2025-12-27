@@ -11,11 +11,9 @@ export default function DraftListPage() {
   const router = useRouter();
   const params = useParams(); 
   const { addToCart } = useCart(); 
-  // 2. PANGGIL HOOK TOAST
   const { showToast } = useToast();
   const [drafts, setDrafts] = useState([]);
 
-  // Load data pas halaman dibuka
   useEffect(() => {
     const saved = localStorage.getItem("flowerDrafts");
     if (saved) {
@@ -23,28 +21,22 @@ export default function DraftListPage() {
     }
   }, []);
 
-  // Logic Hapus Draft
   const handleDelete = (id) => {
-    // Note: Untuk "Confirm" (Yakin/Tidak) biarkan native browser dulu karena sifatnya blocking.
-    // Tapi kita kasih notifikasi cantik setelahnya.
     if (confirm("Yakin mau hapus draft ini?")) {
         const updated = drafts.filter(d => d.id !== id);
         setDrafts(updated);
         localStorage.setItem("flowerDrafts", JSON.stringify(updated));
         
-        // 3. KASIH TOAST INFO SETELAH HAPUS
         showToast("Draft berhasil dihapus.", "success");
     }
   };
 
-  // Logic Edit
   const handleEdit = (draft) => {
     localStorage.setItem("editDraftId", draft.id);
     const targetShopId = draft.shop?.id || params.id;
     router.push(`/custom/${targetShopId}`); 
   };
 
-  // Logic Add to Cart
   const handleAddToCart = (draft) => {
     const cartItem = {
         id: draft.id, 

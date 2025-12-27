@@ -352,8 +352,23 @@ export default function TenantListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const isSearching = searchQuery.trim().length > 0;
+  const { user } = useAuth();
+  const { showToast } = useToast();
 
-  const handleStartCustom = () => {
+  const handleStartCustom = (e) => {
+    e?.preventDefault(); 
+    
+    if (!user) {
+        showToast("Hey, login dulu baru bisa kustom!", "error");
+        router.push("/login");
+        return;
+    }
+
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+        showToast("Gunakan akun user untuk belanja!", "error");
+        return;
+    }
+
     topSectionRef.current?.scrollIntoView({ behavior: "smooth" });
     setIsModalOpen(true);
   };
