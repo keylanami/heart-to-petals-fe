@@ -223,7 +223,7 @@ export default function ShopEtalasePage() {
         return;
     }
 
-    router.push("/custom/${currentShop.id}");
+    router.push(`/custom/${currentShop.id}`);
   };
 
 

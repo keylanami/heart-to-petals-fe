@@ -371,7 +371,7 @@ export default function TenantListPage() {
         return;
     }
 
-    router.push("/custom/${currentShop.id}");
+    router.push(`/custom/${currentShop.id}`);
   };
 
   const getBentoClass = (index) => {
