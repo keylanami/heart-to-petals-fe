@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
@@ -8,7 +9,7 @@ import { Check, Copy, ArrowRight, Clock, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { useOrder } from "@/app/context/OrderContext";
 
-export default function OrderSuccessPage() {
+function OrderSuccessPage() {
   const searchParams = useSearchParams();
   const vaNumber = "880123456789";
   const [copied, setCopied] = useState(false);
@@ -144,4 +145,17 @@ export default function OrderSuccessPage() {
       <Footer />
     </main>
   );
+}
+
+
+export default function OrderSuccessPage(){
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-[#F5F5F5]">
+                <div className="text-gray-400 font-bold animate-pulse">Memuat...</div>
+            </div>
+        }>
+            <OrderSuccessContent />
+        </Suspense>
+    );
 }
