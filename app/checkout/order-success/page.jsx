@@ -9,7 +9,7 @@ import { Check, Copy, ArrowRight, Clock, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { useOrder } from "@/app/context/OrderContext";
 
-function OrderSuccessPage() {
+function OrderSuccessContent() {
   const searchParams = useSearchParams();
   const vaNumber = "880123456789";
   const [copied, setCopied] = useState(false);
