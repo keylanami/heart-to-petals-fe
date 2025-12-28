@@ -3,7 +3,7 @@ import { useCart } from "@/app/context/CartContext";
 import { useAuth } from "@/app/context/AuthContext"; 
 import { useOrder } from "@/app/context/OrderContext"; 
 import { useToast } from "@/app/context/ToastContext";
-import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, AlertTriangle, LogIn, LogOut } from "lucide-react";
+import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, AlertTriangle, LogIn, LogOut, Info } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import Link from "next/link"; 
@@ -26,18 +26,33 @@ function CheckoutContent() {
   const { addOrder } = useOrder(); 
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [selectedCheckoutIds, setSelectedCheckoutIds] = useState([]);
 
   useEffect(() => {
     setIsClient(true);
+    // Ambil data item yang dicentang dari localStorage
+    if (typeof window !== "undefined") {
+        const ids = localStorage.getItem("checkoutIds");
+        if (ids) {
+            setSelectedCheckoutIds(JSON.parse(ids));
+        }
+    }
   }, []);
 
   const isDirectBuy = searchParams.get("direct") === "true";
   const directId = searchParams.get("id");
 
+  // --- LOGIC FILTER ITEM YANG AKAN DIBAYAR ---
   const displayItems = isDirectBuy && directId 
     ? cart.filter(item => String(item.id) === String(directId))
-    : cart;
+    : cart.filter(item => selectedCheckoutIds.includes(item.id));
 
+  // --- SPLIT LOGIC: CUSTOM VS CATALOG ---
+  // Kita pisahkan untuk perhitungan DP
+  const customItems = displayItems.filter(item => item.isCustom);
+  const catalogItems = displayItems.filter(item => !item.isCustom);
+
+  // Grouping per toko (Visual Only)
   const groupedCart = displayItems.reduce((acc, item) => {
     const shopId = item.shop?.id || "unknown";
     if (!acc[shopId]) {
@@ -69,15 +84,28 @@ function CheckoutContent() {
     setShippingSelection((prev) => ({ ...prev, [shopId]: option }));
   };
 
-  const subtotal = displayItems.reduce((acc, item) => acc + (item.price || 0) * (item.qty || item.quantity || 1), 0);
+  // --- FINANCIAL CALCULATION (CORE LOGIC) ---
   
+  // 1. Hitung Subtotal Asli
+  const subtotalCatalog = catalogItems.reduce((acc, item) => acc + (item.price * (item.qty || item.quantity || 1)), 0);
+  const subtotalCustom = customItems.reduce((acc, item) => acc + (item.price * (item.qty || item.quantity || 1)), 0);
+  
+  // 2. Hitung Ongkir
   const totalShipping = shopKeys.reduce((acc, shopId) => {
     const selectedOption = shippingSelection[shopId];
     return acc + (selectedOption?.cost || 0);
   }, 0);
 
   const serviceFee = 2000;
-  const grandTotal = subtotal + totalShipping + serviceFee;
+
+  // 3. ATURAN PEMBAYARAN:
+  // - Catalog: Bayar Full 100%
+  // - Custom: Bayar DP 40%
+  // - Ongkir: Bayar NANTI (masuk pelunasan)
+  
+  const dpAmountCustom = subtotalCustom * 0.4; 
+  const payNowTotal = subtotalCatalog + dpAmountCustom + serviceFee;
+  const remainingBill = (subtotalCustom - dpAmountCustom) + totalShipping;
 
   const toRupiah = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(num || 0);
 
@@ -96,31 +124,71 @@ function CheckoutContent() {
   const handlePayment = async () => {
     if (!user) {
         showToast("Login terlebih dahulu untuk melanjutkan pembayaran.", "error");
-        router.push("/get-started");
+        router.push("/get-started"); // Atau /login
         return;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // GENERATE ORDER ID (Penting buat routing)
+    const newOrderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
 
-    const itemsToBuy = isDirectBuy && directId 
-        ? cart.filter(item => String(item.id) === String(directId))
-        : cart;
-    
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulasi Loading
+
+    // Create Order Object
     const newOrderData = {
+        id: newOrderId,
         customer: user.name,
-        items: itemsToBuy,
-        total: grandTotal, 
-        type: itemsToBuy.some(i => i.can_customize) ? "Custom" : "Catalog", 
+        date: new Date().toLocaleDateString("id-ID"),
+        items: displayItems,
+        
+        // Simpan Data Keuangan Lengkap untuk Page Tracking
+        financials: {
+            subtotalCatalog,
+            subtotalCustom,
+            totalShipping,
+            serviceFee,
+            dpAmount: dpAmountCustom,
+            payNowTotal: payNowTotal, // Yang dibayar user saat ini
+            remainingAmount: remainingBill, // Yang harus dilunasi nanti
+            isPaidOff: remainingBill <= 0 // Flag lunas atau belum
+        },
+
+        // Logic Status
+        // Kalau ada custom -> waiting_approval (Flow Pre-order)
+        // Kalau cuma catalog -> processing (Flow Normal)
+        status: customItems.length > 0 ? "waiting_approval" : "processing", 
+        type: customItems.length > 0 ? "Pre-Order" : "Instant",
+
+        // Timeline Awal
+        timeline: [
+            {
+                id: 1,
+                date: new Date().toLocaleString("id-ID"),
+                title: "Pesanan Dibuat & Pembayaran Diterima",
+                desc: customItems.length > 0 
+                    ? `Pembayaran Awal (DP) sebesar ${toRupiah(payNowTotal)} berhasil. Menunggu konfirmasi florist.`
+                    : `Pembayaran lunas sebesar ${toRupiah(payNowTotal)}. Pesanan akan diproses.`,
+                type: "info",
+                status: "completed"
+            }
+        ]
     };
 
     addOrder(newOrderData); 
 
+    // CLEANUP CART (Hanya hapus yang dibeli)
     if (isDirectBuy && directId) {
-        removeFromCart(parseInt(directId));
+        removeFromCart(directId); // Pastikan tipe data ID cocok
     } else {
-        clearCart();
+        // Hapus item yang ada di list selectedCheckoutIds
+        selectedCheckoutIds.forEach(id => removeFromCart(id));
+        localStorage.removeItem("checkoutIds");
     }
-    router.push("/checkout/order-success");
+    
+    showToast("Pembayaran Berhasil! Mengalihkan ke tracking...", "success");
+    
+    // REDIRECT KE PRE-ORDER PAGE
+    // router.push(`/orders/${newOrderId}`);
+    router.push(`/checkout/order-success?id=${newOrderId}`);
   };
 
   if (!isClient) return <div className="min-h-screen bg-gray-50"></div>;
@@ -136,7 +204,7 @@ function CheckoutContent() {
           <ArrowLeft size={18} /> Batal
         </button>
         <div className="flex items-center gap-2 text-dark-green font-serif font-bold text-lg">
-          Proses pemesananmu!
+          Checkout {customItems.length > 0 ? "(Pre-Order)" : ""}
         </div>
         <div className="w-10"></div>
       </header>
@@ -204,19 +272,25 @@ function CheckoutContent() {
                   <div className="space-y-6">
                     {group.items.map((item, idx) => (
                       <div key={idx} className="flex gap-4">
-                        <div className="w-20 h-24 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0">
+                        <div className="w-20 h-24 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 relative">
                           <img
                             src={item.image}
                             alt={item.title}
                             className="w-full h-full object-cover"
                           />
+                          {/* Label Custom */}
+                          {item.isCustom && (
+                             <div className="absolute top-0 left-0 bg-sage-green text-white text-[10px] font-bold px-2 py-0.5 rounded-br-lg z-10">
+                                 Custom
+                             </div>
+                          )}
                         </div>
                         <div className="flex-1">
                           <h3 className="font-serif font-bold text-lg text-dark-green leading-tight">
                             {item.title}
                           </h3>
                           <p className="text-xs text-gray-400 mt-1">
-                            {item.tag} • {item.category}
+                            {item.isCustom ? "Custom Request" : "Ready Stock"} • {item.category || "Bouquet"}
                           </p>
                           <div className="flex justify-between items-end mt-2">
                             <p className="font-bold text-dark-green">
@@ -225,14 +299,6 @@ function CheckoutContent() {
                                 {" "}x {item.qty || item.quantity || 1}
                               </span>
                             </p>
-                            {!isDirectBuy && (
-                                <button
-                                onClick={() => removeFromCart(item.id)}
-                                className="text-red-400 text-xs flex items-center gap-1 hover:text-red-600"
-                                >
-                                <Trash2 size={14} /> Hapus
-                                </button>
-                            )}
                           </div>
                         </div>
                       </div>
@@ -253,10 +319,10 @@ function CheckoutContent() {
                           className={`
                             flex-1 min-w-[120px] text-left p-3 rounded-lg border text-xs transition-all relative
                             ${
-                                shippingSelection[shopId]
-                                ?.name === opt.name
-                                ? "border-sage-green bg-white text-dark-green ring-2 ring-sage-green ring-offset-1"
-                                : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
+                              shippingSelection[shopId]
+                              ?.name === opt.name
+                              ? "border-sage-green bg-white text-dark-green ring-2 ring-sage-green ring-offset-1"
+                              : "border-gray-200 bg-white text-gray-500 hover:border-gray-300"
                             }
                           `}
                         >
@@ -301,31 +367,54 @@ function CheckoutContent() {
               Ringkasan Pembayaran
             </h3>
 
+            {/* ALERT CUSTOM INFO */}
+            {customItems.length > 0 && (
+                <div className="mb-6 p-3 bg-sage-green/10 rounded-xl border border-sage-green/20 text-xs text-dark-green flex gap-2 items-start">
+                    <Info size={16} className="shrink-0 mt-0.5"/>
+                    <p>
+                        Pesanan ini mengandung barang <b>Custom</b>. Bayar <b>DP 40%</b> sekarang. Sisa & Ongkir dibayar saat pelunasan.
+                    </p>
+                </div>
+            )}
+
             <div className="space-y-3 text-sm text-gray-600 mb-6">
               <div className="flex justify-between">
-                <span>Total Harga Barang</span>
-                <span className="font-medium">{toRupiah(subtotal)}</span>
-              </div>
-
-              <div className="flex justify-between text-sage-green font-bold">
-                <span>Total Ongkos Kirim</span>
-                <span>{toRupiah(totalShipping)}</span>
+                <span>Total Catalog (Ready Stock)</span>
+                <span className="font-medium">{toRupiah(subtotalCatalog)}</span>
               </div>
               <div className="flex justify-between">
+                <span>Total Custom (Pre-Order)</span>
+                <span className="font-medium">{toRupiah(subtotalCustom)}</span>
+              </div>
+              
+              <div className="flex justify-between text-gray-400 italic text-xs pt-2 border-t border-dashed border-gray-100">
+                 <span>Ongkos Kirim (Bayar Nanti)</span>
+                 <span>+{toRupiah(totalShipping)}</span>
+              </div>
+              
+              <div className="flex justify-between text-gray-800 pt-2 font-bold">
                 <span>Biaya Layanan</span>
                 <span className="font-medium">{toRupiah(serviceFee)}</span>
               </div>
+              
+              {/* SISA TAGIHAN INFO */}
+              {customItems.length > 0 && (
+                  <div className="flex justify-between text-green-600 font-bold bg-green-50 p-2 rounded-lg mt-2">
+                    <span>Sisa Tagihan (Pelunasan)</span>
+                    <span>- {toRupiah(remainingBill)}</span>
+                  </div>
+              )}
+
               <div className="border-t border-dashed border-gray-200 my-4 pt-4 flex justify-between items-center text-dark-green font-bold text-lg">
-                <span>Total Tagihan</span>
-                <span>{toRupiah(grandTotal)}</span>
+                <span>Bayar Sekarang (DP)</span>
+                <span>{toRupiah(payNowTotal)}</span>
               </div>
             </div>
 
             <div className="bg-blue-50 p-3 rounded-xl flex items-start gap-3 text-xs text-blue-800 mb-6 border border-blue-100">
               <ShieldCheck size={16} className="shrink-0 mt-0.5" />
               <p className="leading-tight">
-                Pembayaranmu aman. Penjual baru menerima uang setelah kamu
-                konfirmasi pesanan diterima.
+                Pembayaranmu aman. Uang ditahan sistem sampai pesanan selesai.
               </p>
             </div>
 
@@ -334,7 +423,7 @@ function CheckoutContent() {
               disabled={displayItems.length === 0}
               className="w-full bg-dark-green text-white py-4 rounded-full font-bold shadow-lg hover:bg-sage-green transition-all flex items-center justify-center gap-2 transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <CreditCard size={18} /> Bayar Sekarang
+              <CreditCard size={18} /> {customItems.length > 0 ? "Bayar DP & Proses" : "Bayar Sekarang"}
             </button>
           </div>
         </div>
@@ -396,7 +485,7 @@ export default function CheckoutPage() {
   return (
     <Suspense fallback={
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
-            <div className="text-gray-400 font-bold animate-pulse">Memuat Pesanan...</div>
+            <div className="text-gray-400 font-bold animate-pulse">Memuat Pembayaran...</div>
         </div>
     }>
       <CheckoutContent />
