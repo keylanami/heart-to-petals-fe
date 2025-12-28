@@ -6,9 +6,9 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Check, Copy, ArrowRight, Clock, ShoppingBag } from "lucide-react";
-import { useState } from "react";
-import { useOrder } from "@/app/context/OrderContext";
 import { useState, Suspense } from "react";
+import { useOrder } from "@/app/context/OrderContext";
+
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
