@@ -27,7 +27,7 @@ export default function OrderSuccessPage() {
     if (orderId && orderId !== "ORD-UNKNOWN") {
       router.push(`/orders/${orderId}`);
     } else {
-      router.push("/orders");
+      router.push("/profile");
     }
   };
 
