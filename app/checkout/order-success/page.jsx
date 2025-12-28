@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { Check, Copy, ArrowRight, Clock, ShoppingBag } from "lucide-react";
 import { useState } from "react";
 import { useOrder } from "@/app/context/OrderContext";
+import { useState, Suspense } from "react";
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
