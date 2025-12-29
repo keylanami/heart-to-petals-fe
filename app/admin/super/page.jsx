@@ -2,20 +2,18 @@
 import { useState, useEffect } from "react";
 import { 
   LayoutGrid, Map, Store, Check, X, Trash2, Search, MapPin, TrendingUp, Users, AlertCircle, User, ArrowLeft 
-} from "lucide-react"; // Import icon User & ArrowLeft
+} from "lucide-react"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/app/context/ToastContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "@/app/context/AuthContext"; // IMPORT useAuth
+import { useAuth } from "@/app/context/AuthContext"; 
 
 export default function SuperAdminPage() {
   const [activeTab, setActiveTab] = useState("requests"); 
   const { showToast } = useToast();
   const router = useRouter();
-  
-  // AMBIL USER DARI CONTEXT
-  const { user } = useAuth(); // Biar sidebar profile dinamis
+  const { user } = useAuth(); 
 
   const [tenants, setTenants] = useState([]);
   const [pendingTenants, setPendingTenants] = useState([]);
@@ -28,7 +26,7 @@ export default function SuperAdminPage() {
         
         const active = allUsers.filter(u => u.role === "tenant" && u.status === "active").map((u, i) => ({
             ...u,
-            x: u.shop?.x || 20 + (i * 15) % 80, 
+            x: u.shop?.x || 20 + (i * 15) % 80, // Mock koordinat peta
             y: u.shop?.y || 30 + (i * 20) % 60
         }));
         
@@ -41,8 +39,12 @@ export default function SuperAdminPage() {
   };
 
   useEffect(() => {
+    // Proteksi: Cuma super admin yg boleh masuk
+    if (user && user.role !== 'superadmin') {
+        // router.push('/'); // Uncomment kalo mau strict
+    }
     loadData();
-  }, []);
+  }, [user]);
 
   const handleApprove = (email) => {
     const rawUsers = JSON.parse(localStorage.getItem("users"));
@@ -54,10 +56,9 @@ export default function SuperAdminPage() {
     });
 
     localStorage.setItem("users", JSON.stringify(updatedUsers));
-    loadData(); // Reload state
+    loadData();
     showToast("Tenant berhasil disetujui! Mereka sekarang bisa login.", "success");
   };
-
 
   const handleReject = (email) => {
     if(!window.confirm("Yakin tolak dan hapus pendaftaran ini?")) return;

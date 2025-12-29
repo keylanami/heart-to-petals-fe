@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/app/context/ToastContext"; 
+import { SHOPS } from "@/app/utils/shop";
 
 const AuthContext = createContext();
 
@@ -21,9 +22,39 @@ export function AuthProvider({ children }) {
     } catch (error) {
       removeStorage("currentUser");
     }
+
+    const rawUsers = getStorage("users");
+    let existingUsers = rawUsers ? JSON.parse(rawUsers) : [];
+
+    const rosyGardenExists = existingUsers.find(u => u.email === "rosy@florist.com");
+    
+    if (!rosyGardenExists) {
+        const dummyTenants = SHOPS.map(shop => ({
+            id: Date.now() + shop.id, 
+            name: `Owner ${shop.name}`,
+            email: `admin@${shop.name.replace(/\s+/g, '').toLowerCase()}.com`, // admin@rosygardenbandung.com
+            password: "123",
+            role: "tenant",
+            status: "active", 
+            shop: {
+                id: shop.id, // PENTING: ID ini harus sama dengan ID di allItems (101, 102, dst)
+                name: shop.name,
+                location: shop.location,
+                image: shop.image,
+                rating: shop.rating,
+                can_customize: shop.can_customize
+            }
+        }));
+
+        // Gabungkan user lama dengan dummy tenants baru
+        const newUsersList = [...existingUsers, ...dummyTenants];
+        setStorage("users", JSON.stringify(newUsersList));
+        console.log("Seeded Dummy Tenants:", dummyTenants); // Cek console buat liat emailnya apa aja
+    }
+
   }, []);
 
-
+  // --- REGISTER LOGIC (Updated) ---
   const register = (name, email, password, role = "user", shopData = null) => {
     try {
       const rawData = getStorage("users");
@@ -43,18 +74,21 @@ export function AuthProvider({ children }) {
         email, 
         password,
         role: role, 
+        // PENTING: Tenant defaultnya pending
         status: role === "tenant" ? "pending" : "active",
         phone: "", 
         address: { street: "", city: "", province: "", zip: "", label: "Rumah" },
 
         ...(role === "tenant" && shopData ? {
             shop: {
-                id: newId,
-                name: shopData.shopName,
+                id: `SHOP-${newId}`, // ID Toko Unik
+                name: shopData.name,
                 location: shopData.location,
-                image: "/assets/toko/default.jpg",
+                image: "/assets/flowershop/placeholder_store.png",
                 rating: 0,
-                can_customize: true
+                can_customize: shopData.can_customize,
+                desc: shopData.desc,
+                openTime: shopData.openTime
             }
         } : {})
       };
@@ -63,25 +97,30 @@ export function AuthProvider({ children }) {
       setStorage("users", JSON.stringify(existingUsers));
       
       if (role === "tenant") {
-          showToast("Registrasi Tenant Berhasil! Menunggu persetujuan Superadmin.", "info");
+          // JANGAN auto login
+          showToast("Pendaftaran Berhasil! Mohon tunggu persetujuan Admin.", "success");
+          router.push("/login"); // Lempar ke login biar dia nunggu
       } else {
+          // User biasa auto login (opsional, tapi lebih aman lempar ke login juga)
           showToast("Register Berhasil! Silakan Login.", "success");
+          router.push("/login");
       }
       
-      router.push("/login");
       return true;
     } catch (e) {
+      console.error(e);
       showToast("Gagal register.", "error");
       return false;
     }
   };
 
-
+  // --- LOGIN LOGIC (Updated) ---
   const login = (email, password) => {
     try {
       const rawData = getStorage("users");
       const existingUsers = rawData ? JSON.parse(rawData) : [];
       
+      // Super Admin Hardcoded
       if (email === "super@admin.com" && password === "admin123") {
          const superAdmin = { id: 999, name: "Super Admin", email, role: "superadmin", status: "active" };
          setStorage("currentUser", JSON.stringify(superAdmin));
@@ -104,7 +143,7 @@ export function AuthProvider({ children }) {
         setStorage("currentUser", JSON.stringify(validUser));
         setUser(validUser);
         
-        // redirect based on role
+        // Redirect based on role
         if (validUser.role === "tenant") {
             showToast(`Halo, ${validUser.shop.name}! Selamat berjualan.`, "success");
             router.push("/admin/florist");
@@ -135,6 +174,8 @@ export function AuthProvider({ children }) {
         const updatedUser = { ...user, ...newUserData };
         setUser(updatedUser);
         setStorage("currentUser", JSON.stringify(updatedUser));
+        
+        // Update juga di database 'users'
         const rawData = getStorage("users");
         if (rawData) {
             const users = JSON.parse(rawData);
