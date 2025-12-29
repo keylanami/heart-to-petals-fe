@@ -7,6 +7,7 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false); 
 
+  // 1. Load Cart on Mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedCart = localStorage.getItem("myCart");
@@ -15,15 +16,20 @@ export function CartProvider({ children }) {
           setCart(JSON.parse(savedCart));
         } catch (error) {
           console.error("Gagal parse cart:", error);
+          setCart([]);
         }
       }
       setIsInitialized(true); 
     }
   }, []);
 
+  // 2. Sync to LocalStorage whenever cart changes
   useEffect(() => {
     if (isInitialized && typeof window !== "undefined") {
       localStorage.setItem("myCart", JSON.stringify(cart));
+      
+      // Dispatch custom event so Navbar can listen to changes immediately
+      window.dispatchEvent(new Event("cart-updated"));
     }
   }, [cart, isInitialized]);
 
@@ -31,13 +37,23 @@ export function CartProvider({ children }) {
   const addToCart = (product, quantity = 1) => {
     setCart((prev) => {
       const existingItemIndex = prev.findIndex((item) => item.id === product.id);
+      let newCart;
       if (existingItemIndex > -1) {
-        const newCart = [...prev];
+        newCart = [...prev];
         newCart[existingItemIndex].qty += quantity;
-        return newCart;
+        
+        // Remove item if qty becomes 0 or less
+        if (newCart[existingItemIndex].qty <= 0) {
+            newCart.splice(existingItemIndex, 1);
+        }
       } else {
-        return [...prev, { ...product, qty: quantity }];
+        if (quantity > 0) {
+            newCart = [...prev, { ...product, qty: quantity }];
+        } else {
+            newCart = prev;
+        }
       }
+      return newCart;
     });
   };
 
@@ -49,11 +65,16 @@ export function CartProvider({ children }) {
     setCart((prev) => prev.filter((item) => !idsToRemove.includes(item.id)));
   };
 
+  // Called after checkout success
   const clearCart = () => {
     setCart([]);
+    if (typeof window !== "undefined") {
+        localStorage.removeItem("myCart");
+        window.dispatchEvent(new Event("cart-updated"));
+    }
   };
 
-  const totalItems = cart.reduce((acc, item) => acc + item.qty, 0);
+  const totalItems = cart.reduce((acc, item) => acc + (item.qty || 1), 0);
 
   return (
     <CartContext.Provider value={{ cart, removeItems, addToCart, removeFromCart, clearCart, totalItems }}>

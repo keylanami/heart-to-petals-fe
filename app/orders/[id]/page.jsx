@@ -1,22 +1,16 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { CheckCircle2, Clock, AlertCircle, ChevronRight, Image as ImageIcon, XCircle, ShoppingBag, Store, Truck } from "lucide-react";
+import { CheckCircle2, Clock, ChevronRight, Image as ImageIcon, ShoppingBag, Store } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { useToast } from "@/app/context/ToastContext";
 
 const LOADING_STATE = {
   id: "Loading...",
   items: [], 
   status: "loading",
   timeline: [],
-  financials: {
-    itemsTotal: 0,
-    shippingTotal: 0,
-    serviceFee: 0,
-    grandTotal: 0
-  },
+  financials: { itemsTotal: 0, shippingTotal: 0, serviceFee: 0, grandTotal: 0 },
 };
 
 export default function OrderProgressPage() {
@@ -25,7 +19,7 @@ export default function OrderProgressPage() {
 
   useEffect(() => {
     if (typeof window !== "undefined" && params?.id) {
-      // 1. Coba ambil dari cache active_order (biar cepet)
+      // 1. Try cache
       const activeData = localStorage.getItem("active_order");
       if (activeData) {
           const parsed = JSON.parse(activeData);
@@ -34,11 +28,9 @@ export default function OrderProgressPage() {
               return;
           }
       }
-
-      // 2. Kalau ga ada, cari di database orders
+      // 2. Try DB
       const allOrders = JSON.parse(localStorage.getItem("orders") || "[]");
       const targetOrder = allOrders.find(o => String(o.id) === String(params.id));
-      
       if (targetOrder) setOrder(targetOrder);
     }
   }, [params?.id]);
@@ -51,7 +43,6 @@ export default function OrderProgressPage() {
       <Navbar />
 
       <main className="max-w-6xl mx-auto mt-10 px-6 py-24">
-        {/* BREADCRUMB */}
         <div className="mb-8">
           <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
             <span>Orders</span>
@@ -59,27 +50,24 @@ export default function OrderProgressPage() {
             <span className="truncate max-w-[200px] font-mono">{order.id}</span>
           </div>
           <h1 className="text-3xl font-serif font-bold text-dark-green mb-2">Progress Pesanan</h1>
-          <p className="text-gray-500">Pantau status pengerjaan pesananmu di sini.</p>
+          <p className="text-gray-500">Pantau status pesananmu di sini.</p>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-8">
-          
-          {/* KOLOM KIRI: TIMELINE */}
+          {/* TIMELINE */}
           <div className="flex-1 space-y-6">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative overflow-hidden">
               <div className="absolute left-9 top-6 bottom-6 w-0.5 bg-gray-100"></div>
-
               <div className="space-y-8 relative">
                 {order.timeline && order.timeline.length > 0 ? (
                   order.timeline.map((event, idx) => (
                     <div key={idx} className="flex gap-4 relative">
                       <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center shrink-0 z-10 bg-white
                             ${event.status === "completed" ? "border-sage-green text-sage-green" 
-                            : event.status === "current" ? "border-sage-green bg-sage-green text-white animate-pulse" 
+                            : event.status === "current" || event.status === "active" ? "border-sage-green bg-sage-green text-white animate-pulse" 
                             : "border-gray-300 text-gray-300"}`}>
                         {event.status === "completed" ? <CheckCircle2 size={16} /> : <Clock size={16} />}
                       </div>
-
                       <div className="flex-1 pt-1">
                         <div className="flex justify-between items-start mb-1">
                           <h4 className="font-bold text-dark-green text-sm md:text-base">{event.title}</h4>
@@ -96,12 +84,10 @@ export default function OrderProgressPage() {
             </div>
           </div>
 
-          {/* KOLOM KANAN: RINCIAN */}
+          {/* DETAILS */}
           <div className="w-full lg:w-[400px]">
             <div className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100 sticky top-24">
               <h3 className="font-serif font-bold text-dark-green text-xl mb-6">Rincian Order</h3>
-
-              {/* ITEM LIST */}
               <div className="mb-6 pb-2 border-b border-gray-100">
                 <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-3">ITEMS</p>
                 <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
@@ -122,7 +108,6 @@ export default function OrderProgressPage() {
                 </div>
               </div>
 
-              {/* FINANCIALS */}
               <div className="space-y-4 mb-8 pt-2">
                 <div className="flex justify-between text-gray-600 text-sm">
                   <span>Total Barang</span>
@@ -146,7 +131,6 @@ export default function OrderProgressPage() {
                 </div>
               </div>
 
-              {/* ACTION BUTTON */}
               <button disabled className="w-full py-4 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200">
                 {order.status === 'processing' ? 'Pesanan Sedang Diproses...' 
                  : order.status === 'on_delivery' ? 'Sedang Dikirim Kurir' 

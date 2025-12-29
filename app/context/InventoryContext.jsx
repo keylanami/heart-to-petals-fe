@@ -2,102 +2,40 @@
 import { createContext, useContext, useState, useEffect } from "react";
 
 // --- DATA DUMMY AWAL (MOCK DB) ---
-
-// 1. ITEMS CATALOG (BOUQUET JADI)
 const INITIAL_PRODUCTS = [
   {
-    id: 1,
-    shopId: 101, // Rosy Garden
-    type: "product",
-    title: "Head Over Heels",
-    price: 850000,
-    image: "/assets/bouquet/peace/crimson_promise.png",
-    category: "Warm",
-    tag: "Romance",
-    desc: "Cinta yang meledak-ledak.",
-    flowers: ["Mawar Merah", "Baby Breath"],
-    stock: 5
+    id: 1, shopId: 101, type: "product", title: "Head Over Heels", price: 850000,
+    image: "/assets/bouquet/peace/crimson_promise.png", category: "Warm", tag: "Romance",
+    desc: "Cinta yang meledak-ledak.", flowers: ["Mawar Merah", "Baby Breath"], stock: 5
   },
   {
-    id: 2,
-    shopId: 102, // Eternal Florist
-    type: "product",
-    title: "Midnight Regret",
-    price: 480000,
-    image: "/assets/bouquet/regret/first_date_bloom.png",
-    category: "Gloomy",
-    tag: "Regret",
-    desc: "Penyesalan yang dalam.",
-    flowers: ["White Rose"],
-    stock: 10
+    id: 2, shopId: 102, type: "product", title: "Midnight Regret", price: 480000,
+    image: "/assets/bouquet/regret/first_date_bloom.png", category: "Gloomy", tag: "Regret",
+    desc: "Penyesalan yang dalam.", flowers: ["White Rose"], stock: 10
   }
 ];
 
-// 2. RAW FLOWERS (BUNGA TANGKAI) - Khusus Toko Custom
 const INITIAL_FLOWERS = [
-  {
-    id: "f1",
-    shopId: 101,
-    type: "flower",
-    name: "Red Rose Premium",
-    category: "romance",
-    price: 15000,
-    image: "/assets/flowers/red_rose.png", // Pastikan file ini ada atau ganti placeholder
-    color: "bg-red-500",
-    stock: 100
-  },
-  {
-    id: "f2",
-    shopId: 101,
-    type: "flower",
-    name: "Peony Pink",
-    category: "romance",
-    price: 120000,
-    image: "/assets/flowers/peony_pink.png",
-    color: "bg-pink-400",
-    stock: 50
-  },
-  {
-    id: "f3",
-    shopId: 101,
-    type: "flower",
-    name: "Sunflower",
-    category: "joy",
-    price: 25000,
-    image: "/assets/flowers/sunflower.png",
-    color: "bg-yellow-400",
-    stock: 80
-  }
+  { id: "f1", shopId: 101, type: "flower", name: "Red Rose Premium", category: "romance", price: 15000, image: "/assets/flowers/red_rose.png", color: "#ef4444", stock: 100 },
+  { id: "f2", shopId: 101, type: "flower", name: "Peony Pink", category: "romance", price: 120000, image: "/assets/flowers/peony_pink.png", color: "#f472b6", stock: 50 },
+  { id: "f3", shopId: 101, type: "flower", name: "Sunflower", category: "joy", price: 25000, image: "/assets/flowers/sunflower.png", color: "#facc15", stock: 80 }
 ];
 
-// 3. PACKAGING (KEMASAN) - Khusus Toko Custom
 const INITIAL_PACKAGING = [
   {
-    id: "p1",
-    shopId: 101,
-    type: "packaging",
-    category: "wrapping", // wrapping / box / ribbon
-    name: "Premium Paper",
-    price: 15000,
+    id: "p1", shopId: 101, type: "packaging", category: "wrapping", name: "Premium Paper", price: 15000, stock: 200,
     colors: [
         { name: "Pastel Pink", hex: "#FDF2F8", class: "bg-pink-50" },
         { name: "Cream", hex: "#FFFBEB", class: "bg-amber-50" },
         { name: "Black", hex: "#000000", class: "bg-gray-900" }
-    ],
-    stock: 200
+    ]
   },
   {
-    id: "p2",
-    shopId: 101,
-    type: "packaging",
-    category: "box",
-    name: "Square Box",
-    price: 45000,
+    id: "p2", shopId: 101, type: "packaging", category: "box", name: "Square Box", price: 45000, stock: 50,
     colors: [
         { name: "White", hex: "#FFFFFF", class: "bg-white border" },
         { name: "Pink", hex: "#FBCFE8", class: "bg-pink-200" }
-    ],
-    stock: 50
+    ]
   }
 ];
 
@@ -114,7 +52,6 @@ export function InventoryProvider({ children }) {
       if (savedInv) {
         setInventory(JSON.parse(savedInv));
       } else {
-        // Gabungkan semua jadi satu array besar
         setInventory([...INITIAL_PRODUCTS, ...INITIAL_FLOWERS, ...INITIAL_PACKAGING]);
       }
       setIsInitialized(true);
@@ -134,6 +71,14 @@ export function InventoryProvider({ children }) {
     setInventory((prev) => [item, ...prev]);
   };
 
+  const deleteItem = (id) => {
+    setInventory((prev) => prev.filter(item => item.id !== id));
+  };
+
+  const updateItem = (id, updatedFields) => {
+    setInventory((prev) => prev.map(item => item.id === id ? { ...item, ...updatedFields } : item));
+  };
+
   const updateStock = (itemId, amount) => {
     setInventory((prev) =>
       prev.map((item) =>
@@ -144,7 +89,6 @@ export function InventoryProvider({ children }) {
     );
   };
 
-  // Helper: Ambil item berdasarkan Shop ID dan Type
   const getItemsByShop = (shopId, type = null) => {
       return inventory.filter(item => {
           const matchShop = String(item.shopId) === String(shopId);
@@ -154,7 +98,7 @@ export function InventoryProvider({ children }) {
   };
 
   return (
-    <InventoryContext.Provider value={{ inventory, addItem, updateStock, getItemsByShop }}>
+    <InventoryContext.Provider value={{ inventory, addItem, deleteItem, updateItem, updateStock, getItemsByShop }}>
       {children}
     </InventoryContext.Provider>
   );

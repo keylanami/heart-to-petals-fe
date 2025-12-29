@@ -10,22 +10,22 @@ export default function MyOrdersPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "payment_pending": return "text-orange-600 bg-orange-50 border-orange-200";
-      case "waiting_approval": return "text-blue-600 bg-blue-50 border-blue-200";
+      case "payment_pending": return "text-orange-600 bg-orange-50 border-orange-200"; // Should be rare now
       case "processing": return "text-blue-600 bg-blue-50 border-blue-200";
-      case "revision": return "text-red-600 bg-red-50 border-red-200";
+      case "on_delivery": return "text-purple-600 bg-purple-50 border-purple-200";
       case "completed": return "text-green-600 bg-green-50 border-green-200";
+      case "cancelled": return "text-red-600 bg-red-50 border-red-200";
       default: return "text-gray-600 bg-gray-50 border-gray-200";
     }
   };
 
   const getStatusLabel = (status) => {
       switch(status) {
-          case "payment_pending": return "Menunggu Pembayaran";
-          case "waiting_approval": return "Menunggu Konfirmasi";
+          case "payment_pending": return "Menunggu Konfirmasi";
           case "processing": return "Sedang Diproses";
-          case "revision": return "Perlu Revisi";
+          case "on_delivery": return "Sedang Dikirim";
           case "completed": return "Selesai";
+          case "cancelled": return "Dibatalkan";
           default: return status;
       }
   }
@@ -81,8 +81,7 @@ export default function MyOrdersPage() {
                     <div className="text-right">
                         <p className="text-xs text-gray-400 mb-0.5">Total Belanja</p>
                         <p className="font-bold text-dark-green">
-                            {/* Hitung total aman */}
-                            {(order.financials?.payNowTotal || order.totalPrice || 0).toLocaleString('id-ID', {style: 'currency', currency: 'IDR'})}
+                            {(order.financials?.grandTotal || order.totalPrice || 0).toLocaleString('id-ID', {style: 'currency', currency: 'IDR'})}
                         </p>
                     </div>
                   </div>
