@@ -86,11 +86,10 @@ function CheckoutContent() {
 
   // --- FINANCIAL CALCULATION (CORE LOGIC) ---
   
-  // 1. Hitung Subtotal Asli
   const subtotalCatalog = catalogItems.reduce((acc, item) => acc + (item.price * (item.qty || item.quantity || 1)), 0);
   const subtotalCustom = customItems.reduce((acc, item) => acc + (item.price * (item.qty || item.quantity || 1)), 0);
   
-  // 2. Hitung Ongkir
+ 
   const totalShipping = shopKeys.reduce((acc, shopId) => {
     const selectedOption = shippingSelection[shopId];
     return acc + (selectedOption?.cost || 0);
@@ -98,14 +97,19 @@ function CheckoutContent() {
 
   const serviceFee = 2000;
 
-  // 3. ATURAN PEMBAYARAN:
-  // - Catalog: Bayar Full 100%
-  // - Custom: Bayar DP 40%
-  // - Ongkir: Bayar NANTI (masuk pelunasan)
+  const isPreOrder = customItems.length > 0;
   
   const dpAmountCustom = subtotalCustom * 0.4; 
-  const payNowTotal = subtotalCatalog + dpAmountCustom + serviceFee;
-  const remainingBill = (subtotalCustom - dpAmountCustom) + totalShipping;
+ let payNowTotal = 0;
+  let remainingBill = 0;
+
+  if (isPreOrder) {
+    payNowTotal = subtotalCatalog + dpAmountCustom + serviceFee;
+    remainingBill = (subtotalCustom - dpAmountCustom) + totalShipping;
+  } else {
+    payNowTotal = subtotalCatalog + serviceFee + totalShipping;
+    remainingBill = 0;
+  }
 
   const toRupiah = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(num || 0);
 
@@ -124,14 +128,12 @@ function CheckoutContent() {
   const handlePayment = async () => {
     if (!user) {
         showToast("Login terlebih dahulu untuk melanjutkan pembayaran.", "error");
-        router.push("/get-started"); // Atau /login
+        router.push("/login"); 
         return;
     }
 
-    // GENERATE ORDER ID (Penting buat routing)
     const newOrderId = `ORD-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulasi Loading
+    await new Promise(resolve => setTimeout(resolve, 1000)); 
 
     // Create Order Object
     const newOrderData = {
@@ -152,9 +154,7 @@ function CheckoutContent() {
             isPaidOff: remainingBill <= 0 // Flag lunas atau belum
         },
 
-        // Logic Status
-        // Kalau ada custom -> waiting_approval (Flow Pre-order)
-        // Kalau cuma catalog -> processing (Flow Normal)
+      
         status: customItems.length > 0 ? "waiting_approval" : "processing", 
         type: customItems.length > 0 ? "Pre-Order" : "Instant",
 
@@ -175,11 +175,9 @@ function CheckoutContent() {
 
     addOrder(newOrderData); 
 
-    // CLEANUP CART (Hanya hapus yang dibeli)
     if (isDirectBuy && directId) {
-        removeFromCart(directId); // Pastikan tipe data ID cocok
+        removeFromCart(directId); 
     } else {
-        // Hapus item yang ada di list selectedCheckoutIds
         selectedCheckoutIds.forEach(id => removeFromCart(id));
         localStorage.removeItem("checkoutIds");
     }

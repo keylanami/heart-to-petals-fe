@@ -10,29 +10,28 @@ import {
   XCircle,
   ShoppingBag,
   Info,
+  Store
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useToast } from "@/app/context/ToastContext";
 
-// --- 1. DUMMY DATA (Penyelamat Error Null) ---
-// State awal pakai ini dulu biar UI ga kaget/crash saat data asli lagi diambil
 const LOADING_STATE = {
   id: "Loading...",
-  itemTitle: "Mengambil data pesanan...",
-  shopName: "...",
+  items: [], // default empty arr
   totalPrice: 0,
   dpAmount: 0,
   remainingAmount: 0,
-  status: "loading", // status khusus
+  status: "loading",
   timeline: [],
   financials: {
-    // Struktur dari checkout
     payNowTotal: 0,
     dpAmount: 0,
     remainingAmount: 0,
     subtotalCustom: 0,
     subtotalCatalog: 0,
+    totalShipping: 0,
+    serviceFee: 2000,
   },
 };
 
@@ -41,23 +40,18 @@ export default function OrderProgressPage() {
   const params = useParams();
   const { showToast } = useToast();
 
-  // Inisialisasi dengan LOADING_STATE (Bukan Null!)
   const [order, setOrder] = useState(LOADING_STATE);
-
   const [rejectReason, setRejectReason] = useState("");
   const [isRejecting, setIsRejecting] = useState(false);
 
-  // --- 2. LOGIC PENGAMBILAN DATA (Robust) ---
   useEffect(() => {
     if (typeof window !== "undefined" && params?.id) {
-      // A. Coba ambil dari "Jalur Cepat" (Data barusan checkout)
       const activeData = localStorage.getItem("active_order");
       let found = false;
 
       if (activeData) {
         try {
           const parsed = JSON.parse(activeData);
-          // Cek ID cocok ga?
           if (String(parsed.id) === String(params.id)) {
             setOrder(parsed);
             found = true;
@@ -67,7 +61,6 @@ export default function OrderProgressPage() {
         }
       }
 
-      // B. Kalau jalur cepat gagal, cari di "Database Utama" (orders)
       if (!found) {
         const allOrders = localStorage.getItem("orders");
         if (allOrders) {
@@ -86,24 +79,15 @@ export default function OrderProgressPage() {
         }
       }
 
-      // C. Kalau gak ketemu dimanapun
       if (!found) {
-        // Biarkan user tau (bisa set state error atau redirect)
         console.log("Order tidak ditemukan di storage");
       }
     }
   }, [params?.id]);
 
-  // --- ACTIONS (Update State & Storage) ---
-
-  // Helper untuk update state sekaligus update localStorage agar sinkron
   const updateOrderData = (newData) => {
     setOrder(newData);
-
-    // 1. Update Active Order (Cache)
     localStorage.setItem("active_order", JSON.stringify(newData));
-
-    // 2. Update Global Orders
     const allOrders = JSON.parse(localStorage.getItem("orders") || "[]");
     const updatedList = allOrders.map((o) =>
       o.id === newData.id ? newData : o
@@ -112,7 +96,6 @@ export default function OrderProgressPage() {
   };
 
   const handleApprove = () => {
-    // Clone timeline dengan aman
     const currentTimeline = order.timeline || [];
     const updatedTimeline = currentTimeline.map((t) =>
       t.type === "approval" && t.status === "pending"
@@ -177,28 +160,21 @@ export default function OrderProgressPage() {
     router.push(`/checkout/settlement/${order.id}`);
   };
 
-  // --- UI HELPER (Menghitung Harga dengan Aman) ---
   const getDisplayData = () => {
-    // Ambil data item pertama untuk judul
-    const firstItem = Array.isArray(order.items) ? order.items[0] : null;
-    const itemTitle = firstItem
-      ? firstItem.title || firstItem.name
-      : order.itemTitle || "Custom Bouquet";
-    const shopName =
-      firstItem?.shop?.name || order.shopName || "Florist Partner";
+    // semua items
+    const orderItems = Array.isArray(order.items) ? order.items : [];
 
-    // Ambil data financials (prioritas data dari checkout)
     const fin = order.financials || {};
 
-    // Fallback logic yang kuat
     const dpVal =
       fin.dpAmount !== undefined ? fin.dpAmount : order.dpAmount || 0;
     const remainVal =
       fin.remainingAmount !== undefined
         ? fin.remainingAmount
         : order.remainingAmount || 0;
+    
+    const serviceFee = fin.serviceFee || 2000;
 
-    // Hitung total value
     let totalVal = 0;
     if (fin.subtotalCustom || fin.subtotalCatalog) {
       totalVal = (fin.subtotalCustom || 0) + (fin.subtotalCatalog || 0);
@@ -206,22 +182,22 @@ export default function OrderProgressPage() {
       totalVal = order.totalPrice || 0;
     }
 
-    return { itemTitle, shopName, totalVal, dpVal, remainVal };
+    const isPreOrder = order.type === "Pre-Order" || (fin.subtotalCustom > 0);
+
+    return { orderItems, totalVal, dpVal, remainVal, isPreOrder, fin, serviceFee };
   };
 
-  const { itemTitle, shopName, totalVal, dpVal, remainVal } = getDisplayData();
+  const { orderItems, totalVal, dpVal, remainVal, isPreOrder, fin, serviceFee } = getDisplayData();
 
-  // --- RENDER UI (Persis Request Kamu) ---
   return (
     <div className="min-h-screen bg-cream-bg font-sans">
       <Navbar />
 
-      <main className="max-w-4xl mx-auto mt-10 px-6 py-24">
+      <main className="max-w-6xl mx-auto mt-10 px-6 py-24">
         <div className="mb-8">
           <div className="flex items-center gap-2 text-sm text-gray-400 mb-2">
             <span>Orders</span>
             <ChevronRight size={14} />
-            
             <span className="truncate max-w-[200px] font-mono">{order.id}</span>
           </div>
           <h1 className="text-3xl font-serif font-bold text-dark-green mb-2">
@@ -232,9 +208,9 @@ export default function OrderProgressPage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* KOLOM KIRI: TIMELINE */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="flex flex-col lg:flex-row gap-8">
+          
+          <div className="flex-1 space-y-6">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 relative overflow-hidden">
               <div className="absolute left-9 top-6 bottom-6 w-0.5 bg-gray-100"></div>
 
@@ -290,7 +266,6 @@ export default function OrderProgressPage() {
                           </div>
                         )}
 
-                        {/* APPROVAL BOX */}
                         {event.type === "approval" &&
                           event.status === "pending" && (
                             <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mt-2 animate-in fade-in slide-in-from-top-2">
@@ -379,89 +354,170 @@ export default function OrderProgressPage() {
             </div>
           </div>
 
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 sticky top-24">
-              <h3 className="font-serif font-bold text-dark-green text-xl mb-4">
+          <div className="w-full lg:w-[400px]">
+            <div className="bg-white rounded-2xl p-7 shadow-sm border border-gray-100 sticky top-24">
+              <h3 className="font-serif font-bold text-dark-green text-xl mb-6">
                 Rincian Order
               </h3>
 
-              <div className="mb-6 pb-6 border-b border-gray-100">
-                <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">
-                  Item
+              <div className="mb-6 pb-2 border-b border-gray-100">
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-3">
+                  ITEMS
                 </p>
-                <p className="font-medium text-gray-700 line-clamp-2">
-                  {itemTitle}
-                </p>
-                <p className="text-xs text-sage-green mt-1 flex items-center gap-1">
-                  <ShoppingBag size={12} /> {shopName}
-                </p>
+                
+                <div className="space-y-4 max-h-[240px] overflow-y-auto pr-2 custom-scrollbar">
+                    {orderItems.length > 0 ? (
+                        orderItems.map((item, idx) => (
+                            <div key={idx} className="flex gap-3">
+                                <div className="w-12 h-14 rounded-lg bg-gray-50 overflow-hidden flex-shrink-0 border border-gray-100">
+                                    {item.image ? (
+                                        <img src={item.image} alt={item.title} className="w-full h-full object-cover"/>
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                            <ImageIcon size={16}/>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-bold text-gray-800 leading-tight line-clamp-2">
+                                        {item.title || item.name || "Custom Item"}
+                                    </p>
+                                    <div className="flex items-center gap-1 text-[10px] text-sage-green font-bold mt-1">
+                                        <Store size={10}/>
+                                        <span className="truncate">{item.shop?.name || "Florist"}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                        {item.qty || 1} x {(item.price || 0).toLocaleString("id-ID")}
+                                    </p>
+                                </div>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="text-xs text-gray-400 italic">Memuat item...</p>
+                    )}
+                </div>
               </div>
 
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Total Nilai</span>
-                  <span className="font-medium">
+              <div className="space-y-4 mb-8 pt-2">
+                <div className="flex justify-between text-gray-600 items-center">
+                  <span className="text-sm">Total Barang</span>
+                  <span className="font-bold text-gray-800 text-base">
                     {totalVal.toLocaleString("id-ID", {
                       style: "currency",
                       currency: "IDR",
                     })}
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">
-                    DP (40%){" "}
-                    <span className="text-[10px] text-green-600 bg-green-50 px-1 rounded">
-                      Lunas
-                    </span>
-                  </span>
-                  <span className="font-medium text-green-600">
-                    -
-                    {dpVal.toLocaleString("id-ID", {
+                
+                <div className="flex justify-between text-gray-600 items-center">
+                  <span className="text-sm">Biaya Layanan</span>
+                  <span className="font-bold text-gray-800 text-base">
+                    {serviceFee.toLocaleString("id-ID", {
                       style: "currency",
                       currency: "IDR",
                     })}
                   </span>
                 </div>
-                <div className="border-t border-dashed border-gray-200 pt-3 flex justify-between items-center">
-                  <span className="font-bold text-dark-green">
-                    Sisa Tagihan
-                  </span>
-                  <span className="font-bold text-xl text-dark-green">
-                    {remainVal.toLocaleString("id-ID", {
-                      style: "currency",
-                      currency: "IDR",
-                    })}
-                  </span>
-                </div>
-                <p className="text-[10px] text-gray-400 text-right">
-                  *Belum termasuk ongkir
-                </p>
+
+                {isPreOrder ? (
+                    <>
+                        <div className="flex justify-between text-gray-600 items-center">
+                          <span className="text-sm">
+                            DP (40%){" "}
+                            <span className="text-[10px] text-green-600 bg-green-50 px-2 py-0.5 rounded-full font-bold ml-1 align-middle">
+                              Lunas
+                            </span>
+                          </span>
+                          <span className="font-bold text-green-600 text-base">
+                            -
+                            {dpVal.toLocaleString("id-ID", {
+                              style: "currency",
+                              currency: "IDR",
+                            })}
+                          </span>
+                        </div>
+                        
+                        <div className="border-t-2 border-dashed border-gray-100 pt-5 flex justify-between items-center mt-2">
+                          <span className="font-bold text-dark-green text-lg">
+                            Sisa Tagihan
+                          </span>
+                          <span className="font-bold text-2xl text-dark-green">
+                            {remainVal.toLocaleString("id-ID", {
+                              style: "currency",
+                              currency: "IDR",
+                            })}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-400 text-right mt-1 italic">
+                          *Termasuk ongkir pelunasan
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <div className="flex justify-between text-gray-600 items-center">
+                          <span className="text-sm">Ongkos Kirim</span>
+                          <span className="font-bold text-gray-800 text-base">
+                            {(fin.totalShipping || 0).toLocaleString("id-ID", {
+                              style: "currency",
+                              currency: "IDR",
+                            })}
+                          </span>
+                        </div>
+                        
+                        <div className="border-t-2 border-gray-100 pt-5 flex justify-between items-center mt-2">
+                          <span className="font-bold text-dark-green text-lg">
+                            Total Bayar
+                          </span>
+                          <span className="font-bold text-2xl text-dark-green">
+                            {((fin.payNowTotal || 0)).toLocaleString("id-ID", {
+                              style: "currency",
+                              currency: "IDR",
+                            })}
+                          </span>
+                        </div>
+                        <div className="mt-4 bg-green-50 text-green-700 text-xs font-bold px-3 py-3 rounded-xl text-center border border-green-100 flex items-center justify-center gap-2">
+                            <CheckCircle2 size={16}/> Lunas • Siap Diproses
+                        </div>
+                    </>
+                )}
               </div>
 
-              {order.status === "payment_pending" ? (
-                <div className="animate-bounce-slow">
+              {/* BUTTON ACTION */}
+              {isPreOrder ? (
+                order.status === "payment_pending" ? (
+                  <div className="animate-bounce-slow">
+                    <button
+                      onClick={goToCheckout}
+                      className="w-full py-4 bg-dark-green text-white rounded-xl font-bold text-base hover:bg-sage-green transition shadow-xl shadow-green-900/10 flex items-center justify-center gap-2"
+                    >
+                      <ShoppingBag size={20} />
+                      Bayar Pelunasan & Kirim
+                    </button>
+                    <p className="text-xs text-center text-sage-green mt-3 font-medium">
+                      *Selesaikan pembayaran agar pesanan dikirim.
+                    </p>
+                  </div>
+                ) : (
                   <button
-                    onClick={goToCheckout}
-                    className="w-full py-4 bg-dark-green text-white rounded-xl font-bold text-sm hover:bg-sage-green transition shadow-lg shadow-green-900/20 flex items-center justify-center gap-2"
+                    disabled
+                    className="w-full py-4 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200"
                   >
-                    <ShoppingBag size={18} />
-                    Bayar Pelunasan & Kirim
+                    {order.status === "revision"
+                      ? "Menunggu Revisi Florist..."
+                      : order.status === "processing"
+                      ? "Pesanan Sedang Diproses"
+                      : "Menunggu Approval Final..."}
                   </button>
-                  <p className="text-xs text-center text-sage-green mt-2 font-medium">
-                    *Selesaikan pembayaran agar pesanan dikirim.
-                  </p>
-                </div>
+                )
               ) : (
                 <button
                   disabled
-                  className="w-full py-3 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200"
+                  className="w-full py-4 bg-gray-100 text-gray-500 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200"
                 >
-                  {order.status === "revision"
-                    ? "Menunggu Revisi Florist..."
-                    : order.status === "processing" ||
-                      order.status === "waiting_approval"
-                    ? "Menunggu Approval/Proses..."
-                    : "Menunggu Approval Final..."}
+                  {order.status === "processing"
+                    ? "Pesanan Sedang Diproses..."
+                    : "Pesanan Selesai"}
                 </button>
               )}
             </div>
