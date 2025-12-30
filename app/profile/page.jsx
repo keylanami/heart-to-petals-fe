@@ -108,20 +108,32 @@ export default function ProfilePage() {
 
   const badge = getRoleBadge();
 
-  // --- LOGIC WARNA STATUS BARU (LEBIH BEDA) ---
+  // --- LOGIC HIDE TAB ---
+  // Sembunyikan tab 'order' jika user adalah Tenant atau Superadmin
+  const allTabs = [
+    { id: "personal", label: "Personal Info", icon: User },
+    { id: "address", label: "Alamat Saya", icon: MapPin },
+    { id: "security", label: "Keamanan", icon: Lock },
+    { id: "order", label: "Pesanan Saya", icon: Package },
+  ];
+
+  const sidebarTabs = allTabs.filter(tab => {
+      if (tab.id === 'order') {
+          return user.role !== 'tenant' && user.role !== 'superadmin' ; // Hanya tampil untuk user biasa
+      }
+      return true;
+  });
+
+  // --- LOGIC WARNA STATUS ---
   const getStatusStyle = (status) => {
     switch (status) {
-      case "payment_pending":
-        return { color: "text-orange-600 bg-orange-50 border-orange-200", icon: Clock };
-      case "waiting_approval": // Menunggu Konfirmasi (Kuning Emas)
+      case "waiting_approval": 
         return { color: "text-yellow-700 bg-yellow-50 border-yellow-200", icon: AlertCircle };
-      case "processing": // Sedang Diproses (Biru Langit/Teal)
+      case "processing": 
         return { color: "text-blue-600 bg-blue-50 border-blue-200", icon: Box };
-      case "revision": // Revisi (Merah)
-        return { color: "text-rose-600 bg-rose-50 border-rose-200", icon: AlertCircle };
-      case "on_delivery": // Dikirim (Ungu/Indigo)
+      case "on_delivery": 
         return { color: "text-indigo-600 bg-indigo-50 border-indigo-200", icon: Truck };
-      case "completed": // Selesai (Hijau Sage)
+      case "completed": 
         return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", icon: CheckCircle2 };
       default:
         return { color: "text-gray-600 bg-gray-50 border-gray-200", icon: Box };
@@ -130,10 +142,8 @@ export default function ProfilePage() {
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case "payment_pending": return "Menunggu Pembayaran";
       case "waiting_approval": return "Menunggu Konfirmasi";
       case "processing": return "Sedang Diproses";
-      case "revision": return "Perlu Revisi";
       case "on_delivery": return "Sedang Dikirim";
       case "completed": return "Selesai";
       default: return status;
@@ -146,15 +156,12 @@ export default function ProfilePage() {
     
     return orders.filter(o => {
         if (orderFilter === "packed") {
-            // Group: Dikemas (Termasuk pending payment, approval, processing, revision)
             return ["payment_pending", "waiting_approval", "processing", "revision"].includes(o.status);
         }
         if (orderFilter === "shipped") {
-            // Group: Dikirim
             return ["on_delivery"].includes(o.status);
         }
         if (orderFilter === "completed") {
-            // Group: Selesai
             return ["completed"].includes(o.status);
         }
         return true;
@@ -216,12 +223,7 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* SIDEBAR NAV */}
           <div className="md:col-span-1 space-y-2">
-            {[
-              { id: "personal", label: "Personal Info", icon: User },
-              { id: "address", label: "Alamat Saya", icon: MapPin },
-              { id: "security", label: "Keamanan", icon: Lock },
-              { id: "order", label: "Pesanan Saya", icon: Package },
-            ].map((tab) => (
+            {sidebarTabs.map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -387,7 +389,7 @@ export default function ProfilePage() {
                 </div>
               )}
               
-              {/* --- TAB ORDER (UPDATED ARTSY UI) --- */}
+              {/* --- TAB ORDER (UPDATED ARTSY UI & PRICE FIX) --- */}
               {activeTab === "order" && (
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
@@ -402,9 +404,9 @@ export default function ProfilePage() {
                                 key={filter}
                                 onClick={() => setOrderFilter(filter)}
                                 className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                                    orderFilter === filter 
-                                    ? "bg-dark-green text-white shadow-md" 
-                                    : "text-gray-500 hover:text-dark-green"
+                                  orderFilter === filter 
+                                  ? "bg-dark-green text-white shadow-md" 
+                                  : "text-gray-500 hover:text-dark-green"
                                 }`}
                               >
                                 {filter === "all" ? "Semua" : 
@@ -496,12 +498,14 @@ export default function ProfilePage() {
                                 <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Total</p>
                                 <p className="font-bold text-dark-green text-sm font-sans">
                                   {(
-                                    order.financials?.payNowTotal ||
-                                    order.totalPrice ||
+                                    order.financials?.grandTotal || // Prioritas 1: Format baru
+                                    order.financials?.payNowTotal || // Fallback 1: Format lama
+                                    order.totalPrice || // Fallback 2: Basic
                                     0
                                   ).toLocaleString("id-ID", {
                                     style: "currency",
                                     currency: "IDR",
+                                    maximumSignificantDigits: 3,
                                   })}
                                 </p>
                               </div>
