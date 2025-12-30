@@ -20,9 +20,10 @@ import { useToast } from "@/app/context/ToastContext";
 import { useOrder } from "@/app/context/OrderContext";
 import { useInventory } from "@/app/context/InventoryContext";
 import { useAuth } from "@/app/context/AuthContext";
+import { allItems, SHOPS } from "@/app/utils/shop";
+import { FLOWER_LIBRARY } from "@/app/utils/flower";
 
 export default function FloristAdminPage() {
-  // --- 1. DECLARE ALL HOOKS ---
   const [activeTab, setActiveTab] = useState("overview");
   const { showToast } = useToast();
   const router = useRouter();
@@ -44,17 +45,14 @@ export default function FloristAdminPage() {
     setMounted(true);
   }, []);
 
-  // --- 2. REDIRECT LOGIC ---
   useEffect(() => {
     if (mounted && user && user.role !== "tenant") {
       router.push("/");
     }
   }, [user, router, mounted]);
 
-  // --- 3. DATA PROCESSING ---
   const SHOP_ID = user?.shop?.id;
 
-  // Filter Orders: Hanya tampilkan order yang mengandung item dari toko ini
   const myOrders = SHOP_ID
     ? orders.filter(
         (order) =>
@@ -63,12 +61,35 @@ export default function FloristAdminPage() {
       )
     : [];
 
-  // Filter Inventory: Hanya tampilkan item milik toko ini
-  const myInventory = SHOP_ID
-    ? inventory.filter((item) => String(item.shopId) === String(SHOP_ID))
-    : [];
+  const getMyInventory = () => {
+    if (!SHOP_ID) return [];
+    const dynamicItems = inventory.filter((item) => String(item.shopId) === String(SHOP_ID));
+    const staticCatalog = allItems
+      .filter((item) => String(item.shop?.id) === String(SHOP_ID))
+      .map((item) => ({
+        ...item,
+        shopId: item.shop.id,
+        stock: 5, 
+      }));
 
-  // --- 4. HANDLERS ---
+    const staticMaterials = FLOWER_LIBRARY
+      .filter((item) => String(item.shop_id) === String(SHOP_ID))
+      .map((item) => ({
+        ...item,
+        id: item.id,
+        title: item.name, 
+        shopId: item.shop_id,
+        type: 'flower', 
+        stock: 50, 
+      }));
+
+    return [...dynamicItems, ...staticCatalog, ...staticMaterials];
+  };
+
+  const myInventory = getMyInventory();
+
+
+
   const handleAddProduct = (e) => {
     e.preventDefault();
     if (!SHOP_ID) return;
@@ -89,25 +110,21 @@ export default function FloristAdminPage() {
     showToast("Item berhasil ditambahkan!", "success");
   };
 
-  // Action: Terima Pesanan Custom (Waiting -> Processing)
   const handleApproveOrder = (orderId) => {
     updateOrderStatus(orderId, "processing"); 
     showToast("Pesanan diterima & mulai diproses.", "success");
   };
 
-  // Action: Kirim Pesanan (Processing -> On Delivery)
   const handleSendOrder = (orderId) => {
     updateOrderStatus(orderId, "on_delivery"); 
     showToast("Status diupdate: Sedang Dikirim ke kurir.", "success");
   };
 
-  // Action: Tolak Pesanan
   const handleRejectOrder = (orderId) => {
     updateOrderStatus(orderId, "cancelled");
     showToast("Pesanan ditolak.", "error");
   };
 
-  // --- 5. RENDER GUARD ---
   if (!mounted) return null;
 
   if (!user || !user.shop) {
@@ -118,7 +135,6 @@ export default function FloristAdminPage() {
     );
   }
 
-  // --- 6. VIEW COMPONENTS ---
 
   const OverviewView = () => {
     const totalRevenue = myOrders
@@ -242,7 +258,6 @@ export default function FloristAdminPage() {
   };
 
   const RequestsView = () => {
-    // Tampilkan order yang butuh aksi: Waiting Approval (Custom) ATAU Processing (Siap Kirim)
     const pendingOrders = myOrders.filter(
       (o) => o.status === "waiting_approval" || o.status === "processing"
     );
@@ -297,10 +312,6 @@ export default function FloristAdminPage() {
                 </div>
 
                 <div className="flex flex-row md:flex-col justify-center gap-3 min-w-[140px]">
-                  
-                  {/* LOGIC TOMBOL BERDASARKAN STATUS */}
-                  
-                  {/* Jika Custom & Belum Approved -> Tampilkan Terima */}
                   {order.status === "waiting_approval" && (
                       <button
                         onClick={() => handleApproveOrder(order.id)}
@@ -309,8 +320,6 @@ export default function FloristAdminPage() {
                         <Check size={16} /> Terima
                       </button>
                   )}
-
-                  {/* Jika Processing (Sudah Lunas/Approved) -> Tampilkan Kirim */}
                   {order.status === "processing" && (
                       <button
                         onClick={() => handleSendOrder(order.id)}
@@ -377,7 +386,7 @@ export default function FloristAdminPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs capitalize">
-                      {item.type || "Product"}
+                      {item.type || "Bouquet"}
                     </span>
                   </td>
                   <td className="px-6 py-4">

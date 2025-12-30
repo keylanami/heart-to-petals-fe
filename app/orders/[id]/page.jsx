@@ -172,7 +172,6 @@ export default function OrderProgressPage() {
                 </div>
               </div>
 
-              {/* ACTION BUTTON (DYNAMIC) */}
               {order.status === 'on_delivery' ? (
                   <button 
                     onClick={handleCompleteOrder}

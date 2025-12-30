@@ -79,7 +79,7 @@ export const allItems = [
   {
     id: 1,
     shop: SHOPS[0],
-    type: "product",
+    type: "bouquet",
     title: "Head Over Heels",
     price: 850000,
     image: "/assets/bouquet/peace/crimson_promise.png",
@@ -101,7 +101,7 @@ export const allItems = [
   {
     id: 2,
     shop: SHOPS[0],
-    type: "product",
+    type: "bouquet",
     title: "Sunset Harmony",
     price: 450000,
     image: "/assets/bouquet/peace/sunset_harmony.png",
@@ -122,7 +122,7 @@ export const allItems = [
   {
     id: 3,
     shop: SHOPS[0],
-    type: "product",
+    type: "bouquet",
     title: "Bright Future",
     price: 450000,
     image: "/assets/bouquet/gratitude/sol_de_mi_vida.png",
@@ -139,7 +139,7 @@ export const allItems = [
   {
     id: 4,
     shop: SHOPS[5],
-    type: "product",
+    type: "bouquet",
     title: "Sweet Gratitude",
     price: 350000,
     image: "/assets/bouquet/peace/moonlight_serenity.png",
@@ -156,7 +156,7 @@ export const allItems = [
   {
     id: 5,
     shop: SHOPS[1],
-    type: "product",
+    type: "bouquet",
     title: "Silent Tears",
     price: 700000,
     image: "/assets/bouquet/regret/sweet_apology.png",
@@ -173,7 +173,7 @@ export const allItems = [
   {
     id: 6,
     shop: SHOPS[2],
-    type: "product",
+    type: "bouquet",
     title: "Midnight Regret",
     price: 480000,
     image: "/assets/bouquet/regret/first_date_bloom.png",
@@ -189,7 +189,7 @@ export const allItems = [
   {
     id: 7,
     shop: SHOPS[3],
-    type: "product",
+    type: "bouquet",
     title: "Garden Symphony",
     price: 820000,
     image: "/assets/bouquet/romance/garden_syphony.png",
@@ -205,7 +205,7 @@ export const allItems = [
   {
     id: 8,
     shop: SHOPS[3],
-    type: "product",
+    type: "bouquet",
     title: "Midnight Velvet",
     price: 900000,
     image: "/assets/bouquet/romance/midnight_velvet.png",
@@ -221,7 +221,7 @@ export const allItems = [
   {
     id: 9,
     shop: SHOPS[1],
-    type: "product",
+    type: "bouquet",
     title: "Peony Dream",
     price: 780000,
     image: "/assets/bouquet/romance/peony_dream.png",
@@ -237,7 +237,7 @@ export const allItems = [
   {
     id: 10,
     shop: SHOPS[5],
-    type: "product",
+    type: "bouquet",
     title: "Sweet Harmony",
     price: 760000,
     image: "/assets/bouquet/romance/sweet_harmony.png",
@@ -253,7 +253,7 @@ export const allItems = [
   {
     id: 11,
     shop: SHOPS[4],
-    type: "product",
+    type: "bouquet",
     title: "Autumn Blooms",
     price: 620000,
     image: "/assets/bouquet/gratitude/autumn_blooms.png",
@@ -269,7 +269,7 @@ export const allItems = [
   {
     id: 12,
     shop: SHOPS[4],
-    type: "product",
+    type: "bouquet",
     title: "Sol De Mi Vida",
     price: 650000,
     image: "/assets/bouquet/gratitude/sol_de_mi_vida.png",
@@ -285,7 +285,7 @@ export const allItems = [
   {
     id: 13,
     shop: SHOPS[1],
-    type: "product",
+    type: "bouquet",
     title: "Sunshine Bliss",
     price: 600000,
     image: "/assets/bouquet/gratitude/sunshine_bliss.png",

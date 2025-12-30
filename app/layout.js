@@ -25,13 +25,11 @@ export default function RootLayout({ children }) {
         <ToastProvider>
           <AuthProvider>
             <ShopProvider>
-            <CartProvider>
-              <InventoryProvider>
-                <OrderProvider>
-                  {children}
-                  </OrderProvider>
-              </InventoryProvider>
-            </CartProvider>
+              <CartProvider>
+                <InventoryProvider>
+                  <OrderProvider>{children}</OrderProvider>
+                </InventoryProvider>
+              </CartProvider>
             </ShopProvider>
           </AuthProvider>
         </ToastProvider>

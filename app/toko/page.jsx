@@ -61,6 +61,7 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
             className="fixed z-[70] bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
           >
             <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-cream-bg">
@@ -371,7 +372,7 @@ export default function TenantListPage() {
         return;
     }
 
-    router.push(`/custom/${currentShop.id}`);
+    setIsModalOpen(true);
   };
 
   const getBentoClass = (index) => {
