@@ -19,7 +19,6 @@ export function AuthProvider({ children }) {
     typeof window !== "undefined" && localStorage.removeItem(key);
 
   useEffect(() => {
-    // Cek User Login
     try {
       const loggedInUser = getStorage("currentUser");
       if (loggedInUser) setUser(JSON.parse(loggedInUser));
@@ -27,7 +26,6 @@ export function AuthProvider({ children }) {
       removeStorage("currentUser");
     }
 
-    // Seeding Dummy Data (Hanya jika belum ada)
     const rawUsers = getStorage("users");
     if (!rawUsers) {
       // ... (Kode seeding dummy kamu yang lama bisa ditaruh sini jika perlu)
@@ -36,7 +34,9 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // --- LOGIC REGISTER YANG BENAR ---
+
+
+
   const register = (name, email, password, role = "user", shopData = null) => {
     try {
       const rawData = getStorage("users");
@@ -153,8 +153,17 @@ export function AuthProvider({ children }) {
   const logout = () => {
     removeStorage("currentUser");
     setUser(null);
+
+    if (typeof window !== "undefined") {
+        localStorage.removeItem("myCart"); 
+        window.dispatchEvent(new Event("reset-cart"));
+    }
+
     router.push("/get-started");
   };
+
+
+
   const updateUser = (newUserData) => {
     if (!user) return;
     try {

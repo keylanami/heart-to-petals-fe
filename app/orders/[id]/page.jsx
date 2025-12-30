@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { CheckCircle2, Clock, ChevronRight, Image as ImageIcon, ShoppingBag, Store } from "lucide-react";
+import { CheckCircle2, Clock, ChevronRight, Image as ImageIcon, ShoppingBag, Store, Truck, Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { useOrder } from "@/app/context/OrderContext";
+import { useToast } from "@/app/context/ToastContext";
 
 const LOADING_STATE = {
   id: "Loading...",
@@ -15,25 +17,64 @@ const LOADING_STATE = {
 
 export default function OrderProgressPage() {
   const params = useParams();
+  const router = useRouter();
+  const { showToast } = useToast();
+  const { updateOrderStatus } = useOrder(); // Need this to update status
+  
   const [order, setOrder] = useState(LOADING_STATE);
 
+  // --- 1. LOAD DATA ---
   useEffect(() => {
     if (typeof window !== "undefined" && params?.id) {
-      // 1. Try cache
-      const activeData = localStorage.getItem("active_order");
-      if (activeData) {
-          const parsed = JSON.parse(activeData);
-          if (String(parsed.id) === String(params.id)) {
-              setOrder(parsed);
-              return;
-          }
-      }
-      // 2. Try DB
       const allOrders = JSON.parse(localStorage.getItem("orders") || "[]");
       const targetOrder = allOrders.find(o => String(o.id) === String(params.id));
-      if (targetOrder) setOrder(targetOrder);
+      
+      if (targetOrder) {
+          // --- DYNAMIC TIMELINE INJECTION ---
+          // Inject "On Delivery" event if status is suitable
+          let displayedTimeline = [...targetOrder.timeline];
+          
+          if (targetOrder.status === 'on_delivery' || targetOrder.status === 'completed') {
+              // Check if already exists to avoid duplicates
+              if (!displayedTimeline.find(t => t.title === "Pesanan Dikirim")) {
+                  displayedTimeline.unshift({
+                      title: "Pesanan Dikirim",
+                      date: "Baru saja",
+                      desc: "Kurir sedang menuju ke lokasi tujuan. Estimasi tiba: Hari ini.",
+                      status: targetOrder.status === 'completed' ? 'completed' : 'current'
+                  });
+              }
+          }
+
+          if (targetOrder.status === 'completed') {
+               if (!displayedTimeline.find(t => t.title === "Pesanan Selesai")) {
+                  displayedTimeline.unshift({
+                      title: "Pesanan Selesai",
+                      date: "Baru saja",
+                      desc: "Pesanan telah diterima dengan baik.",
+                      status: 'completed'
+                  });
+              }
+          }
+
+          setOrder({ ...targetOrder, timeline: displayedTimeline });
+      }
     }
-  }, [params?.id]);
+  }, [params?.id]); // Re-run if ID changes
+
+  // --- 2. ACTION HANDLERS ---
+  const handleCompleteOrder = () => {
+      if (confirm("Apakah pesanan sudah diterima dengan baik?")) {
+          // Update Context/Local Storage
+          updateOrderStatus(order.id, "completed");
+          
+          // Update Local State for immediate UI feedback
+          setOrder(prev => ({ ...prev, status: "completed" }));
+          
+          showToast("Terima kasih! Pesanan selesai.", "success");
+          setTimeout(() => window.location.reload(), 1000); // Reload to refresh timeline logic
+      }
+  };
 
   const { items: orderItems, financials } = order;
   const toRupiah = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(num || 0);
@@ -131,11 +172,23 @@ export default function OrderProgressPage() {
                 </div>
               </div>
 
-              <button disabled className="w-full py-4 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200">
-                {order.status === 'processing' ? 'Pesanan Sedang Diproses...' 
-                 : order.status === 'on_delivery' ? 'Sedang Dikirim Kurir' 
-                 : 'Pesanan Selesai'}
-              </button>
+              {/* ACTION BUTTON (DYNAMIC) */}
+              {order.status === 'on_delivery' ? (
+                  <button 
+                    onClick={handleCompleteOrder}
+                    className="w-full py-4 bg-dark-green text-white rounded-xl font-bold text-sm hover:bg-sage-green transition shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <Check size={18} /> Pesanan Diterima & Selesai
+                  </button>
+              ) : order.status === 'completed' ? (
+                  <button disabled className="w-full py-4 bg-green-100 text-green-700 rounded-xl font-bold text-sm cursor-not-allowed border border-green-200 flex items-center justify-center gap-2">
+                    <CheckCircle2 size={18} /> Transaksi Selesai
+                  </button>
+              ) : (
+                  <button disabled className="w-full py-4 bg-gray-100 text-gray-400 rounded-xl font-bold text-sm cursor-not-allowed border border-gray-200">
+                    {order.status === 'processing' ? 'Pesanan Sedang Diproses...' : 'Menunggu Konfirmasi...'}
+                  </button>
+              )}
             </div>
           </div>
         </div>

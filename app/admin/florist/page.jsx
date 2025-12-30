@@ -13,6 +13,7 @@ import {
   DollarSign,
   User,
   ArrowLeft,
+  Truck
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/app/context/ToastContext";
@@ -88,11 +89,19 @@ export default function FloristAdminPage() {
     showToast("Item berhasil ditambahkan!", "success");
   };
 
+  // Action: Terima Pesanan Custom (Waiting -> Processing)
   const handleApproveOrder = (orderId) => {
-    updateOrderStatus(orderId, "approved"); 
-    showToast("Pesanan disetujui.", "success");
+    updateOrderStatus(orderId, "processing"); 
+    showToast("Pesanan diterima & mulai diproses.", "success");
   };
 
+  // Action: Kirim Pesanan (Processing -> On Delivery)
+  const handleSendOrder = (orderId) => {
+    updateOrderStatus(orderId, "on_delivery"); 
+    showToast("Status diupdate: Sedang Dikirim ke kurir.", "success");
+  };
+
+  // Action: Tolak Pesanan
   const handleRejectOrder = (orderId) => {
     updateOrderStatus(orderId, "cancelled");
     showToast("Pesanan ditolak.", "error");
@@ -104,7 +113,7 @@ export default function FloristAdminPage() {
   if (!user || !user.shop) {
     return (
       <div className="min-h-screen bg-cream-bg flex items-center justify-center text-gray-400">
-        hmmm kayaknya km harus login dulu! atau daftar sebagai tenants :D
+        Memuat Data Toko...
       </div>
     );
   }
@@ -113,7 +122,7 @@ export default function FloristAdminPage() {
 
   const OverviewView = () => {
     const totalRevenue = myOrders
-      .filter((o) => o.status === "completed") 
+      .filter((o) => o.status === "completed" || o.status === "on_delivery") 
       .reduce((acc, order) => {
         const shopSubtotal = order.items
           .filter((i) => String(i.shop?.id) === String(SHOP_ID))
@@ -207,12 +216,14 @@ export default function FloristAdminPage() {
                                 ${
                                   order.status === "completed"
                                     ? "bg-green-100 text-green-600"
-                                    : order.status === "waiting_approval"
-                                    ? "bg-yellow-100 text-yellow-600"
+                                    : order.status === "on_delivery"
+                                    ? "bg-purple-100 text-purple-600"
+                                    : order.status === "processing"
+                                    ? "bg-blue-100 text-blue-600"
                                     : "bg-gray-100 text-gray-600"
                                 }`}
                           >
-                            {order.status}
+                            {order.status.replace("_", " ")}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-gray-500">
@@ -231,6 +242,7 @@ export default function FloristAdminPage() {
   };
 
   const RequestsView = () => {
+    // Tampilkan order yang butuh aksi: Waiting Approval (Custom) ATAU Processing (Siap Kirim)
     const pendingOrders = myOrders.filter(
       (o) => o.status === "waiting_approval" || o.status === "processing"
     );
@@ -241,7 +253,7 @@ export default function FloristAdminPage() {
         {pendingOrders.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-200">
             <p className="text-gray-400">
-              Tidak ada pesanan baru yang perlu diproses.
+              Kerjaan beres! Tidak ada pesanan aktif.
             </p>
           </div>
         ) : (
@@ -259,6 +271,13 @@ export default function FloristAdminPage() {
                       ORD #{order.id}
                     </span>
                     <span className="text-xs text-gray-400">{order.date}</span>
+                    
+                    {/* Status Badge */}
+                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                        order.status === 'processing' ? 'bg-blue-100 text-blue-600' : 'bg-yellow-100 text-yellow-600'
+                    }`}>
+                        {order.status === 'processing' ? 'Siap Diproses' : 'Menunggu Approval'}
+                    </span>
                   </div>
                   <h3 className="text-lg font-bold text-dark-green">
                     {order.customer}
@@ -278,12 +297,29 @@ export default function FloristAdminPage() {
                 </div>
 
                 <div className="flex flex-row md:flex-col justify-center gap-3 min-w-[140px]">
-                  <button
-                    onClick={() => handleApproveOrder(order.id)}
-                    className="flex-1 bg-dark-green text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-sage-green transition flex items-center justify-center gap-2"
-                  >
-                    <Check size={16} /> Proses
-                  </button>
+                  
+                  {/* LOGIC TOMBOL BERDASARKAN STATUS */}
+                  
+                  {/* Jika Custom & Belum Approved -> Tampilkan Terima */}
+                  {order.status === "waiting_approval" && (
+                      <button
+                        onClick={() => handleApproveOrder(order.id)}
+                        className="flex-1 bg-dark-green text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-sage-green transition flex items-center justify-center gap-2"
+                      >
+                        <Check size={16} /> Terima
+                      </button>
+                  )}
+
+                  {/* Jika Processing (Sudah Lunas/Approved) -> Tampilkan Kirim */}
+                  {order.status === "processing" && (
+                      <button
+                        onClick={() => handleSendOrder(order.id)}
+                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-500 transition flex items-center justify-center gap-2"
+                      >
+                        <Truck size={16} /> Kirim
+                      </button>
+                  )}
+
                   <button
                     onClick={() => handleRejectOrder(order.id)}
                     className="flex-1 border border-red-200 text-red-500 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-50 transition flex items-center justify-center gap-2"
@@ -475,7 +511,7 @@ export default function FloristAdminPage() {
         </motion.div>
       </main>
 
-      {/* MODAL ADD PRODUCT (Sesuai UI kamu) */}
+      {/* MODAL ADD PRODUCT */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 bg-[#1A2F24]/40 z-50 flex items-center justify-center backdrop-blur-sm p-4">
@@ -496,6 +532,7 @@ export default function FloristAdminPage() {
                 </p>
 
                 <form onSubmit={handleAddProduct} className="space-y-4">
+                  {/* ... (Form Fields sama persis seperti sebelumnya) ... */}
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
                       Nama Item
@@ -538,10 +575,7 @@ export default function FloristAdminPage() {
                         className="w-full bg-white border border-gray-200 p-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm"
                         value={newProduct.price}
                         onChange={(e) =>
-                          setNewProduct({
-                            ...newProduct,
-                            price: e.target.value,
-                          })
+                          setNewProduct({ ...newProduct, price: e.target.value })
                         }
                       />
                     </div>
@@ -556,10 +590,7 @@ export default function FloristAdminPage() {
                         className="w-full bg-white border border-gray-200 p-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm"
                         value={newProduct.stock}
                         onChange={(e) =>
-                          setNewProduct({
-                            ...newProduct,
-                            stock: e.target.value,
-                          })
+                          setNewProduct({ ...newProduct, stock: e.target.value })
                         }
                       />
                     </div>
