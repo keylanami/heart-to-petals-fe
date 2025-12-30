@@ -24,10 +24,13 @@ body {
   background: rgba(143, 188, 143, 0.1);
   border-radius: 10px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #1A2F24;
   border-radius: 10px;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #2F4F4F;
 }
+
