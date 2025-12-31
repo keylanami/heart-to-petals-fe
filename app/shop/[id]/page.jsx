@@ -11,6 +11,7 @@ import {
   Star,
   ArrowLeft,
   Store,
+  Slash
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -34,10 +35,16 @@ const BentoCard = ({ product, index, className }) => {
   const { showToast } = useToast();
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const router = useRouter();
+
+  const stock = product.stock || 0;
+  const isOutOfStock = stock <= 0;
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isOutOfStock) return; 
 
     if (!user) {
       showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
@@ -61,17 +68,22 @@ const BentoCard = ({ product, index, className }) => {
       initial="hidden"
       animate="show"
       exit="hidden"
-      className={`group relative overflow-hidden cursor-pointer h-full shadow-sm hover:shadow-2xl transition-shadow duration-500 ${className}`}
+      className={`group relative overflow-hidden h-full shadow-sm transition-all duration-500 
+        ${className} 
+        ${isOutOfStock ? "grayscale opacity-60 cursor-not-allowed" : "hover:shadow-2xl cursor-pointer"}
+      `}
     >
-      <Link href={`/product/${product.id}`} className="absolute inset-0 z-10" />
+      {!isOutOfStock && <Link href={`/product/${product.id}`} className="absolute inset-0 z-10" />}
 
       <div className="absolute inset-0 overflow-hidden">
         <img
           src={product.image}
           alt={product.title}
-          className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+          className={`w-full h-full object-cover transition-transform duration-700 ease-in-out 
+            ${isOutOfStock ? "" : "group-hover:scale-110"}`}
         />
       </div>
+      
       <div
         className={`absolute inset-0 bg-gradient-to-t ${
           isDark
@@ -79,10 +91,17 @@ const BentoCard = ({ product, index, className }) => {
             : "from-[#8C8681] via-[#8C8681]/20"
         } to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500`}
       ></div>
+
       <div className="absolute top-5 left-5 z-20 pointer-events-none">
-        <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
-          {product.tag}
-        </span>
+        {isOutOfStock ? (
+            <span className="bg-gray-800 text-white border border-gray-600 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1">
+                <Slash size={10} /> Stok Habis
+            </span>
+        ) : (
+            <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
+                {product.tag}
+            </span>
+        )}
       </div>
 
       <div
@@ -90,7 +109,7 @@ const BentoCard = ({ product, index, className }) => {
           isDark ? "text-cream-bg" : "text-white"
         }`}
       >
-        <div className="transform transition-transform duration-500 group-hover:-translate-y-2">
+        <div className={`transform transition-transform duration-500 ${!isOutOfStock && "group-hover:-translate-y-2"}`}>
           <h3 className="text-2xl md:text-3xl font-serif font-bold leading-tight mb-1 drop-shadow-lg">
             {product.title}
           </h3>
@@ -102,35 +121,38 @@ const BentoCard = ({ product, index, className }) => {
             }).format(product.price)}
           </p>
         </div>
-        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
-          <div className="overflow-hidden">
-            <p className="text-sm opacity-90 line-clamp-2 mb-5 leading-relaxed font-light">
-              {product.desc}
-            </p>
-            <div className="flex gap-3 pb-1 pointer-events-auto">
-              <button
-                onClick={handleAddToCart}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md border transition-all active:scale-95 ${
-                  isDark
-                    ? "bg-cream-bg/90 text-dark-green border-cream-bg hover:bg-white"
-                    : "bg-dark-green/80 text-white border-dark-green/50 hover:bg-dark-green"
-                }`}
-              >
-                <ShoppingBag size={14} /> Add
-              </button>
-              <button
-                onClick={handleAddToCart}
-                className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
-                  isDark
-                    ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
-                    : "bg-white/20 border border-white/50 text-white hover:bg-white hover:text-dark-green"
-                }`}
-              >
-                Buy Now
-              </button>
+
+        {!isOutOfStock && (
+            <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
+            <div className="overflow-hidden">
+                <p className="text-sm opacity-90 line-clamp-2 mb-5 leading-relaxed font-light">
+                {product.desc}
+                </p>
+                <div className="flex gap-3 pb-1 pointer-events-auto">
+                <button
+                    onClick={handleAddToCart}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md border transition-all active:scale-95 ${
+                    isDark
+                        ? "bg-cream-bg/90 text-dark-green border-cream-bg hover:bg-white"
+                        : "bg-dark-green/80 text-white border-dark-green/50 hover:bg-dark-green"
+                    }`}
+                >
+                    <ShoppingBag size={14} /> Add
+                </button>
+                <button
+                    onClick={handleAddToCart}
+                    className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
+                    isDark
+                        ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
+                        : "bg-white/20 border border-white/50 text-white hover:bg-white hover:text-dark-green"
+                    }`}
+                >
+                    Buy Now
+                </button>
+                </div>
             </div>
-          </div>
-        </div>
+            </div>
+        )}
       </div>
     </motion.div>
   );
@@ -156,7 +178,6 @@ const PromoCard = ({ className, shopId }) => {
     }
 
     router.push(shopId ? `/custom/${shopId}` : "/custom");
-    
   };
 
   return (
@@ -226,7 +247,6 @@ export default function ShopEtalasePage() {
     router.push(`/custom/${currentShop.id}`);
   };
 
-
   const shopProducts = allItems.filter((item) => {
     if (!currentShop) return false;
     if (item.type === "promo") {
@@ -241,6 +261,28 @@ export default function ShopEtalasePage() {
       : shopProducts.filter(
           (item) => item.type === "promo" || item.category === activeMood
         );
+
+  // --- LOGIKA SORTING YANG BENAR ---
+  const sortedItems = [...filteredItems].sort((a, b) => {
+      // Logic: 
+      // - Promo dianggap "Available" (Stock > 0)
+      // - Barang dengan Stock > 0 di atas
+      // - Barang Stock <= 0 (Habis) di bawah
+      
+      // Definisikan 'Availability'
+      const isA_Available = a.type === 'promo' || (a.stock || 0) > 0;
+      const isB_Available = b.type === 'promo' || (b.stock || 0) > 0;
+
+      // Jika A Available & B Tidak -> A di atas (-1)
+      if (isA_Available && !isB_Available) return -1;
+      
+      // Jika A Tidak & B Available -> B di atas (1)
+      if (!isA_Available && isB_Available) return 1;
+
+      // Jika sama-sama Available atau sama-sama Habis -> Pertahankan urutan asli (0)
+      // (Promo akan tetap di posisi aslinya di array, biasanya terselip di tengah)
+      return 0;
+  });
 
   const getBentoClass = (index) => {
     if (index % 6 === 0) return "md:col-span-2 md:row-span-2 min-h-[640px]";
@@ -354,7 +396,7 @@ export default function ShopEtalasePage() {
           className="grid grid-cols-1 md:grid-cols-4 gap-6 grid-flow-dense"
         >
           <AnimatePresence mode="popLayout">
-            {filteredItems.map((item, index) => {
+            {sortedItems.map((item, index) => {
               if (item.type === "promo") {
                 return (
                   <PromoCard
@@ -376,7 +418,7 @@ export default function ShopEtalasePage() {
           </AnimatePresence>
         </motion.div>
 
-        {filteredItems.filter((i) => i.type !== "promo").length === 0 && (
+        {sortedItems.filter((i) => i.type !== "promo").length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

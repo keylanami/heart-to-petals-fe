@@ -427,7 +427,6 @@ export default function FloristAdminPage() {
 
   return (
     <div className="bg-cream-bg min-h-screen font-sans flex">
-      {/* SIDEBAR FIXED */}
       <aside className="w-64 bg-white border-r border-gray-200 fixed h-full z-10 hidden md:flex flex-col">
         <div className="p-6 border-b border-gray-100">
           <h1 className="font-serif font-bold text-xl text-dark-green">
@@ -502,7 +501,6 @@ export default function FloristAdminPage() {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main className="flex-1 md:ml-64 p-8">
         <div className="mb-8">
           <h1 className="text-2xl font-bold capitalize text-dark-green">
@@ -520,7 +518,6 @@ export default function FloristAdminPage() {
         </motion.div>
       </main>
 
-      {/* MODAL ADD PRODUCT */}
       <AnimatePresence>
         {isAddModalOpen && (
           <div className="fixed inset-0 bg-[#1A2F24]/40 z-50 flex items-center justify-center backdrop-blur-sm p-4">
@@ -541,7 +538,6 @@ export default function FloristAdminPage() {
                 </p>
 
                 <form onSubmit={handleAddProduct} className="space-y-4">
-                  {/* ... (Form Fields sama persis seperti sebelumnya) ... */}
                   <div className="space-y-1">
                     <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
                       Nama Item
