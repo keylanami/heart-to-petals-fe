@@ -1,12 +1,24 @@
 "use client";
 import { useCart } from "@/app/context/CartContext";
-import { useAuth } from "@/app/context/AuthContext"; 
-import { useOrder } from "@/app/context/OrderContext"; 
+import { useAuth } from "@/app/context/AuthContext";
+import { useOrder } from "@/app/context/OrderContext";
 import { useToast } from "@/app/context/ToastContext";
-import { ArrowLeft, MapPin, Store, Trash2, ShieldCheck, CreditCard, Truck, AlertTriangle, LogIn, LogOut, Info } from "lucide-react";
+import {
+  ArrowLeft,
+  MapPin,
+  Store,
+  ShieldCheck,
+  CreditCard,
+  Truck,
+  X,
+  Plus,
+  Check,
+  Map as MapIcon,
+  AlertTriangle,
+  LogOut
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
-import Link from "next/link"; 
 import { motion, AnimatePresence } from "framer-motion";
 
 const shippingOptions = [
@@ -15,40 +27,90 @@ const shippingOptions = [
   { name: "Reguler", cost: 9000, eta: "2-3 Hari" },
 ];
 
+// --- INITIAL DATA ---
+const INITIAL_ADDRESSES = [
+  {
+    id: 101,
+    name: "Keyla Na",
+    phone: "(+62) 823 1501 9268",
+    street:
+      "Pondok Pelangi, Jalan Kampung Melati No.17A, RT.4/RW.4, Sijarak, Kesambi (rmh oren plg ujung)",
+    city: "KESAMBI, KOTA CIREBON, JAWA BARAT, ID, 45134",
+    label: "Rumah",
+    isPrimary: true,
+  },
+];
+
 function CheckoutContent() {
-  // Destructure removeItems here
-  const { cart, removeItems } = useCart(); 
+  const { cart, removeItems } = useCart();
   const { user } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isClient, setIsClient] = useState(false);
   const [shippingSelection, setShippingSelection] = useState({});
   const { showToast } = useToast();
-  const { addOrder } = useOrder(); 
+  const { addOrder } = useOrder();
 
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedCheckoutIds, setSelectedCheckoutIds] = useState([]);
 
+  // --- ADDRESS STATE ---
+  const [availableAddresses, setAvailableAddresses] =
+    useState(INITIAL_ADDRESSES);
+  const [selectedAddressId, setSelectedAddressId] = useState(101);
+
+  // Modal Visibility
+  const [showAddressList, setShowAddressList] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+
+  // State untuk menyimpan ID alamat yang sedang diedit (null jika mode tambah)
+  const [editingId, setEditingId] = useState(null);
+
+  // Form State
+  const [addressForm, setAddressForm] = useState({
+    name: "",
+    phone: "",
+    city: "",
+    street: "",
+    extra: "",
+    label: "Rumah",
+  });
+
+  // --- LOGIC ALAMAT AKTIF ---
+  const activeAddress =
+    availableAddresses.find((a) => a.id === selectedAddressId) ||
+    availableAddresses[0];
+
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== "undefined") {
-        const ids = localStorage.getItem("checkoutIds");
-        if (ids) setSelectedCheckoutIds(JSON.parse(ids));
+      // Load saved addresses
+      const saved = localStorage.getItem("saved_addresses");
+      if (saved) {
+        setAvailableAddresses(JSON.parse(saved));
+      } else {
+        // Jika tidak ada di localstorage, pakai initial (untuk demo)
+        setAvailableAddresses(INITIAL_ADDRESSES);
+      }
+
+      // Load checkout items
+      const ids = localStorage.getItem("checkoutIds");
+      if (ids) setSelectedCheckoutIds(JSON.parse(ids));
     }
   }, []);
 
+  // --- SHIPPING & CART LOGIC (Tetap) ---
   const isDirectBuy = searchParams.get("direct") === "true";
   const directId = searchParams.get("id");
 
-  const displayItems = isDirectBuy && directId 
-    ? cart.filter(item => String(item.id) === String(directId))
-    : cart.filter(item => selectedCheckoutIds.includes(item.id));
+  const displayItems =
+    isDirectBuy && directId
+      ? cart.filter((item) => String(item.id) === String(directId))
+      : cart.filter((item) => selectedCheckoutIds.includes(item.id));
 
   const groupedCart = displayItems.reduce((acc, item) => {
     const shopId = item.shop?.id || "unknown";
-    if (!acc[shopId]) {
-      acc[shopId] = { shop: item.shop, items: [] };
-    }
+    if (!acc[shopId]) acc[shopId] = { shop: item.shop, items: [] };
     acc[shopId].items.push(item);
     return acc;
   }, {});
@@ -62,7 +124,7 @@ function CheckoutContent() {
         let hasChange = false;
         shopKeys.forEach((shopId) => {
           if (!next[shopId]) {
-            next[shopId] = shippingOptions[1]; 
+            next[shopId] = shippingOptions[1];
             hasChange = true;
           }
         });
@@ -71,164 +133,587 @@ function CheckoutContent() {
     }
   }, [shopKeys.length]);
 
-  const handleChangeShipping = (shopId, option) => {
+  const handleChangeShipping = (shopId, option) =>
     setShippingSelection((prev) => ({ ...prev, [shopId]: option }));
-  };
 
   const calculateTotal = () => {
-    const itemsTotal = displayItems.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
+    const itemsTotal = displayItems.reduce(
+      (sum, item) => sum + item.price * (item.qty || 1),
+      0
+    );
     let shippingTotal = 0;
-    shopKeys.forEach(shopId => {
-        const selected = shippingSelection[shopId];
-        if (selected) shippingTotal += selected.cost;
+    shopKeys.forEach((shopId) => {
+      const selected = shippingSelection[shopId];
+      if (selected) shippingTotal += selected.cost;
     });
     const serviceFee = 2000;
     const grandTotal = itemsTotal + shippingTotal + serviceFee;
     return { itemsTotal, shippingTotal, serviceFee, grandTotal };
   };
 
-  const { itemsTotal, shippingTotal, serviceFee, grandTotal } = calculateTotal();
-  const toRupiah = (num) => new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(num || 0);
+  const { itemsTotal, shippingTotal, serviceFee, grandTotal } =
+    calculateTotal();
+  const toRupiah = (num) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumSignificantDigits: 3,
+    }).format(num || 0);
 
-  const handleCancelClick = () => {
-    setIsCancelModalOpen(true); 
+  // --- HANDLERS: ADDRESS ---
+
+  const handleOpenAddressModal = () => {
+    if (availableAddresses.length === 0) {
+      resetForm();
+      setShowAddForm(true);
+    } else {
+      setShowAddressList(true);
+    }
   };
 
-  const confirmCancelOrder = () => {
-    setIsCancelModalOpen(false);
-    router.back();
-    setTimeout(() => {
-        showToast("Pesanan dibatalkan. Keranjang aman! 👌", "info");
-    }, 200);
+  const handleSelectAddress = (id) => {
+    setSelectedAddressId(id);
+    setShowAddressList(false);
   };
 
+  const resetForm = () => {
+    setAddressForm({
+      name: "",
+      phone: "",
+      city: "",
+      street: "",
+      extra: "",
+      label: "Rumah",
+    });
+    setEditingId(null);
+  };
+
+  // Handler saat tombol "Ubah" diklik di dalam LIST ALAMAT
+  const handleEditClick = (address) => {
+    setAddressForm({
+      name: address.name,
+      phone: address.phone,
+      city: address.city,
+      street: address.street,
+      extra: address.extra || "",
+      label: address.label || "Rumah",
+    });
+    setEditingId(address.id); // Set ID yang sedang diedit
+    setShowAddressList(false); // Tutup list
+    setShowAddForm(true); // Buka form
+  };
+
+  // Handler saat tombol "Tambah Alamat Baru" diklik
+  const handleAddNewClick = () => {
+    resetForm();
+    setShowAddressList(false);
+    setShowAddForm(true);
+  };
+
+  // Handler Simpan (Create / Update)
+  const handleSaveAddress = () => {
+    if (!addressForm.name || !addressForm.street) return;
+
+    let updatedList;
+
+    if (editingId) {
+      // --- MODE EDIT ---
+      updatedList = availableAddresses.map((addr) =>
+        addr.id === editingId
+          ? { ...addr, ...addressForm } // Update data
+          : addr
+      );
+      showToast("Alamat berhasil diperbarui", "success");
+    } else {
+      // --- MODE TAMBAH BARU ---
+      const newId = Date.now();
+      const newAddrObj = {
+        id: newId,
+        ...addressForm,
+        city: addressForm.city || "JAWA BARAT, ID",
+        isPrimary: availableAddresses.length === 0,
+      };
+      updatedList = [newAddrObj, ...availableAddresses];
+      setSelectedAddressId(newId); // Auto select yang baru
+      showToast("Alamat baru ditambahkan", "success");
+    }
+
+    // Update State & Storage
+    setAvailableAddresses(updatedList);
+    localStorage.setItem("saved_addresses", JSON.stringify(updatedList));
+
+    // UI Flow
+    resetForm();
+    setShowAddForm(false);
+    setShowAddressList(true); // Kembali ke list
+  };
+
+  // --- PAYMENT ---
   const handlePayment = async () => {
     if (!user) {
-        showToast("Login terlebih dahulu untuk melanjutkan pembayaran.", "error");
-        router.push("/login"); 
-        return;
+      showToast("Login dulu ya!", "error");
+      router.push("/login");
+      return;
+    }
+    if (!activeAddress) {
+      showToast("Mohon isi alamat pengiriman.", "error");
+      handleOpenAddressModal();
+      return;
     }
 
     const newOrderId = `ORD-${Date.now()}`;
-    await new Promise(resolve => setTimeout(resolve, 1000)); 
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
     const orderData = {
-          id: newOrderId,
-          date: new Date().toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' }),
-          customer: user.name, 
-          status: "processing", 
-          payment_status: "paid", 
-          items: displayItems,
-          financials: {
-              itemsTotal,
-              shippingTotal,
-              serviceFee,
-              grandTotal 
-          },
-          timeline: [
-              {
-                  title: "Pembayaran Berhasil",
-                  date: "Baru saja",
-                  desc: "Pesanan lunas & diteruskan ke penjual.",
-                  status: "completed"
-              },
-              {
-                  title: "Menunggu Proses Penjual",
-                  date: "Est. 10 Menit",
-                  desc: "Penjual akan menyiapkan pesananmu.",
-                  status: "active" 
-              }
-          ]
-      };
+      id: newOrderId,
+      date: new Date().toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
+      customer: user.name,
+      address: activeAddress,
+      status: "processing",
+      payment_status: "paid",
+      items: displayItems,
+      financials: { itemsTotal, shippingTotal, serviceFee, grandTotal },
+      timeline: [
+        {
+          title: "Pembayaran Berhasil",
+          date: "Baru saja",
+          desc: "Pesanan lunas & diteruskan ke penjual.",
+          status: "completed",
+        },
+        {
+          title: "Menunggu Proses Penjual",
+          date: "Est. 10 Menit",
+          desc: "Penjual akan menyiapkan pesananmu.",
+          status: "active",
+        },
+      ],
+    };
 
-      addOrder(orderData);
-
-      // --- REMOVE ITEMS FROM CART ---
-      if (!isDirectBuy) {
-          const idsToRemove = displayItems.map(item => item.id);
-          removeItems(idsToRemove); // This cleans up the cart!
-          // Clear temp storage
-          localStorage.removeItem("checkoutIds");
-      }
-
-      router.push(`/checkout/order-success?id=${newOrderId}`);
+    addOrder(orderData);
+    if (!isDirectBuy) {
+      removeItems(displayItems.map((item) => item.id));
+      localStorage.removeItem("checkoutIds");
+    }
+    router.push(`/checkout/order-success?id=${newOrderId}`);
   };
 
-  if (!isClient) return <div className="min-h-screen bg-gray-50"></div>;
+  const handleCancelClick = () => setIsCancelModalOpen(true);
+  const confirmCancelOrder = () => {
+    setIsCancelModalOpen(false);
+    router.back();
+    setTimeout(() => showToast("Pesanan dibatalkan.", "info"), 200);
+  };
+
+  if (!isClient) return <div className="min-h-screen bg-cream-bg"></div>;
 
   return (
-    <main className="bg-gray-50 min-h-screen pb-32 font-sans">
-      <header className="fixed top-0 left-0 w-full bg-white border-b border-gray-100 px-4 md:px-8 py-4 z-50 flex items-center justify-between shadow-sm">
-        <button onClick={handleCancelClick} className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors font-bold text-sm">
+    <main className="bg-gray-50 min-h-screen pb-32 font-sans text-gray-800">
+      <header className="fixed top-0 left-0 w-full bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 py-4 z-50 flex items-center justify-between shadow-sm">
+        <button
+          onClick={handleCancelClick}
+          className="flex items-center gap-2 text-gray-500 hover:text-red-500 transition-colors font-bold text-sm"
+        >
           <ArrowLeft size={18} /> Batal
         </button>
-        <div className="flex items-center gap-2 text-dark-green font-serif font-bold text-lg">Checkout</div>
+        <div className="flex items-center gap-2 text-dark-green font-serif font-bold text-lg">
+          Checkout
+        </div>
         <div className="w-10"></div>
       </header>
 
+      {/* --- MODAL 1: LIST ALAMAT --- */}
+      <AnimatePresence>
+        {showAddressList && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-dark-green/40 backdrop-blur-sm p-4"
+            onClick={() => setShowAddressList(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.95, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-cream-bg w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-white/50"
+            >
+              <div className="p-6 border-b border-sage-green/20 bg-white flex justify-between items-center sticky top-0 z-10">
+                <h3 className="text-xl font-bold text-dark-green font-serif">
+                  Alamat Penerima
+                </h3>
+                <button
+                  onClick={() => setShowAddressList(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+                >
+                  <X size={20} className="text-gray-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+                {availableAddresses.length === 0 ? (
+                  <div className="text-center py-10 flex flex-col items-center">
+                    <MapPin size={48} className="text-gray-300 mb-4" />
+                    <p className="text-gray-400 text-sm">
+                      Belum ada alamat tersimpan.
+                    </p>
+                  </div>
+                ) : (
+                  availableAddresses.map((addr) => {
+                    const isSelected = selectedAddressId === addr.id;
+                    return (
+                      <div
+                        key={addr.id}
+                        // Klik container = Pilih Alamat
+                        onClick={() => handleSelectAddress(addr.id)}
+                        className={`relative p-5 rounded-2xl border-2 transition-all cursor-pointer group ${
+                          isSelected
+                            ? "bg-white border-dark-green shadow-md"
+                            : "bg-white border-transparent hover:border-sage-green/50 shadow-sm"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-dark-green text-sm max-w-[150px] truncate">
+                              {addr.name}
+                            </span>
+                            <span className="text-gray-400 text-xs">|</span>
+                            <span className="text-gray-500 text-xs">
+                              {addr.phone}
+                            </span>
+                          </div>
+                          {isSelected && (
+                            <div className="text-dark-green bg-sage-green/20 rounded-full p-1">
+                              <Check size={14} strokeWidth={3} />
+                            </div>
+                          )}
+                        </div>
+
+                        <p className="text-xs text-gray-600 leading-relaxed mb-3 pr-8 line-clamp-2">
+                          {addr.street}
+                        </p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3 truncate">
+                          {addr.city}
+                        </p>
+
+                        <div className="flex items-center gap-2">
+                          {addr.isPrimary && (
+                            <span className="bg-dark-green text-white text-[10px] font-bold px-2 py-1 rounded-lg shadow-sm">
+                              Utama
+                            </span>
+                          )}
+                          <span className="bg-cream-bg text-dark-green text-[10px] font-bold px-2 py-1 rounded-lg border border-sage-green/30 uppercase">
+                            {addr.label}
+                          </span>
+                        </div>
+
+                        {/* Tombol Ubah: Stop Propagation agar tidak memilih alamat saat diklik */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(addr);
+                          }}
+                          className="absolute bottom-5 right-5 text-xs font-bold text-sage-green hover:text-dark-green transition-colors hover:underline decoration-dotted underline-offset-4"
+                        >
+                          Ubah
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="p-5 border-t border-sage-green/20 bg-white flex justify-center pb-8">
+                <button
+                  onClick={handleAddNewClick}
+                  className="flex items-center gap-2 bg-dark-green hover:bg-sage-green text-white px-8 py-3.5 rounded-full text-sm font-bold shadow-lg transition-all hover:scale-105 active:scale-95 w-full justify-center"
+                >
+                  <Plus size={18} /> Tambah Alamat Baru
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MODAL 2: FORM TAMBAH/EDIT ALAMAT --- */}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-dark-green/40 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+              className="bg-cream-bg w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              <div className="p-6 border-b border-sage-green/20 bg-white flex justify-between items-center">
+                <h3 className="text-xl font-bold text-dark-green font-serif">
+                  {editingId ? "Ubah Alamat" : "Alamat Baru"}
+                </h3>
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+                >
+                  <X size={20} className="text-gray-400" />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-5 custom-scrollbar">
+                <div className="flex gap-4">
+                  <input
+                    placeholder="Nama Lengkap"
+                    className="flex-1 bg-white border border-gray-200 p-3.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm placeholder:text-gray-400"
+                    value={addressForm.name}
+                    onChange={(e) =>
+                      setAddressForm({ ...addressForm, name: e.target.value })
+                    }
+                  />
+                  <input
+                    placeholder="Nomor Telepon"
+                    className="flex-1 bg-white border border-gray-200 p-3.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm placeholder:text-gray-400"
+                    value={addressForm.phone}
+                    onChange={(e) =>
+                      setAddressForm({ ...addressForm, phone: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="relative">
+                  <input
+                    placeholder="Provinsi, Kota, Kecamatan, Kode Pos"
+                    className="w-full bg-white border border-gray-200 p-3.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm placeholder:text-gray-400 pr-10"
+                    value={addressForm.city}
+                    onChange={(e) =>
+                      setAddressForm({ ...addressForm, city: e.target.value })
+                    }
+                  />
+                </div>
+
+                <textarea
+                  placeholder="Nama Jalan, Gedung, No. Rumah"
+                  rows={2}
+                  className="w-full bg-white border border-gray-200 p-3.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm placeholder:text-gray-400 resize-none"
+                  value={addressForm.street}
+                  onChange={(e) =>
+                    setAddressForm({ ...addressForm, street: e.target.value })
+                  }
+                />
+
+                <input
+                  placeholder="Detail Lainnya (Cth: Blok / Unit No., Patokan)"
+                  className="w-full bg-white border border-gray-200 p-3.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm placeholder:text-gray-400"
+                  value={addressForm.extra}
+                  onChange={(e) =>
+                    setAddressForm({ ...addressForm, extra: e.target.value })
+                  }
+                />
+
+                <div className="w-full h-32 bg-sage-green/5 border-2 border-dashed border-sage-green/30 rounded-2xl flex items-center justify-center cursor-pointer hover:bg-sage-green/10 transition group overflow-hidden relative">
+                  <div className="absolute inset-0 opacity-10 bg-[url('https://upload.wikimedia.org/wikipedia/commons/e/ec/World_map_blank_without_borders.svg')] bg-cover grayscale group-hover:grayscale-0 transition-all"></div>
+                  <div className="flex items-center gap-2 text-dark-green font-bold bg-white px-4 py-2 rounded-full shadow-sm border border-sage-green/20 z-10">
+                    <MapIcon size={16} />
+                    <span className="text-sm">Pin Lokasi</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4 pt-2">
+                  <span className="text-sm font-bold text-gray-500">
+                    Label:
+                  </span>
+                  <div className="flex gap-2">
+                    {["Rumah", "Kantor", "Kost"].map((label) => (
+                      <button
+                        key={label}
+                        onClick={() =>
+                          setAddressForm({ ...addressForm, label })
+                        }
+                        className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+                          addressForm.label === label
+                            ? "bg-dark-green text-white border-dark-green shadow-md"
+                            : "bg-white text-gray-500 border-gray-200 hover:border-sage-green hover:text-dark-green"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-sage-green/20 bg-white flex justify-between gap-3 items-center">
+                <button
+                  onClick={() => {
+                    setShowAddForm(false);
+                    if (availableAddresses.length > 0) setShowAddressList(true);
+                  }}
+                  className="px-6 py-3 text-sm text-gray-400 hover:text-dark-green font-bold transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSaveAddress}
+                  className="flex-1 py-3.5 bg-dark-green hover:bg-sage-green text-white text-sm font-bold rounded-full shadow-lg transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!addressForm.name}
+                >
+                  Simpan Alamat
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* --- MAIN CHECKOUT VIEW --- */}
       <div className="pt-28 px-4 md:px-6 max-w-6xl mx-auto flex flex-col lg:flex-row gap-8">
-        
         <div className="flex-1 space-y-6">
-          <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
-            <h2 className="font-bold text-lg text-dark-green mb-4 flex items-center gap-2">
-              <MapPin size={18} /> Alamat Pengiriman
+          <section className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden group hover:shadow-md transition-shadow">
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-dark-green/80 via-sage-green/80 to-dark-green/80 opacity-90"></div>
+
+            <h2 className="font-bold text-lg text-dark-green mb-4 flex items-center gap-2 pt-2">
+              <MapPin size={20} className="text-sage-green fill-current" />{" "}
+              Alamat Pengiriman
             </h2>
-            {user ? (
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                    <p className="font-bold text-gray-900 mb-1">{user.name} (Rumah)</p>
-                    <p className="text-sm text-gray-600">{user.address?.street || "Jl. Dago Asri No. 102"}, {user.address?.city || "Bandung"}</p>
+
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 pl-1">
+              {activeAddress ? (
+                <div className="text-sm text-gray-800 space-y-2 flex-1 min-w-0">
+                  <div className="font-bold text-base text-dark-green flex items-center gap-2">
+                    <span className="truncate max-w-[200px]">
+                      {activeAddress.name}
+                    </span>
+                    <span className="w-1 h-1 rounded-full bg-gray-300 shrink-0"></span>
+                    <span className="font-normal text-gray-500 text-sm font-mono shrink-0">
+                      {activeAddress.phone}
+                    </span>
+                  </div>
+
+                  <div className="text-gray-600 leading-relaxed bg-cream-bg/50 p-3 rounded-xl border border-sage-green/10 w-full">
+                    <p className="line-clamp-2 break-words text-sm">
+                      {activeAddress.street}
+                    </p>
+                    <div className="mt-1 text-xs font-bold text-dark-green/70 uppercase tracking-wider truncate">
+                      {activeAddress.city}
+                    </div>
+                  </div>
+
+                  <div className="pt-1 flex gap-2">
+                    {activeAddress.isPrimary && (
+                      <span className="text-[10px] bg-dark-green text-white px-2 py-0.5 rounded-md font-bold shadow-sm">
+                        Utama
+                      </span>
+                    )}
+                    {activeAddress.label && (
+                      <span className="text-[10px] bg-white border border-sage-green/40 text-dark-green px-2 py-0.5 rounded-md font-bold uppercase">
+                        {activeAddress.label}
+                      </span>
+                    )}
+                  </div>
                 </div>
-            ) : (
-                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 text-sm text-yellow-800">
-                    <Link href="/login" className="underline font-bold">Login</Link> untuk menggunakan alamat tersimpan.
+              ) : (
+                <div className="text-sm text-gray-500 italic py-2 flex items-center gap-2">
+                  <AlertTriangle size={16} className="text-yellow-500" />
+                  Belum ada alamat pengiriman.
                 </div>
-            )}
+              )}
+
+              <button
+                onClick={handleOpenAddressModal}
+                className="text-dark-green font-bold text-sm hover:text-sage-green uppercase tracking-wide shrink-0 transition-colors underline decoration-dotted underline-offset-4"
+              >
+                {availableAddresses.length === 0 ? "Tambah Alamat" : "Ubah"}
+              </button>
+            </div>
           </section>
 
+          {/* Sisa konten checkout (Cart items, shipping, summary) tidak berubah */}
           {displayItems.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-[2rem]">
               <p className="text-gray-400 mb-4">Keranjang kosong.</p>
-              <button onClick={() => router.push("/toko")} className="text-dark-green font-bold underline">Belanja Dulu</button>
+              <button
+                onClick={() => router.push("/toko")}
+                className="text-dark-green font-bold underline"
+              >
+                Belanja Dulu
+              </button>
             </div>
           ) : (
             shopKeys.map((shopId) => {
               const group = groupedCart[shopId];
               return (
-                <div key={shopId} className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100">
+                <div
+                  key={shopId}
+                  className="bg-white p-6 rounded-[2rem] shadow-sm border border-gray-100"
+                >
                   <h2 className="font-bold text-md text-dark-green mb-6 flex items-center gap-2 pb-4 border-b border-gray-50">
-                    <Store size={18} className="text-sage-green" /> {group.shop?.name || "Florist Partner"}
+                    <Store size={18} className="text-sage-green" />{" "}
+                    {group.shop?.name || "Florist Partner"}
                   </h2>
-
                   <div className="space-y-6">
                     {group.items.map((item, idx) => (
                       <div key={idx} className="flex gap-4">
                         <div className="w-20 h-24 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0 relative">
-                          <img src={item.image} alt={item.title} className="w-full h-full object-cover"/>
-                          {item.isCustom && <div className="absolute top-0 left-0 bg-sage-green text-white text-[10px] font-bold px-2 py-0.5 rounded-br-lg z-10">Custom</div>}
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="w-full h-full object-cover"
+                          />
+                          {item.isCustom && (
+                            <div className="absolute top-0 left-0 bg-sage-green text-white text-[10px] font-bold px-2 py-0.5 rounded-br-lg z-10">
+                              Custom
+                            </div>
+                          )}
                         </div>
                         <div className="flex-1">
-                          <h3 className="font-serif font-bold text-lg text-dark-green leading-tight">{item.title}</h3>
-                          <p className="text-xs text-gray-400 mt-1">{item.isCustom ? "Custom Request" : "Ready Stock"} • {item.category || "Bouquet"}</p>
+                          <h3 className="font-serif font-bold text-lg text-dark-green leading-tight">
+                            {item.title}
+                          </h3>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {item.isCustom ? "Custom Request" : "Ready Stock"} •{" "}
+                            {item.category || "Bouquet"}
+                          </p>
                           <div className="flex justify-between items-end mt-2">
-                            <p className="font-bold text-dark-green">{toRupiah(item.price)} <span className="text-xs text-gray-400 font-normal">x {item.qty || 1}</span></p>
+                            <p className="font-bold text-dark-green">
+                              {toRupiah(item.price)}{" "}
+                              <span className="text-xs text-gray-400 font-normal">
+                                x {item.qty || 1}
+                              </span>
+                            </p>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
-
-                  <div className="mt-6 pt-4 border-t border-dashed border-gray-200 bg-blue-50/30 -mx-6 px-6 pb-4 rounded-b-[2rem]">
+                  <div className="mt-6 pt-4 border-t border-dashed border-gray-200 bg-cream-bg -mx-6 px-6 pb-4 rounded-b-[2rem]">
                     <div className="flex items-center gap-2 text-sm font-bold text-gray-700 mb-3 pt-3">
                       <Truck size={16} /> <span>Opsi Pengiriman</span>
                     </div>
                     <div className="flex flex-wrap gap-3">
                       {shippingOptions.map((opt) => (
-                        <button key={opt.name} onClick={() => handleChangeShipping(shopId, opt)}
-                          className={`flex-1 min-w-[120px] text-left p-3 rounded-lg border text-xs transition-all relative ${shippingSelection[shopId]?.name === opt.name ? "border-sage-green bg-white text-dark-green ring-2 ring-sage-green" : "border-gray-200 bg-white text-gray-500"}`}
+                        <button
+                          key={opt.name}
+                          onClick={() => handleChangeShipping(shopId, opt)}
+                          className={`flex-1 min-w-[120px] text-left p-3 rounded-xl border text-xs transition-all relative ${
+                            shippingSelection[shopId]?.name === opt.name
+                              ? "border-sage-green bg-white text-dark-green ring-2 ring-sage-green/50 shadow-md"
+                              : "border-gray-200 bg-white text-gray-500 hover:border-sage-green/50"
+                          }`}
                         >
                           <div className="font-bold">{opt.name}</div>
-                          <div className="text-[10px] opacity-70">{opt.eta}</div>
-                          <div className="mt-1 font-bold text-sage-green">{toRupiah(opt.cost)}</div>
+                          <div className="text-[10px] opacity-70">
+                            {opt.eta}
+                          </div>
+                          <div className="mt-1 font-bold text-sage-green">
+                            {toRupiah(opt.cost)}
+                          </div>
                         </button>
                       ))}
                     </div>
@@ -239,11 +724,11 @@ function CheckoutContent() {
           )}
         </div>
 
-        {/* SUMMARY CARD */}
         <div className="lg:w-[380px]">
           <div className="bg-white p-6 rounded-[2rem] shadow-lg border border-gray-100 sticky top-28">
-            <h3 className="font-serif font-bold text-xl text-dark-green mb-6">Ringkasan Pembayaran</h3>
-
+            <h3 className="font-serif font-bold text-xl text-dark-green mb-6">
+              Ringkasan Pembayaran
+            </h3>
             <div className="space-y-3 text-sm text-gray-600 mb-6">
               <div className="flex justify-between">
                 <span>Total Harga Barang</span>
@@ -257,18 +742,17 @@ function CheckoutContent() {
                 <span>Biaya Layanan</span>
                 <span className="font-medium">{toRupiah(serviceFee)}</span>
               </div>
-              
               <div className="border-t border-dashed border-gray-200 my-4 pt-4 flex justify-between items-center text-dark-green font-bold text-lg">
                 <span>Total Tagihan</span>
                 <span>{toRupiah(grandTotal)}</span>
               </div>
             </div>
-
-            <div className="bg-green-50 p-3 rounded-xl flex items-start gap-3 text-xs text-green-800 mb-6 border border-green-100">
+            <div className="bg-sage-green/10 p-4 rounded-2xl flex items-start gap-3 text-xs text-dark-green mb-6 border border-sage-green/20">
               <ShieldCheck size={16} className="shrink-0 mt-0.5" />
-              <p>Pembayaran Full di muka (Aman & Bergaransi).</p>
+              <p className="font-medium">
+                Pembayaran Full di muka (Aman & Bergaransi).
+              </p>
             </div>
-
             <button
               onClick={handlePayment}
               disabled={displayItems.length === 0}
@@ -282,46 +766,61 @@ function CheckoutContent() {
 
       <AnimatePresence>
         {isCancelModalOpen && (
-            <>
+          <>
             <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setIsCancelModalOpen(false)}
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsCancelModalOpen(false)}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
             />
-            
             <motion.div
-                initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                className="fixed z-[70] bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 text-center"
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="fixed z-[70] bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 p-6 text-center"
             >
-                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
-                    <LogOut size={28} className="ml-1" /> 
-                </div>
-                
-                <h3 className="font-serif text-2xl font-bold text-dark-green mb-2">Yakin mau batal?</h3>
-                <p className="text-gray-500 text-sm mb-8 leading-relaxed">
-                    Pesananmu belum tersimpan loh. Tenang aja, isi keranjangmu gak akan hilang kok!
-                </p>
-
-                <div className="flex gap-3">
-                    <button onClick={() => setIsCancelModalOpen(false)} className="flex-1 py-3 rounded-full font-bold text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 transition">Gak Jadi</button>
-                    <button onClick={confirmCancelOrder} className="flex-1 py-3 rounded-full font-bold text-sm bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-red-500/30 transition">Ya, Batalkan</button>
-                </div>
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                <LogOut size={28} className="ml-1" />
+              </div>
+              <h3 className="font-serif text-2xl font-bold text-dark-green mb-2">
+                Yakin mau batal?
+              </h3>
+              <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                Pesananmu belum tersimpan loh. Tenang aja, isi keranjangmu gak
+                akan hilang kok!
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setIsCancelModalOpen(false)}
+                  className="flex-1 py-3 rounded-full font-bold text-sm border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+                >
+                  Gak Jadi
+                </button>
+                <button
+                  onClick={confirmCancelOrder}
+                  className="flex-1 py-3 rounded-full font-bold text-sm bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-red-500/30 transition"
+                >
+                  Ya, Batalkan
+                </button>
+              </div>
             </motion.div>
-            </>
+          </>
         )}
       </AnimatePresence>
-
     </main>
   );
 }
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-gray-50">Loading Payment...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-cream-bg">
+          Loading Payment...
+        </div>
+      }
+    >
       <CheckoutContent />
     </Suspense>
   );

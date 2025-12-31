@@ -23,29 +23,36 @@ import {
   Truck,
   CheckCircle2,
   Clock,
-  AlertCircle
+  AlertCircle,
+  Trash2,
 } from "lucide-react";
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuth();
+  if (!user) {
+    return null;
+  }
   const { showToast } = useToast();
   const router = useRouter();
+
   const [activeTab, setActiveTab] = useState("personal");
-  const [orderFilter, setOrderFilter] = useState("all"); 
-  
+  const [orderFilter, setOrderFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
   const { orders } = useOrder();
-
+  const [savedAddresses, setSavedAddresses] = useState([]);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
-    street: "",
-    city: "",
-    province: "",
-    zip: "",
-    label: "",
+ 
+    shopName: "",
+    shopAddress: "",
+    shopDesc: "",
+
+    adminCode: "",
+    department: "",
   });
+
 
   useEffect(() => {
     if (user) {
@@ -53,37 +60,62 @@ export default function ProfilePage() {
         name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
-        street: user.address?.street || "",
-        city: user.address?.city || "",
-        province: user.address?.province || "",
-        zip: user.address?.zip || "",
-        label: user.address?.label || "Rumah",
+        shopName: user.shop?.name || "",
+        shopAddress: user.shop?.location || "",
+        shopDesc: user.shop?.desc || "",
+        adminCode: user.adminCode || "SA-001",
+        department: user.department || "Head Office",
       });
+
+      if (typeof window !== "undefined") {
+        const stored = localStorage.getItem("saved_addresses");
+        if (stored) {
+          setSavedAddresses(JSON.parse(stored));
+        }
+      }
     } else {
       router.push("/");
     }
   }, [user, router]);
 
-  const handleSave = async (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     await new Promise((r) => setTimeout(r, 800));
 
-    updateUser({
+    const updates = {
       name: formData.name,
       email: formData.email,
       phone: formData.phone,
-      address: {
-        street: formData.street,
-        city: formData.city,
-        province: formData.province,
-        zip: formData.zip,
-        label: formData.label,
-      },
-    });
+    };
 
+    if (user?.role === "tenant") {
+      updates.shop = {
+        ...user.shop,
+        name: formData.shopName,
+        location: formData.shopAddress,
+        desc: formData.shopDesc,
+      };
+    }
+
+    if (user.role === "superadmin") {
+      updates.adminCode = formData.adminCode;
+      updates.department = formData.department;
+    }
+
+    updateUser(updates);
     setIsLoading(false);
     showToast("Profil berhasil diperbarui! ✨", "success");
+  };
+
+
+  const handleDeleteAddress = (id) => {
+    if (window.confirm("Hapus alamat ini?")) {
+      const newList = savedAddresses.filter((a) => a.id !== id);
+      setSavedAddresses(newList);
+      localStorage.setItem("saved_addresses", JSON.stringify(newList));
+      showToast("Alamat dihapus.");
+    }
   };
 
   const handleLogout = () => {
@@ -105,66 +137,87 @@ export default function ProfilePage() {
       };
     return { label: "Member", color: "bg-gray-100 text-gray-500" };
   };
-
   const badge = getRoleBadge();
 
-  // --- LOGIC HIDE TAB ---
-  // Sembunyikan tab 'order' jika user adalah Tenant atau Superadmin
   const allTabs = [
     { id: "personal", label: "Personal Info", icon: User },
-    { id: "address", label: "Alamat Saya", icon: MapPin },
+    {
+      id: "address",
+      label: "Alamat Penerima",
+      icon: MapPin,
+      hidden: user.role !== "user",
+    },
+    {
+      id: "order",
+      label: "Pesanan Saya",
+      icon: Package,
+      hidden: user.role !== "user",
+    },
     { id: "security", label: "Keamanan", icon: Lock },
-    { id: "order", label: "Pesanan Saya", icon: Package },
   ];
 
-  const sidebarTabs = allTabs.filter(tab => {
-      if (tab.id === 'order') {
-          return user.role !== 'tenant' && user.role !== 'superadmin' ; // Hanya tampil untuk user biasa
-      }
-      return true;
+  const visibleTabs = allTabs.filter((tab) => !tab.hidden);
+
+  const sidebarTabs = allTabs.filter((tab) => {
+    if (tab.id === "order" || tab.id === "address") {
+      return user.role !== "tenant" && user.role !== "superadmin";
+    }
+    return true;
   });
 
-  // --- LOGIC WARNA STATUS ---
   const getStatusStyle = (status) => {
     switch (status) {
-      case "waiting_approval": 
-        return { color: "text-yellow-700 bg-yellow-50 border-yellow-200", icon: AlertCircle };
-      case "processing": 
+      case "waiting_approval":
+        return {
+          color: "text-yellow-700 bg-yellow-50 border-yellow-200",
+          icon: AlertCircle,
+        };
+      case "processing":
         return { color: "text-blue-600 bg-blue-50 border-blue-200", icon: Box };
-      case "on_delivery": 
-        return { color: "text-indigo-600 bg-indigo-50 border-indigo-200", icon: Truck };
-      case "completed": 
-        return { color: "text-emerald-700 bg-emerald-50 border-emerald-200", icon: CheckCircle2 };
+      case "on_delivery":
+        return {
+          color: "text-indigo-600 bg-indigo-50 border-indigo-200",
+          icon: Truck,
+        };
+      case "completed":
+        return {
+          color: "text-emerald-700 bg-emerald-50 border-emerald-200",
+          icon: CheckCircle2,
+        };
       default:
         return { color: "text-gray-600 bg-gray-50 border-gray-200", icon: Box };
     }
   };
 
-  const getStatusLabel = (status) => {
-    switch (status) {
-      case "waiting_approval": return "Menunggu Konfirmasi";
-      case "processing": return "Sedang Diproses";
-      case "on_delivery": return "Sedang Dikirim";
-      case "completed": return "Selesai";
-      default: return status;
-    }
+  const getStatusLabel = (s) => {
+    const map = {
+      waiting_approval: "Menunggu Konfirmasi",
+      processing: "Diproses",
+      on_delivery: "Dikirim",
+      completed: "Selesai",
+    };
+    return map[s] || s;
   };
 
-  // --- LOGIC FILTER ORDER ---
   const getFilteredOrders = () => {
     if (orderFilter === "all") return orders;
-    
-    return orders.filter(o => {
-        if (orderFilter === "packed") {
-            return ["payment_pending", "waiting_approval", "processing", "revision"].includes(o.status);
-        }
-        if (orderFilter === "shipped") {
-            return ["on_delivery"].includes(o.status);
-        }
-        if (orderFilter === "completed") {
-            return ["completed"].includes(o.status);
-        }
-        return true;
+
+    return orders.filter((o) => {
+      if (orderFilter === "packed") {
+        return [
+          "payment_pending",
+          "waiting_approval",
+          "processing",
+          "revision",
+        ].includes(o.status);
+      }
+      if (orderFilter === "shipped") {
+        return ["on_delivery"].includes(o.status);
+      }
+      if (orderFilter === "completed") {
+        return ["completed"].includes(o.status);
+      }
+      return true;
     });
   };
 
@@ -175,7 +228,6 @@ export default function ProfilePage() {
       <Navbar />
 
       <div className="pt-32 pb-24 px-4 md:px-6 max-w-5xl mx-auto">
-        {/* HEADER PROFILE */}
         <div className="flex flex-col md:flex-row items-center gap-6 mb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
           <div className="relative group">
             <div className="w-28 h-28 rounded-full bg-dark-green text-white flex items-center justify-center text-4xl font-serif font-bold shadow-xl border-4 border-white">
@@ -196,7 +248,6 @@ export default function ProfilePage() {
               >
                 {badge.label}
               </span>
-
               {user.role === "tenant" && user.shop && (
                 <span className="flex items-center gap-1 text-xs font-bold text-sage-green">
                   <Store size={14} /> {user.shop.name}
@@ -215,13 +266,12 @@ export default function ProfilePage() {
               className="md:ml-auto flex items-center gap-2 bg-dark-green text-white px-6 py-3 rounded-full font-bold text-sm hover:bg-sage-green transition shadow-lg"
             >
               <LayoutDashboard size={18} />
-              Buka Dashboard Toko
+              Buka Dashboard {user.role === "tenant" ? "Toko" : "Admin"}
             </button>
           )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* SIDEBAR NAV */}
           <div className="md:col-span-1 space-y-2">
             {sidebarTabs.map((tab) => (
               <button
@@ -234,23 +284,19 @@ export default function ProfilePage() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <tab.icon size={18} />
-                  {tab.label}
+                  <tab.icon size={18} /> {tab.label}
                 </div>
                 {activeTab === tab.id && <ChevronRight size={16} />}
               </button>
             ))}
-
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3 p-4 rounded-2xl text-red-500 hover:bg-red-50 transition-all font-bold text-sm mt-8 border border-transparent hover:border-red-100"
             >
-              <LogOut size={18} />
-              Log Out
+              <LogOut size={18} /> Log Out
             </button>
           </div>
 
-          {/* MAIN CONTENT AREA */}
           <div className="md:col-span-3">
             <motion.div
               key={activeTab}
@@ -259,11 +305,15 @@ export default function ProfilePage() {
               transition={{ duration: 0.3 }}
               className="bg-white p-8 rounded-[2rem] shadow-sm border border-gray-100 relative overflow-hidden min-h-[500px]"
             >
-              {/* --- TAB PERSONAL INFO --- */}
               {activeTab === "personal" && (
-                <form onSubmit={handleSave} className="space-y-6">
+                <form onSubmit={handleSaveProfile} className="space-y-6">
                   <h2 className="text-xl font-bold text-dark-green mb-6 border-b border-gray-100 pb-4">
-                    Edit Personal Info
+                    Edit Profil{" "}
+                    {user.role === "tenant"
+                      ? "Florist"
+                      : user.role === "superadmin"
+                      ? "Admin"
+                      : "Member"}
                   </h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -304,12 +354,109 @@ export default function ProfilePage() {
                         className="w-full bg-gray-100 border border-gray-200 rounded-xl px-4 py-3 text-gray-400 cursor-not-allowed"
                       />
                     </div>
+
+                    {user.role === "tenant" && (
+                      <>
+                        <div className="md:col-span-2 mt-4 pt-4 border-t border-gray-100">
+                          <h3 className="font-bold text-dark-green mb-4 flex items-center gap-2">
+                            <Store size={18} /> Informasi Toko
+                          </h3>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Nama Toko
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.shopName}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                shopName: e.target.value,
+                              })
+                            }
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Lokasi Toko
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.shopAddress}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                shopAddress: e.target.value,
+                              })
+                            }
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
+                          />
+                        </div>
+                        <div className="space-y-2 md:col-span-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Deskripsi Singkat
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={formData.shopDesc}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                shopDesc: e.target.value,
+                              })
+                            }
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
+                          />
+                        </div>
+                      </>
+                    )}
+
+                    {/* --- SUPERADMIN SPECIFIC FIELDS --- */}
+                    {user.role === "superadmin" && (
+                      <>
+                        <div className="md:col-span-2 mt-4 pt-4 border-t border-gray-100">
+                          <h3 className="font-bold text-red-600 mb-4 flex items-center gap-2">
+                            <Lock size={18} /> Internal Data
+                          </h3>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Kode Admin
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.adminCode}
+                            disabled
+                            className="w-full bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-red-800 font-mono cursor-not-allowed"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                            Departemen
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.department}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                department: e.target.value,
+                              })
+                            }
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
+
                   <div className="pt-6 flex justify-end">
                     <button
                       type="submit"
                       disabled={isLoading}
-                      className="bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition shadow-lg"
+                      className="bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition shadow-lg disabled:opacity-50"
                     >
                       {isLoading ? "Menyimpan..." : "Simpan Perubahan"}
                     </button>
@@ -317,64 +464,80 @@ export default function ProfilePage() {
                 </form>
               )}
 
-              {/* --- TAB ALAMAT --- */}
+              {/* --- TAB ADDRESS (LOADED FROM LOCALSTORAGE) --- */}
               {activeTab === "address" && (
-                <form onSubmit={handleSave} className="space-y-6">
-                  <h2 className="text-xl font-bold text-dark-green mb-6 border-b border-gray-100 pb-4">
-                    Atur Alamat Pribadi
-                  </h2>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                      Alamat Lengkap
-                    </label>
-                    <textarea
-                      value={formData.street}
-                      onChange={(e) =>
-                        setFormData({ ...formData, street: e.target.value })
-                      }
-                      rows={3}
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <input
-                      type="text"
-                      placeholder="Kota"
-                      value={formData.city}
-                      onChange={(e) =>
-                        setFormData({ ...formData, city: e.target.value })
-                      }
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Provinsi"
-                      value={formData.province}
-                      onChange={(e) =>
-                        setFormData({ ...formData, province: e.target.value })
-                      }
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Kode Pos"
-                      value={formData.zip}
-                      onChange={(e) =>
-                        setFormData({ ...formData, zip: e.target.value })
-                      }
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3"
-                    />
-                  </div>
-                  <div className="pt-6 flex justify-end">
-                    <button
-                      type="submit"
-                      disabled={isLoading}
-                      className="bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition shadow-lg"
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b border-gray-100 pb-4">
+                    <h2 className="text-xl font-bold text-dark-green">
+                      Daftar Alamat
+                    </h2>
+                    <Link
+                      href="/checkout"
+                      className="text-xs font-bold text-sage-green hover:underline"
                     >
-                      {isLoading ? "Menyimpan..." : "Update Alamat"}
-                    </button>
+                      + Tambah via Checkout
+                    </Link>
                   </div>
-                </form>
+
+                  {savedAddresses.length === 0 ? (
+                    <div className="text-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                      <MapPin
+                        size={40}
+                        className="mx-auto text-gray-300 mb-2"
+                      />
+                      <p className="text-gray-400 text-sm">
+                        Belum ada alamat tersimpan.
+                      </p>
+                      <Link
+                        href="/checkout"
+                        className="text-dark-green text-xs font-bold underline mt-2 inline-block"
+                      >
+                        Tambah saat checkout
+                      </Link>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4">
+                      {savedAddresses.map((addr) => (
+                        <div
+                          key={addr.id}
+                          className="bg-white border border-gray-200 p-5 rounded-2xl flex justify-between items-start group hover:border-sage-green transition-colors"
+                        >
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-dark-green">
+                                {addr.name}
+                              </span>
+                              <span className="text-gray-400 text-xs">|</span>
+                              <span className="text-gray-500 text-xs">
+                                {addr.phone}
+                              </span>
+                              {addr.isPrimary && (
+                                <span className="bg-dark-green text-white text-[10px] px-2 py-0.5 rounded ml-2">
+                                  Utama
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 max-w-lg">
+                              {addr.street}
+                            </p>
+                            <p className="text-xs text-gray-400 uppercase tracking-wide">
+                              {addr.city}
+                            </p>
+                            <span className="inline-block mt-2 text-[10px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded uppercase tracking-wider">
+                              {addr.label}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteAddress(addr.id)}
+                            className="text-gray-400 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* --- TAB SECURITY --- */}
@@ -388,33 +551,38 @@ export default function ProfilePage() {
                   </p>
                 </div>
               )}
-              
-              {/* --- TAB ORDER (UPDATED ARTSY UI & PRICE FIX) --- */}
+
+              {/* --- TAB ORDER (ORIGINAL UI) --- */}
               {activeTab === "order" && (
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
-                      <h2 className="text-xl font-serif font-bold text-dark-green flex items-center gap-2">
-                        <Package size={22} className="text-sage-green" /> Riwayat Pesanan
-                      </h2>
-                      
-                      {/* FILTER TABS */}
-                      <div className="flex bg-gray-50 p-1 rounded-full border border-gray-200">
-                          {["all", "packed", "shipped", "completed"].map((filter) => (
-                              <button
-                                key={filter}
-                                onClick={() => setOrderFilter(filter)}
-                                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
-                                  orderFilter === filter 
-                                  ? "bg-dark-green text-white shadow-md" 
-                                  : "text-gray-500 hover:text-dark-green"
-                                }`}
-                              >
-                                {filter === "all" ? "Semua" : 
-                                 filter === "packed" ? "Dikemas" :
-                                 filter === "shipped" ? "Dikirim" : "Selesai"}
-                              </button>
-                          ))}
-                      </div>
+                    <h2 className="text-xl font-serif font-bold text-dark-green flex items-center gap-2">
+                      <Package size={22} className="text-sage-green" /> Riwayat
+                      Pesanan
+                    </h2>
+                    <div className="flex bg-gray-50 p-1 rounded-full border border-gray-200">
+                      {["all", "packed", "shipped", "completed"].map(
+                        (filter) => (
+                          <button
+                            key={filter}
+                            onClick={() => setOrderFilter(filter)}
+                            className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                              orderFilter === filter
+                                ? "bg-dark-green text-white shadow-md"
+                                : "text-gray-500 hover:text-dark-green"
+                            }`}
+                          >
+                            {filter === "all"
+                              ? "Semua"
+                              : filter === "packed"
+                              ? "Dikemas"
+                              : filter === "shipped"
+                              ? "Dikirim"
+                              : "Selesai"}
+                          </button>
+                        )
+                      )}
+                    </div>
                   </div>
 
                   {filteredOrders.length === 0 ? (
@@ -423,14 +591,11 @@ export default function ProfilePage() {
                         🥀
                       </div>
                       <h3 className="font-bold text-gray-700">
-                        {orderFilter === "all" ? "Belum ada pesanan" : "Tidak ada pesanan di status ini"}
+                        Belum ada pesanan
                       </h3>
-                      <p className="text-gray-400 text-sm mb-6">
-                        Cek tab lain atau mulai belanja sekarang.
-                      </p>
                       <Link
                         href="/toko"
-                        className="px-6 py-2 bg-dark-green text-white rounded-full text-sm font-bold hover:bg-sage-green transition shadow-md"
+                        className="px-6 py-2 bg-dark-green text-white rounded-full text-sm font-bold hover:bg-sage-green transition shadow-md mt-4 inline-block"
                       >
                         Mulai Belanja
                       </Link>
@@ -438,82 +603,82 @@ export default function ProfilePage() {
                   ) : (
                     <div className="grid grid-cols-1 gap-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
                       <AnimatePresence>
-                      {filteredOrders.map((order) => {
-                        const statusStyle = getStatusStyle(order.status);
-                        const StatusIcon = statusStyle.icon;
-
-                        return (
-                        <motion.div
-                          key={order.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, scale: 0.95 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                        <Link href={`/orders/${order.id}`} className="block group">
-                          <div className="bg-white border border-gray-100 rounded-3xl p-5 hover:border-sage-green hover:shadow-lg hover:shadow-green-900/5 transition-all duration-300 relative overflow-hidden">
-                            {/* Decorative Background Accent */}
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-gray-50 rounded-bl-[4rem] -mr-4 -mt-4 transition-colors group-hover:bg-sage-green/10"></div>
-
-                            {/* Header Card */}
-                            <div className="flex justify-between items-start mb-4 relative z-10">
-                              <div className="flex flex-col">
-                                <span className="font-mono text-[10px] text-gray-400 uppercase tracking-widest mb-1">
-                                  ID: {order.id}
-                                </span>
-                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border w-fit ${statusStyle.color}`}>
-                                  <StatusIcon size={12}/>
-                                  {getStatusLabel(order.status)}
-                                </span>
-                              </div>
-                              <span className="text-[10px] text-gray-400 font-medium bg-white/80 px-2 py-1 rounded-lg backdrop-blur-sm">
-                                {order.date}
-                              </span>
-                            </div>
-
-                            {/* Divider Artsy */}
-                            <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-4"></div>
-
-                            {/* Body Card */}
-                            <div className="flex justify-between items-center relative z-10">
-                              <div className="flex items-center gap-4">
-                                <div className="w-12 h-12 rounded-2xl bg-cream-bg flex items-center justify-center text-dark-green border border-gray-100 shadow-sm group-hover:scale-105 transition-transform">
-                                  <ShoppingBag size={20} />
+                        {filteredOrders.map((order) => {
+                          const statusStyle = getStatusStyle(order.status);
+                          const StatusIcon = statusStyle.icon;
+                          return (
+                            <motion.div
+                              key={order.id}
+                              initial={{ opacity: 0, y: 10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                            >
+                              <Link
+                                href={`/orders/${order.id}`}
+                                className="block group"
+                              >
+                                <div className="bg-white border border-gray-100 rounded-3xl p-5 hover:border-sage-green hover:shadow-lg transition-all relative overflow-hidden">
+                                  <div className="flex justify-between items-start mb-4 relative z-10">
+                                    <div className="flex flex-col">
+                                      <span className="font-mono text-[10px] text-gray-400 uppercase tracking-widest mb-1">
+                                        ID: {order.id}
+                                      </span>
+                                      <span
+                                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border w-fit ${statusStyle.color}`}
+                                      >
+                                        <StatusIcon size={12} />{" "}
+                                        {getStatusLabel(order.status)}
+                                      </span>
+                                    </div>
+                                    <span className="text-[10px] text-gray-400 font-medium bg-white/80 px-2 py-1 rounded-lg backdrop-blur-sm">
+                                      {order.date}
+                                    </span>
+                                  </div>
+                                  <div className="h-px w-full bg-gradient-to-r from-transparent via-gray-200 to-transparent mb-4"></div>
+                                  <div className="flex justify-between items-center relative z-10">
+                                    <div className="flex items-center gap-4">
+                                      <div className="w-12 h-12 rounded-2xl bg-cream-bg flex items-center justify-center text-dark-green border border-gray-100 shadow-sm">
+                                        <ShoppingBag size={20} />
+                                      </div>
+                                      <div>
+                                        <h4 className="font-serif font-bold text-gray-800 text-base group-hover:text-dark-green transition-colors line-clamp-1">
+                                          {order.items && order.items[0]
+                                            ? order.items[0].title ||
+                                              order.items[0].name
+                                            : "Custom Bouquet"}
+                                        </h4>
+                                        <p className="text-xs text-gray-400 mt-0.5">
+                                          {order.items && order.items.length > 1
+                                            ? `+${
+                                                order.items.length - 1
+                                              } item lainnya`
+                                            : "Single Item"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">
+                                        Total
+                                      </p>
+                                      <p className="font-bold text-dark-green text-sm font-sans">
+                                        {(
+                                          order.financials?.grandTotal ||
+                                          order.financials?.payNowTotal ||
+                                          order.totalPrice ||
+                                          0
+                                        ).toLocaleString("id-ID", {
+                                          style: "currency",
+                                          currency: "IDR",
+                                          maximumSignificantDigits: 3,
+                                        })}
+                                      </p>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div>
-                                  <h4 className="font-serif font-bold text-gray-800 text-base group-hover:text-dark-green transition-colors line-clamp-1">
-                                    {order.items && order.items[0]
-                                      ? order.items[0].title || order.items[0].name
-                                      : "Custom Bouquet"}
-                                  </h4>
-                                  <p className="text-xs text-gray-400 mt-0.5">
-                                    {order.items && order.items.length > 1
-                                      ? `+${order.items.length - 1} item lainnya`
-                                      : "Single Item"}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="text-right">
-                                <p className="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Total</p>
-                                <p className="font-bold text-dark-green text-sm font-sans">
-                                  {(
-                                    order.financials?.grandTotal || // Prioritas 1: Format baru
-                                    order.financials?.payNowTotal || // Fallback 1: Format lama
-                                    order.totalPrice || // Fallback 2: Basic
-                                    0
-                                  ).toLocaleString("id-ID", {
-                                    style: "currency",
-                                    currency: "IDR",
-                                    maximumSignificantDigits: 3,
-                                  })}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </Link>
-                        </motion.div>
-                      )})}
+                              </Link>
+                            </motion.div>
+                          );
+                        })}
                       </AnimatePresence>
                     </div>
                   )}
