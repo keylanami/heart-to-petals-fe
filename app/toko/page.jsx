@@ -344,7 +344,7 @@ const CompactCard = ({ product }) => {
   return (
     <motion.div
       variants={itemVariants}
-      className="group relative overflow-hidden cursor-pointer w-full h-full shadow-sm hover:shadow-2xl transition-all duration-500 rounded-3xl min-h-[360px] aspect-[3/4]"
+      className="group relative overflow-hidden cursor-pointer w-full h-full shadow-sm hover:shadow-2xl transition-all duration-500 min-h-[360px] aspect-[3/4]"
     >
       <Link href={`/product/${product.id}`} className="absolute inset-0 z-10" />
       <div className="absolute inset-0 overflow-hidden">
