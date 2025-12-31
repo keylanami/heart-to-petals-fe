@@ -19,7 +19,6 @@ import {
   Search,
   LayoutGrid,
   Grid3X3,
-  Slash,
 } from "lucide-react";
 import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
@@ -31,18 +30,20 @@ const pageVariants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
-    transition: { staggerChildren: 0.15, delayChildren: 0.1 },
+    transition: { staggerChildren: 0.1, delayChildren: 0.1 },
   },
 };
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
+  hidden: { opacity: 0, y: 20 },
   show: {
     opacity: 1,
     y: 0,
     transition: { type: "spring", stiffness: 50, damping: 20 },
   },
 };
+
+
 
 const ShopSelectionModal = ({ isOpen, onClose }) => {
   const customShops = SHOPS.filter((shop) => shop.can_customize);
@@ -58,7 +59,6 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
             onClick={onClose}
             className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
           />
-
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -82,7 +82,6 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
                 <X size={18} className="text-gray-500" />
               </button>
             </div>
-
             <div className="p-6 overflow-y-auto custom-scrollbar bg-white">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {customShops.map((shop) => (
@@ -128,6 +127,7 @@ const ShopSelectionModal = ({ isOpen, onClose }) => {
   );
 };
 
+
 const TopShopCard = ({ shop }) => (
   <motion.div variants={itemVariants}>
     <Link
@@ -141,7 +141,6 @@ const TopShopCard = ({ shop }) => (
           className="w-full h-full object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#1A2F24] via-[#1A2F24]/40 to-transparent opacity-80 transition-opacity duration-300 group-hover:opacity-90"></div>
-
         <div className="absolute top-4 left-4 z-10">
           {shop.can_customize ? (
             <div className="flex items-center gap-1.5 bg-white/40 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full text-[9px] font-bold text-white shadow-sm tracking-widest uppercase">
@@ -153,12 +152,10 @@ const TopShopCard = ({ shop }) => (
             </div>
           )}
         </div>
-
         <div className="absolute top-4 right-4 bg-white/20 backdrop-blur-md border border-white/20 px-2 py-1 rounded-full flex items-center gap-1 text-[10px] font-bold text-white shadow-sm">
           <Star size={10} fill="currentColor" className="text-yellow-400" />{" "}
           {shop.rating}
         </div>
-
         <div className="absolute bottom-0 left-0 w-full p-6 text-white text-center">
           <h3 className="font-serif text-xl font-bold leading-tight mb-1 group-hover:text-sage-green transition-colors">
             {shop.name}
@@ -177,6 +174,7 @@ const TopShopCard = ({ shop }) => (
   </motion.div>
 );
 
+
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
   const { addToCart } = useCart();
@@ -187,18 +185,15 @@ const BentoCard = ({ product, index, className }) => {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!user) {
       showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
       router.push("/login");
       return;
     }
-
     if (user && (user.role === "tenant" || user.role === "superadmin")) {
       showToast("Gunakan akun user untuk belanja!", "error");
       return;
     }
-
     addToCart(product, 1);
     showToast(`${product.title} masuk keranjang!`, "success");
   };
@@ -206,18 +201,15 @@ const BentoCard = ({ product, index, className }) => {
   const handleCheckout = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!user) {
       showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
       router.push("/login");
       return;
     }
-
     if (user && (user.role === "tenant" || user.role === "superadmin")) {
       showToast("Gunakan akun user untuk belanja!", "error");
       return;
     }
-
     addToCart(product, 1);
     router.push(`/checkout?direct=true&id=${product.id}`);
   };
@@ -293,7 +285,7 @@ const BentoCard = ({ product, index, className }) => {
               </button>
               <button
                 onClick={handleCheckout}
-                className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
+                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
                   isDark
                     ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
                     : "bg-white/20 border border-white/50 text-white hover:bg-white hover:text-dark-green"
@@ -309,7 +301,9 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
+
 const CompactCard = ({ product }) => {
+  const isDark = product.theme === "dark";
   const { addToCart } = useCart();
   const router = useRouter();
   const { showToast } = useToast();
@@ -318,18 +312,15 @@ const CompactCard = ({ product }) => {
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!user) {
       showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
       router.push("/login");
       return;
     }
-
     if (user && (user.role === "tenant" || user.role === "superadmin")) {
       showToast("Gunakan akun user untuk belanja!", "error");
       return;
     }
-
     addToCart(product, 1);
     showToast(`${product.title} masuk keranjang!`, "success");
   };
@@ -337,74 +328,65 @@ const CompactCard = ({ product }) => {
   const handleCheckout = (e) => {
     e.preventDefault();
     e.stopPropagation();
-
     if (!user) {
       showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
       router.push("/login");
       return;
     }
-
     if (user && (user.role === "tenant" || user.role === "superadmin")) {
       showToast("Gunakan akun user untuk belanja!", "error");
       return;
     }
-
     addToCart(product, 1);
     router.push(`/checkout?direct=true&id=${product.id}`);
   };
 
   return (
-    <motion.div variants={itemVariants} className="group cursor-pointer">
-      <Link href={`/product/${product.id}`}>
-        <div className="aspect-[4/5] overflow-hidden relative bg-gray-100 mb-3 shadow-sm hover:shadow-xl transition-all duration-300">
-          <img
-            src={product.image}
-            alt={product.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-          />
+    <motion.div
+      variants={itemVariants}
+      className="group relative overflow-hidden cursor-pointer w-full h-full shadow-sm hover:shadow-2xl transition-all duration-500 rounded-3xl min-h-[360px] aspect-[3/4]"
+    >
+      <Link href={`/product/${product.id}`} className="absolute inset-0 z-10" />
+      <div className="absolute inset-0 overflow-hidden">
+        <img
+          src={product.image}
+          alt={product.title}
+          className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+        />
+      </div>
 
-          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-            {product.shop && (
-              <span className="bg-white/90 backdrop-blur text-dark-green text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">
-                {product.shop.name}
-              </span>
-            )}
-          </div>
+      <div
+        className={`absolute inset-0 bg-gradient-to-t ${
+          isDark
+            ? "from-[#0F1F18] via-[#0F1F18]/40"
+            : "from-[#8C8681] via-[#8C8681]/20"
+        } to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500`}
+      ></div>
 
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-            <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-              <p className="text-white text-xs line-clamp-2 mb-3 font-light">
-                {product.desc}
-              </p>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={handleAddToCart}
-                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white text-dark-green text-[10px] font-bold uppercase tracking-wide hover:bg-sage-green hover:text-white transition-colors"
-                >
-                  <ShoppingBag size={12} /> Add
-                </button>
-                <button
-                  onClick={handleCheckout}
-                  className="flex-1 py-2 rounded-lg bg-dark-green text-white text-[10px] font-bold uppercase tracking-wide hover:bg-sage-green transition-colors border border-transparent"
-                >
-                  Buy
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div className="flex justify-between items-start">
-            <h4 className="font-serif font-bold text-dark-green text-lg leading-tight group-hover:text-sage-green transition-colors line-clamp-1">
-              {product.title}
-            </h4>
-            <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
-              {product.tag}
+      <div className="absolute top-4 left-4 z-20 pointer-events-none flex flex-col items-start gap-2">
+        {product.shop && (
+          <div className="bg-white/90 backdrop-blur-md border border-white/50 text-dark-green py-1 px-2.5 rounded-full shadow-lg flex items-center gap-1.5">
+            <Store size={9} />
+            <span className="text-[8px] font-bold uppercase tracking-widest">
+              {product.shop.name}
             </span>
           </div>
-          <p className="text-sm font-medium text-gray-600 mt-1">
+        )}
+        <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full shadow-sm">
+          {product.tag}
+        </span>
+      </div>
+
+      <div
+        className={`absolute bottom-0 left-0 w-full p-5 flex flex-col justify-end z-20 pointer-events-none ${
+          isDark ? "text-cream-bg" : "text-white"
+        }`}
+      >
+        <div className="transform transition-transform duration-500 group-hover:-translate-y-2">
+          <h3 className="text-xl font-serif font-bold leading-tight mb-1 drop-shadow-lg">
+            {product.title}
+          </h3>
+          <p className="font-sans font-medium text-base opacity-90 mb-2">
             {new Intl.NumberFormat("id-ID", {
               style: "currency",
               currency: "IDR",
@@ -412,7 +394,34 @@ const CompactCard = ({ product }) => {
             }).format(product.price)}
           </p>
         </div>
-      </Link>
+
+        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
+          <div className="overflow-hidden">
+            <div className="flex gap-2 pb-1 pointer-events-auto mt-2">
+              <button
+                onClick={handleAddToCart}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wide backdrop-blur-md border transition-all active:scale-95 ${
+                  isDark
+                    ? "bg-cream-bg/90 text-dark-green border-cream-bg hover:bg-white"
+                    : "bg-dark-green/80 text-white border-dark-green/50 hover:bg-dark-green"
+                }`}
+              >
+                <ShoppingBag size={12} /> Add
+              </button>
+              <button
+                onClick={handleCheckout}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-wide transition-all active:scale-95 ${
+                  isDark
+                    ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
+                    : "bg-white/20 border border-white/50 text-white hover:bg-white hover:text-dark-green"
+                }`}
+              >
+                Checkout <ArrowRight size={12} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -438,7 +447,6 @@ const PromoCard = ({ className, onClick }) => (
       Punya Cerita <br />{" "}
       <span className="italic text-cream-bg font-light">Sendiri?</span>
     </h3>
-
     <button
       onClick={onClick}
       className="relative z-10 group/btn flex items-center gap-3 bg-cream-bg text-dark-green px-8 py-4 rounded-full font-bold text-xs uppercase tracking-widest hover:bg-white transition-all hover:scale-105 shadow-xl cursor-pointer"
@@ -446,7 +454,6 @@ const PromoCard = ({ className, onClick }) => (
       <span>Mulai Custom</span>
       <ArrowUpRight size={16} />
     </button>
-
     <Sparkles
       strokeWidth={1}
       size={200}
@@ -469,18 +476,15 @@ export default function TenantListPage() {
 
   const handleStartCustom = (e) => {
     e?.preventDefault();
-
     if (!user) {
       showToast("Hey, login dulu baru bisa kustom!", "error");
       router.push("/login");
       return;
     }
-
     if (user && (user.role === "tenant" || user.role === "superadmin")) {
       showToast("Gunakan akun user untuk kustom!", "error");
       return;
     }
-
     setIsModalOpen(true);
   };
 
@@ -499,23 +503,19 @@ export default function TenantListPage() {
 
   const filteredProducts = allItems.filter((item) => {
     if (!isSearching) return true;
-
     const q = searchQuery.toLowerCase().trim();
-
     const matchTitle = (item.title || "").toLowerCase().includes(q);
     const matchTag = (item.tag || "").toLowerCase().includes(q);
     const matchCat = (item.category || "").toLowerCase().includes(q);
     const matchComp = item.flowers?.some((f) =>
       (f || "").toLowerCase().includes(q)
     );
-
     return matchTitle || matchTag || matchCat || matchComp;
   });
 
   return (
     <main className="bg-cream-bg min-h-screen">
       <Navbar />
-
       <ShopSelectionModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -556,7 +556,6 @@ export default function TenantListPage() {
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
                 <Search className="text-gray-400" size={20} />
               </div>
-
               <input
                 type="text"
                 className="w-full pl-12 pr-10 py-4 bg-white rounded-full border border-gray-100 shadow-xl focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all placeholder:text-gray-400 text-dark-green font-medium"
@@ -571,7 +570,6 @@ export default function TenantListPage() {
                   }
                 }}
               />
-
               <AnimatePresence>
                 {isSearching && (
                   <motion.button
@@ -603,14 +601,13 @@ export default function TenantListPage() {
               <h2 className="text-2xl font-serif font-bold text-dark-green flex items-center gap-2">
                 <span className="w-6 h-6 rounded-full bg-dark-green text-white flex items-center justify-center text-xs">
                   1
-                </span>
+                </span>{" "}
                 Top Visited{" "}
                 <span className="italic font-light text-sage-green">
                   Florists
                 </span>
               </h2>
             </motion.div>
-
             <motion.div
               className="flex gap-6 overflow-x-auto pb-10 -mx-4 px-4 md:mx-0 md:px-0 custom-scrollbar"
               variants={pageVariants}
@@ -647,7 +644,6 @@ export default function TenantListPage() {
                 </span>
               )}
             </h2>
-
             <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
               <button
                 onClick={() => setViewMode("bento")}
@@ -690,7 +686,6 @@ export default function TenantListPage() {
                     if (item.type === "promo") return null;
                     return <CompactCard key={item.id} product={item} />;
                   }
-
                   if (item.type === "promo") {
                     return (
                       <PromoCard
