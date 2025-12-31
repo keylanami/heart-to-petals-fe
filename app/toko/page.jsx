@@ -309,8 +309,49 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
+
 const CompactCard = ({ product }) => {
-    const isDark = product.theme === "dark";
+    const { addToCart } = useCart();
+    const router = useRouter();
+    const { showToast } = useToast();
+    const { user } = useAuth();
+    const handleAddToCart = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!user) {
+            showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+            router.push("/login");
+            return;
+        }
+
+        if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
+            showToast("Gunakan akun user untuk belanja!", "error");
+            return;
+        }
+
+        addToCart(product, 1);
+        showToast(`${product.title} masuk keranjang!`, "success"); 
+    };
+
+    const handleCheckout = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (!user) {
+            showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+            router.push("/login");
+            return;
+        }
+
+        if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
+            showToast("Gunakan akun user untuk belanja!", "error");
+            return;
+        }
+
+        addToCart(product, 1);
+        router.push(`/checkout?direct=true&id=${product.id}`);
+    };
     
     return (
         <motion.div variants={itemVariants} className="group cursor-pointer">
@@ -318,8 +359,7 @@ const CompactCard = ({ product }) => {
                 <div className="aspect-[4/5] rounded-2xl overflow-hidden relative bg-gray-100 mb-3 shadow-sm hover:shadow-xl transition-all duration-300">
                     <img src={product.image} alt={product.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
                     
-                    {/* Tags */}
-                    <div className="absolute top-2 left-2 flex flex-col gap-1">
+                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
                         {product.shop && (
                             <span className="bg-white/90 backdrop-blur text-dark-green text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">
                                 {product.shop.name}
@@ -327,8 +367,25 @@ const CompactCard = ({ product }) => {
                         )}
                     </div>
 
-                    <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                        <p className="text-white text-xs line-clamp-2">{product.desc}</p>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                        <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+                            <p className="text-white text-xs line-clamp-2 mb-3 font-light">{product.desc}</p>
+                            
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleAddToCart}
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white text-dark-green text-[10px] font-bold uppercase tracking-wide hover:bg-sage-green hover:text-white transition-colors"
+                                >
+                                    <ShoppingBag size={12} /> Add
+                                </button>
+                                <button
+                                    onClick={handleCheckout}
+                                    className="flex-1 py-2 rounded-lg bg-dark-green text-white text-[10px] font-bold uppercase tracking-wide hover:bg-sage-green transition-colors border border-transparent"
+                                >
+                                    Buy
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 
