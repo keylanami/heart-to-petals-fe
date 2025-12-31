@@ -17,7 +17,9 @@ import {
   ArrowLeft,
   ArrowRight,
   Search,
-  Route,
+  LayoutGrid,
+  Grid3X3,
+  Slash
 } from "lucide-react";
 import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
@@ -182,9 +184,6 @@ const BentoCard = ({ product, index, className }) => {
   const { showToast } = useToast();
   const { user } = useAuth();
 
-  
-
-
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -294,7 +293,7 @@ const BentoCard = ({ product, index, className }) => {
               </button>
               <button
                 onClick={handleCheckout}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
+                className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
                   isDark
                     ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
                     : "bg-white/20 border border-white/50 text-white hover:bg-white hover:text-dark-green"
@@ -309,6 +308,43 @@ const BentoCard = ({ product, index, className }) => {
     </motion.div>
   );
 };
+
+const CompactCard = ({ product }) => {
+    const isDark = product.theme === "dark";
+    
+    return (
+        <motion.div variants={itemVariants} className="group cursor-pointer">
+            <Link href={`/product/${product.id}`}>
+                <div className="aspect-[4/5] rounded-2xl overflow-hidden relative bg-gray-100 mb-3 shadow-sm hover:shadow-xl transition-all duration-300">
+                    <img src={product.image} alt={product.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                    
+                    {/* Tags */}
+                    <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        {product.shop && (
+                            <span className="bg-white/90 backdrop-blur text-dark-green text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">
+                                {product.shop.name}
+                            </span>
+                        )}
+                    </div>
+
+                    <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                        <p className="text-white text-xs line-clamp-2">{product.desc}</p>
+                    </div>
+                </div>
+                
+                <div>
+                    <div className="flex justify-between items-start">
+                        <h4 className="font-serif font-bold text-dark-green text-lg leading-tight group-hover:text-sage-green transition-colors line-clamp-1">{product.title}</h4>
+                        <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full uppercase tracking-wider">{product.tag}</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-600 mt-1">
+                        {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(product.price)}
+                    </p>
+                </div>
+            </Link>
+        </motion.div>
+    )
+}
 
 const PromoCard = ({ className, onClick }) => (
   <motion.div
@@ -354,6 +390,8 @@ export default function TenantListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const isSearching = searchQuery.trim().length > 0;
+  const [viewMode, setViewMode] = useState("bento"); 
+
   const { user } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
@@ -516,7 +554,7 @@ export default function TenantListPage() {
         <motion.section variants={pageVariants} initial="hidden" animate="show">
           <motion.div
             variants={itemVariants}
-            className="flex items-end justify-between mb-10 px-2"
+            className="flex items-center justify-between mb-10 px-2"
           >
             <h2 className="text-2xl font-serif font-bold text-dark-green flex items-center gap-2">
               <span className="w-6 h-6 rounded-full bg-dark-green text-white flex items-center justify-center text-xs">
@@ -538,21 +576,49 @@ export default function TenantListPage() {
                 </span>
               )}
             </h2>
+
+            <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
+                <button 
+                    onClick={() => setViewMode("bento")} 
+                    className={`p-2 rounded-lg transition-all ${viewMode === "bento" ? "bg-dark-green text-white shadow-md" : "text-gray-400 hover:text-dark-green"}`}
+                    title="Bento Grid"
+                >
+                    <LayoutGrid size={18} />
+                </button>
+                <button 
+                    onClick={() => setViewMode("compact")} 
+                    className={`p-2 rounded-lg transition-all ${viewMode === "compact" ? "bg-dark-green text-white shadow-md" : "text-gray-400 hover:text-dark-green"}`}
+                    title="Compact Grid"
+                >
+                    <Grid3X3 size={18} />
+                </button>
+            </div>
           </motion.div>
 
           {filteredProducts.length > 0 ? (
             <motion.div
-              className="grid grid-cols-1 md:grid-cols-4 gap-6 grid-flow-dense"
+              className={`grid gap-6 grid-flow-dense ${
+                  viewMode === 'bento' 
+                  ? "grid-cols-1 md:grid-cols-4" 
+                  : "grid-cols-2 md:grid-cols-4 lg:grid-cols-5"
+              }`}
               variants={pageVariants}
               key={searchQuery ? "search-mode" : "default-mode"}
             >
-              <AnimatePresence>
+              <AnimatePresence mode="popLayout">
                 {filteredProducts.map((item, index) => {
+                  
+                  if (viewMode === 'compact') {
+                      if (item.type === 'promo') return null; 
+                      return <CompactCard key={item.id} product={item} />
+                  }
+
                   if (item.type === "promo") {
                     return (
                       <PromoCard
                         key={item.id}
                         className={getBentoClass(index)}
+                        shopId={null} 
                         onClick={handleStartCustom}
                       />
                     );
