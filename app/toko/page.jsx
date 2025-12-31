@@ -19,7 +19,7 @@ import {
   Search,
   LayoutGrid,
   Grid3X3,
-  Slash
+  Slash,
 } from "lucide-react";
 import { SHOPS, allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
@@ -149,7 +149,7 @@ const TopShopCard = ({ shop }) => (
             </div>
           ) : (
             <div className="flex items-center gap-1.5 bg-white/20 backdrop-blur-md border border-white/20 px-3 py-1.5 rounded-full text-[9px] font-bold text-white shadow-sm tracking-widest uppercase">
-              <Package size={10} /> 
+              <Package size={10} />
             </div>
           )}
         </div>
@@ -189,18 +189,18 @@ const BentoCard = ({ product, index, className }) => {
     e.stopPropagation();
 
     if (!user) {
-        showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
-        router.push("/login");
-        return;
+      showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+      router.push("/login");
+      return;
     }
 
-    if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
-        showToast("Gunakan akun user untuk belanja!", "error");
-        return;
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return;
     }
 
     addToCart(product, 1);
-    showToast(`${product.title} masuk keranjang!`, "success"); 
+    showToast(`${product.title} masuk keranjang!`, "success");
   };
 
   const handleCheckout = (e) => {
@@ -208,14 +208,14 @@ const BentoCard = ({ product, index, className }) => {
     e.stopPropagation();
 
     if (!user) {
-        showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
-        router.push("/login");
-        return;
+      showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+      router.push("/login");
+      return;
     }
 
-    if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
-        showToast("Gunakan akun user untuk belanja!", "error");
-        return;
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return;
     }
 
     addToCart(product, 1);
@@ -309,99 +309,113 @@ const BentoCard = ({ product, index, className }) => {
   );
 };
 
-
 const CompactCard = ({ product }) => {
-    const { addToCart } = useCart();
-    const router = useRouter();
-    const { showToast } = useToast();
-    const { user } = useAuth();
-    const handleAddToCart = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+  const { addToCart } = useCart();
+  const router = useRouter();
+  const { showToast } = useToast();
+  const { user } = useAuth();
 
-        if (!user) {
-            showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
-            router.push("/login");
-            return;
-        }
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-        if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
-            showToast("Gunakan akun user untuk belanja!", "error");
-            return;
-        }
+    if (!user) {
+      showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+      router.push("/login");
+      return;
+    }
 
-        addToCart(product, 1);
-        showToast(`${product.title} masuk keranjang!`, "success"); 
-    };
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return;
+    }
 
-    const handleCheckout = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+    addToCart(product, 1);
+    showToast(`${product.title} masuk keranjang!`, "success");
+  };
 
-        if (!user) {
-            showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
-            router.push("/login");
-            return;
-        }
+  const handleCheckout = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-        if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
-            showToast("Gunakan akun user untuk belanja!", "error");
-            return;
-        }
+    if (!user) {
+      showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+      router.push("/login");
+      return;
+    }
 
-        addToCart(product, 1);
-        router.push(`/checkout?direct=true&id=${product.id}`);
-    };
-    
-    return (
-        <motion.div variants={itemVariants} className="group cursor-pointer">
-            <Link href={`/product/${product.id}`}>
-                <div className="aspect-[4/5] rounded-2xl overflow-hidden relative bg-gray-100 mb-3 shadow-sm hover:shadow-xl transition-all duration-300">
-                    <img src={product.image} alt={product.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-                    
-                    <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
-                        {product.shop && (
-                            <span className="bg-white/90 backdrop-blur text-dark-green text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">
-                                {product.shop.name}
-                            </span>
-                        )}
-                    </div>
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return;
+    }
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
-                        <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                            <p className="text-white text-xs line-clamp-2 mb-3 font-light">{product.desc}</p>
-                            
-                            <div className="flex gap-2">
-                                <button
-                                    onClick={handleAddToCart}
-                                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white text-dark-green text-[10px] font-bold uppercase tracking-wide hover:bg-sage-green hover:text-white transition-colors"
-                                >
-                                    <ShoppingBag size={12} /> Add
-                                </button>
-                                <button
-                                    onClick={handleCheckout}
-                                    className="flex-1 py-2 rounded-lg bg-dark-green text-white text-[10px] font-bold uppercase tracking-wide hover:bg-sage-green transition-colors border border-transparent"
-                                >
-                                    Buy
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div>
-                    <div className="flex justify-between items-start">
-                        <h4 className="font-serif font-bold text-dark-green text-lg leading-tight group-hover:text-sage-green transition-colors line-clamp-1">{product.title}</h4>
-                        <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full uppercase tracking-wider">{product.tag}</span>
-                    </div>
-                    <p className="text-sm font-medium text-gray-600 mt-1">
-                        {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(product.price)}
-                    </p>
-                </div>
-            </Link>
-        </motion.div>
-    )
-}
+    addToCart(product, 1);
+    router.push(`/checkout?direct=true&id=${product.id}`);
+  };
+
+  return (
+    <motion.div variants={itemVariants} className="group cursor-pointer">
+      <Link href={`/product/${product.id}`}>
+        <div className="aspect-[4/5] overflow-hidden relative bg-gray-100 mb-3 shadow-sm hover:shadow-xl transition-all duration-300">
+          <img
+            src={product.image}
+            alt={product.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+
+          <div className="absolute top-2 left-2 flex flex-col gap-1 z-10">
+            {product.shop && (
+              <span className="bg-white/90 backdrop-blur text-dark-green text-[9px] font-bold px-2 py-1 rounded-md shadow-sm">
+                {product.shop.name}
+              </span>
+            )}
+          </div>
+
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+            <div className="transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
+              <p className="text-white text-xs line-clamp-2 mb-3 font-light">
+                {product.desc}
+              </p>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={handleAddToCart}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-white text-dark-green text-[10px] font-bold uppercase tracking-wide hover:bg-sage-green hover:text-white transition-colors"
+                >
+                  <ShoppingBag size={12} /> Add
+                </button>
+                <button
+                  onClick={handleCheckout}
+                  className="flex-1 py-2 rounded-lg bg-dark-green text-white text-[10px] font-bold uppercase tracking-wide hover:bg-sage-green transition-colors border border-transparent"
+                >
+                  Buy
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div className="flex justify-between items-start">
+            <h4 className="font-serif font-bold text-dark-green text-lg leading-tight group-hover:text-sage-green transition-colors line-clamp-1">
+              {product.title}
+            </h4>
+            <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full uppercase tracking-wider">
+              {product.tag}
+            </span>
+          </div>
+          <p className="text-sm font-medium text-gray-600 mt-1">
+            {new Intl.NumberFormat("id-ID", {
+              style: "currency",
+              currency: "IDR",
+              maximumSignificantDigits: 3,
+            }).format(product.price)}
+          </p>
+        </div>
+      </Link>
+    </motion.div>
+  );
+};
 
 const PromoCard = ({ className, onClick }) => (
   <motion.div
@@ -447,24 +461,24 @@ export default function TenantListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const isSearching = searchQuery.trim().length > 0;
-  const [viewMode, setViewMode] = useState("bento"); 
+  const [viewMode, setViewMode] = useState("bento");
 
   const { user } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
 
   const handleStartCustom = (e) => {
-    e?.preventDefault(); 
-    
+    e?.preventDefault();
+
     if (!user) {
-        showToast("Hey, login dulu baru bisa kustom!", "error");
-        router.push("/login");
-        return;
+      showToast("Hey, login dulu baru bisa kustom!", "error");
+      router.push("/login");
+      return;
     }
 
     if (user && (user.role === "tenant" || user.role === "superadmin")) {
-        showToast("Gunakan akun user untuk kustom!", "error");
-        return;
+      showToast("Gunakan akun user untuk kustom!", "error");
+      return;
     }
 
     setIsModalOpen(true);
@@ -635,28 +649,36 @@ export default function TenantListPage() {
             </h2>
 
             <div className="flex bg-white p-1 rounded-xl border border-gray-200 shadow-sm">
-                <button 
-                    onClick={() => setViewMode("bento")} 
-                    className={`p-2 rounded-lg transition-all ${viewMode === "bento" ? "bg-dark-green text-white shadow-md" : "text-gray-400 hover:text-dark-green"}`}
-                    title="Bento Grid"
-                >
-                    <LayoutGrid size={18} />
-                </button>
-                <button 
-                    onClick={() => setViewMode("compact")} 
-                    className={`p-2 rounded-lg transition-all ${viewMode === "compact" ? "bg-dark-green text-white shadow-md" : "text-gray-400 hover:text-dark-green"}`}
-                    title="Compact Grid"
-                >
-                    <Grid3X3 size={18} />
-                </button>
+              <button
+                onClick={() => setViewMode("bento")}
+                className={`p-2 rounded-lg transition-all ${
+                  viewMode === "bento"
+                    ? "bg-dark-green text-white shadow-md"
+                    : "text-gray-400 hover:text-dark-green"
+                }`}
+                title="Bento Grid"
+              >
+                <LayoutGrid size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode("compact")}
+                className={`p-2 rounded-lg transition-all ${
+                  viewMode === "compact"
+                    ? "bg-dark-green text-white shadow-md"
+                    : "text-gray-400 hover:text-dark-green"
+                }`}
+                title="Compact Grid"
+              >
+                <Grid3X3 size={18} />
+              </button>
             </div>
           </motion.div>
 
           {filteredProducts.length > 0 ? (
             <motion.div
               className={`grid gap-6 grid-flow-dense ${
-                  viewMode === 'bento' 
-                  ? "grid-cols-1 md:grid-cols-4" 
+                viewMode === "bento"
+                  ? "grid-cols-1 md:grid-cols-4"
                   : "grid-cols-2 md:grid-cols-4 lg:grid-cols-5"
               }`}
               variants={pageVariants}
@@ -664,10 +686,9 @@ export default function TenantListPage() {
             >
               <AnimatePresence mode="popLayout">
                 {filteredProducts.map((item, index) => {
-                  
-                  if (viewMode === 'compact') {
-                      if (item.type === 'promo') return null; 
-                      return <CompactCard key={item.id} product={item} />
+                  if (viewMode === "compact") {
+                    if (item.type === "promo") return null;
+                    return <CompactCard key={item.id} product={item} />;
                   }
 
                   if (item.type === "promo") {
@@ -675,7 +696,7 @@ export default function TenantListPage() {
                       <PromoCard
                         key={item.id}
                         className={getBentoClass(index)}
-                        shopId={null} 
+                        shopId={null}
                         onClick={handleStartCustom}
                       />
                     );
