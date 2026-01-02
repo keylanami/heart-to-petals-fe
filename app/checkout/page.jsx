@@ -27,16 +27,15 @@ const shippingOptions = [
   { name: "Reguler", cost: 9000, eta: "2-3 Hari" },
 ];
 
-// --- INITIAL DATA ---
 const INITIAL_ADDRESSES = [
   {
     id: 101,
-    name: "Keyla Na",
-    phone: "(+62) 823 1501 9268",
+    name: "Tentukan namamu",
+    phone: "(+62)",
     street:
-      "Pondok Pelangi, Jalan Kampung Melati No.17A, RT.4/RW.4, Sijarak, Kesambi (rmh oren plg ujung)",
-    city: "KESAMBI, KOTA CIREBON, JAWA BARAT, ID, 45134",
-    label: "Rumah",
+      "Daftarkan alamatmu",
+    city: "",
+    label: "",
     isPrimary: true,
   },
 ];
@@ -54,19 +53,15 @@ function CheckoutContent() {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [selectedCheckoutIds, setSelectedCheckoutIds] = useState([]);
 
-  // --- ADDRESS STATE ---
   const [availableAddresses, setAvailableAddresses] =
     useState(INITIAL_ADDRESSES);
   const [selectedAddressId, setSelectedAddressId] = useState(101);
 
-  // Modal Visibility
   const [showAddressList, setShowAddressList] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
 
-  // State untuk menyimpan ID alamat yang sedang diedit (null jika mode tambah)
   const [editingId, setEditingId] = useState(null);
 
-  // Form State
   const [addressForm, setAddressForm] = useState({
     name: "",
     phone: "",
@@ -76,7 +71,6 @@ function CheckoutContent() {
     label: "Rumah",
   });
 
-  // --- LOGIC ALAMAT AKTIF ---
   const activeAddress =
     availableAddresses.find((a) => a.id === selectedAddressId) ||
     availableAddresses[0];
@@ -84,16 +78,13 @@ function CheckoutContent() {
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== "undefined") {
-      // Load saved addresses
       const saved = localStorage.getItem("saved_addresses");
       if (saved) {
         setAvailableAddresses(JSON.parse(saved));
       } else {
-        // Jika tidak ada di localstorage, pakai initial (untuk demo)
         setAvailableAddresses(INITIAL_ADDRESSES);
       }
-
-      // Load checkout items
+      
       const ids = localStorage.getItem("checkoutIds");
       if (ids) setSelectedCheckoutIds(JSON.parse(ids));
     }
