@@ -13,15 +13,16 @@ import {
   DollarSign,
   User,
   ArrowLeft,
-  Truck
+  Truck,
+  Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/app/context/ToastContext";
 import { useOrder } from "@/app/context/OrderContext";
 import { useInventory } from "@/app/context/InventoryContext";
 import { useAuth } from "@/app/context/AuthContext";
-import { allItems, SHOPS } from "@/app/utils/shop";
-import { FLOWER_LIBRARY } from "@/app/utils/flower";
+import { allItems } from "@/app/utils/shop"; 
+import { FLOWER_LIBRARY } from "@/app/utils/flower"; 
 
 export default function FloristAdminPage() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -39,6 +40,7 @@ export default function FloristAdminPage() {
     price: "",
     stock: "",
   });
+  
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -53,23 +55,33 @@ export default function FloristAdminPage() {
 
   const SHOP_ID = user?.shop?.id;
 
+  const getItemShopId = (item) => {
+      return item.shopId || item.shop_id || item.shop?.id;
+  };
+
   const myOrders = SHOP_ID
     ? orders.filter(
         (order) =>
           order.items &&
-          order.items.some((item) => String(item.shop?.id) === String(SHOP_ID))
+          order.items.some((item) => String(getItemShopId(item)) === String(SHOP_ID))
       )
     : [];
 
   const getMyInventory = () => {
     if (!SHOP_ID) return [];
-    const dynamicItems = inventory.filter((item) => String(item.shopId) === String(SHOP_ID));
+
+    const dynamicItems = inventory.filter((item) => {
+        const id = getItemShopId(item);
+        return String(id) === String(SHOP_ID);
+    });
+
     const staticCatalog = allItems
       .filter((item) => String(item.shop?.id) === String(SHOP_ID))
       .map((item) => ({
         ...item,
         shopId: item.shop.id,
-        stock: 5, 
+        stock: item.stock || 5, 
+        type: 'product' 
       }));
 
     const staticMaterials = FLOWER_LIBRARY
@@ -88,27 +100,31 @@ export default function FloristAdminPage() {
 
   const myInventory = getMyInventory();
 
-
-
   const handleAddProduct = (e) => {
     e.preventDefault();
     if (!SHOP_ID) return;
 
     addItem({
       ...newProduct,
-      id: Date.now(),
-      shopId: SHOP_ID,
-      shop: { name: user.shop.name, id: SHOP_ID, location: user.shop.location },
+      id: `manual-${Date.now()}`,
+      shopId: SHOP_ID, 
+      shop_id: SHOP_ID, 
+      shop: { 
+          id: SHOP_ID, 
+          name: user.shop.name, 
+          location: user.shop.location 
+      },
       price: parseInt(newProduct.price),
       stock: parseInt(newProduct.stock),
-      category: "New",
-      image:
-        "https://images.unsplash.com/photo-1596073419667-9d77d59f033f?auto=format&fit=crop&q=80&w=300",
+      category: "Manual Input",
+      image: "https://images.unsplash.com/photo-1596073419667-9d77d59f033f?auto=format&fit=crop&q=80&w=300",
     });
+
     setIsAddModalOpen(false);
     setNewProduct({ title: "", type: "flower", price: "", stock: "" });
     showToast("Item berhasil ditambahkan!", "success");
   };
+
 
   const handleApproveOrder = (orderId) => {
     updateOrderStatus(orderId, "processing"); 
@@ -141,7 +157,7 @@ export default function FloristAdminPage() {
       .filter((o) => o.status === "completed" || o.status === "on_delivery") 
       .reduce((acc, order) => {
         const shopSubtotal = order.items
-          .filter((i) => String(i.shop?.id) === String(SHOP_ID))
+          .filter((i) => String(getItemShopId(i)) === String(SHOP_ID))
           .reduce((sum, i) => sum + i.price * (i.qty || 1), 0);
         return acc + shopSubtotal;
       }, 0);
@@ -210,7 +226,7 @@ export default function FloristAdminPage() {
                 ) : (
                   myOrders.map((order) => {
                     const myItems = order.items.filter(
-                      (i) => String(i.shop?.id) === String(SHOP_ID)
+                      (i) => String(getItemShopId(i)) === String(SHOP_ID)
                     );
                     return (
                       <tr
@@ -223,7 +239,7 @@ export default function FloristAdminPage() {
                         <td className="px-4 py-3">{order.customer}</td>
                         <td className="px-4 py-3 text-xs text-gray-500">
                           {myItems
-                            .map((i) => `${i.title} (x${i.qty || 1})`)
+                            .map((i) => `${i.title || i.name} (x${i.qty || 1})`)
                             .join(", ")}
                         </td>
                         <td className="px-4 py-3">
@@ -287,7 +303,6 @@ export default function FloristAdminPage() {
                     </span>
                     <span className="text-xs text-gray-400">{order.date}</span>
                     
-                    {/* Status Badge */}
                     <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
                         order.status === 'processing' ? 'bg-blue-100 text-blue-600' : 'bg-yellow-100 text-yellow-600'
                     }`}>
@@ -301,10 +316,10 @@ export default function FloristAdminPage() {
                     <p className="font-bold mb-1">Items:</p>
                     <ul className="list-disc list-inside">
                       {order.items
-                        .filter((i) => String(i.shop?.id) === String(SHOP_ID))
+                        .filter((i) => String(getItemShopId(i)) === String(SHOP_ID))
                         .map((item, idx) => (
                           <li key={idx}>
-                            {item.title} (x{item.qty || 1})
+                            {item.title || item.name} (x{item.qty || 1})
                           </li>
                         ))}
                     </ul>
@@ -376,9 +391,9 @@ export default function FloristAdminPage() {
                 </td>
               </tr>
             ) : (
-              myInventory.map((item) => (
+              myInventory.map((item, idx) => (
                 <tr
-                  key={item.id}
+                  key={item.id || idx} // Fallback key
                   className="border-b border-gray-100 hover:bg-gray-50"
                 >
                   <td className="px-6 py-4 font-bold text-dark-green">
@@ -386,7 +401,7 @@ export default function FloristAdminPage() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs capitalize">
-                      {item.type || "Bouquet"}
+                      {item.type || "Product"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
@@ -404,13 +419,13 @@ export default function FloristAdminPage() {
                     <div className="flex justify-center gap-3">
                       <button
                         onClick={() => updateStock(item.id, -1)}
-                        className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 font-bold"
+                        className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 font-bold flex items-center justify-center"
                       >
                         -
                       </button>
                       <button
                         onClick={() => updateStock(item.id, 1)}
-                        className="w-8 h-8 rounded-xl bg-dark-green text-white hover:bg-sage-green font-bold"
+                        className="w-8 h-8 rounded-xl bg-dark-green text-white hover:bg-sage-green font-bold flex items-center justify-center"
                       >
                         +
                       </button>
