@@ -27,17 +27,37 @@ export function AuthProvider({ children }) {
     }
 
     const rawUsers = getStorage("users");
-    if (!rawUsers) {
-     const dummyTenants = SHOPS.map(shop => ({
+
+    if (!rawUsers || rawUsers === "[]") {
+        const dummyTenants = SHOPS.map(shop => ({
             id: `tenant-${shop.id}`,
             name: `Admin ${shop.name}`,
-            email: `admin@${shop.name.toLowerCase().replace(/\s+/g, '')}.com`,
+            email: `admin@${shop.name.toLowerCase().replace(/\s+/g, '')}.com`, 
+            password: "123", 
             role: "tenant",
             status: "active",
             shop: shop 
         }));
-      setStorage("users", JSON.stringify([]));
-      console.log("Database Users Seeding Complete:", initialUsers);
+
+        const dummyUsers = [
+            {
+                id: 101,
+                name: "Kelylyly",
+                email: "user@gmail.com",
+                password: "123",
+                role: "user",
+                status: "active",
+                address: {
+                    street: "Jl. Mawar No. 5",
+                    city: "Bandung",
+                    label: "Rumah"
+                }
+            }
+        ];
+
+        const initialUsers = [...dummyTenants, ...dummyUsers];
+        setStorage("users", JSON.stringify(initialUsers));
+        console.log("Database Users Seeding Complete:", initialUsers);
     }
   }, []);
 
@@ -72,7 +92,6 @@ export function AuthProvider({ children }) {
         ...(role === "tenant" && shopData
           ? {
               shop: {
-                // KRUSIAL: Gunakan ID yang dikirim dari form, kalau ga ada baru generate
                 id: shopData.id || `SHOP-${newId}`,
                 name: shopData.name,
                 location: shopData.location,
@@ -112,7 +131,6 @@ export function AuthProvider({ children }) {
       const rawData = getStorage("users");
       const existingUsers = rawData ? JSON.parse(rawData) : [];
 
-      // Super Admin Backdoor
       if (email === "super@admin.com" && password === "admin123") {
         const superAdmin = {
           id: 999,
@@ -136,11 +154,14 @@ export function AuthProvider({ children }) {
           showToast("Akun Toko Anda sedang ditinjau Superadmin.", "warning");
           return false;
         }
+
         setStorage("currentUser", JSON.stringify(validUser));
         setUser(validUser);
 
         if (validUser.role === "tenant") {
           router.push("/admin/florist");
+        } else if (validUser.role === "superadmin") {
+             router.push("/admin/super");
         } else {
           router.push("/toko");
         }
@@ -152,14 +173,11 @@ export function AuthProvider({ children }) {
     } catch (e) {
       return false;
     }
-
-  
   };
 
   const logout = () => {
     removeStorage("currentUser");
     setUser(null);
-
     if (typeof window !== "undefined") {
         localStorage.removeItem("myCart"); 
         window.dispatchEvent(new Event("reset-cart"));
@@ -168,8 +186,6 @@ export function AuthProvider({ children }) {
     router.push("/get-started");
   };
 
-
-
   const updateUser = (newUserData) => {
     if (!user) return;
     try {
@@ -177,7 +193,7 @@ export function AuthProvider({ children }) {
       setUser(updatedUser);
       setStorage("currentUser", JSON.stringify(updatedUser));
 
-      // Update juga di database 'users'
+      // Update juga di database 'users' localStorage agar permanen
       const rawData = getStorage("users");
       if (rawData) {
         const users = JSON.parse(rawData);
