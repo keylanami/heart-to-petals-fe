@@ -28,14 +28,18 @@ export function AuthProvider({ children }) {
 
     const rawUsers = getStorage("users");
     if (!rawUsers) {
-      // ... (Kode seeding dummy kamu yang lama bisa ditaruh sini jika perlu)
-      // Untuk sekarang kita fokus fix registrasi
+     const dummyTenants = SHOPS.map(shop => ({
+            id: `tenant-${shop.id}`,
+            name: `Admin ${shop.name}`,
+            email: `admin@${shop.name.toLowerCase().replace(/\s+/g, '')}.com`,
+            role: "tenant",
+            status: "active",
+            shop: shop 
+        }));
       setStorage("users", JSON.stringify([]));
+      console.log("Database Users Seeding Complete:", initialUsers);
     }
   }, []);
-
-
-
 
   const register = (name, email, password, role = "user", shopData = null) => {
     try {
@@ -148,6 +152,8 @@ export function AuthProvider({ children }) {
     } catch (e) {
       return false;
     }
+
+  
   };
 
   const logout = () => {
