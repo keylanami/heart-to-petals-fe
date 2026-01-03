@@ -25,15 +25,20 @@ export function InventoryProvider({ children }) {
     }
   }, []);
 
+  const saveToStorage = (newData) => {
+    setInventory(newData);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("inventory", JSON.stringify(newData));
+    }
+  };
 
   const addItem = (item) => {
-    setInventory((prev) => {
-      const newInventory = [item, ...prev]; 
-      if (typeof window !== "undefined") {
-        localStorage.setItem("inventory", JSON.stringify(newInventory));
-      }
-      return newInventory;
-    });
+    const processedItem = {
+      ...item,
+      variants: item.type === "packaging" ? item.variants || [] : null,
+      stock: item.type === "flower" ? parseInt(item.stock) : 0,
+    };
+    saveToStorage([processedItem, ...inventory]);
   };
 
   const deleteItem = (id) => {
@@ -58,18 +63,27 @@ export function InventoryProvider({ children }) {
     });
   };
 
-  const updateStock = (itemId, amount) => {
-    setInventory((prev) => {
-      const newInventory = prev.map((item) =>
-        item.id === itemId
-          ? { ...item, stock: Math.max(0, (item.stock || 0) + amount) }
-          : item
-      );
-      if (typeof window !== "undefined") {
-        localStorage.setItem("inventory", JSON.stringify(newInventory));
+  const updateStock = (itemId, amount, variantColor = null) => {
+    const newInv = inventory.map((item) => {
+      if (item.id !== itemId) return item;
+
+      if (item.type === "flower" || !item.variants) {
+        return { ...item, stock: Math.max(0, (item.stock || 0) + amount) };
       }
-      return newInventory;
+
+      if (item.type === "packaging" && variantColor) {
+        const updatedVariants = item.variants.map((v) => {
+          if (v.color === variantColor) {
+            return { ...v, stock: Math.max(0, (v.stock || 0) + amount) };
+          }
+          return v;
+        });
+        return { ...item, variants: updatedVariants };
+      }
+
+      return item;
     });
+    saveToStorage(newInv);
   };
 
   const getItemsByShop = (shopId) => {
@@ -85,11 +99,15 @@ export function InventoryProvider({ children }) {
       })
       .map((item) => ({
         ...item,
-        shopId: shopId, 
-        stock: item.stock || 50, 
+        shopId: shopId,
+        stock: item.stock || 50,
+        variants: item.type === "packaging" ? [] : null,
       }));
 
-    return [...contextItems, ...mockItems];
+    const contextIds = new Set(contextItems.map((i) => i.id));
+    const filteredMock = mockItems.filter((i) => !contextIds.has(i.id));
+    return [...contextItems, ...filteredMock];
+    
   };
 
   return (

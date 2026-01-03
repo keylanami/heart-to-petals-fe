@@ -14,15 +14,16 @@ import {
   Package,
   Flower2,
   ShoppingBag,
-  Upload,
   MapPin,
   Clock,
   Image as ImageIcon,
+  Check,
+  Palette,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { HexColorPicker } from "react-colorful";
 
-// --- STYLE CONSTANTS ---
 const INPUT_STYLE =
   "w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all placeholder:text-gray-400";
 const LABEL_STYLE =
@@ -44,46 +45,43 @@ export default function RegisterTenantPage() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
 
-  // --- GLOBAL STATES ---
   const [account, setAccount] = useState({ name: "", email: "", password: "" });
-
-  // Shop State (Updated for Map & Time)
   const [shop, setShop] = useState({
     name: "",
-    address: "", // Alamat Lengkap (Text)
-    coordinate: null, // Mock LatLng
-    openTime: "09:00", // Start
-    closeTime: "21:00", // End
+    address: "",
+    coordinate: null,
+    openTime: "09:00",
+    closeTime: "21:00",
     desc: "",
     can_customize: false,
   });
 
-  // Inventory Containers
   const [flowers, setFlowers] = useState([]);
   const [packagings, setPackagings] = useState([]);
   const [catalog, setCatalog] = useState([]);
-
-  // --- MODAL STATES ---
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const [modalType, setModalType] = useState(null);
 
-  // 1. Temp Flower (Updated: Add Image)
   const [tempFlower, setTempFlower] = useState({
     name: "",
     price: "",
-    color: "#ff0000",
+    stock: "",
     category: "romance",
     image: null,
     preview: "",
   });
 
-  // 2. Temp Packaging (Updated: No Name, Type Selection)
   const [tempPack, setTempPack] = useState({
     type: "wrapping",
     price: "",
-    colors: "",
+    variants: [],
+  });
+  const [variantInput, setVariantInput] = useState({
+    name: "",
+    hex: "#A3B18A",
+    stock: "",
   });
 
-  // 3. Temp Catalog (Updated: Full Structure)
   const [tempCatalog, setTempCatalog] = useState({
     title: "",
     price: "",
@@ -98,7 +96,6 @@ export default function RegisterTenantPage() {
     preview: "",
   });
 
-  // --- HANDLERS: FLOWER ---
   const handleFlowerImage = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -118,8 +115,8 @@ export default function RegisterTenantPage() {
         ...tempFlower,
         id: `f-${Date.now()}`,
         type: "flower",
-        stock: 50,
-        // Di real app, image diupload ke cloud dulu. Di sini kita pake preview URL/Placeholder
+        stock: parseInt(tempFlower.stock),
+        price: parseInt(tempFlower.price),
         image: tempFlower.preview || "/assets/flowers/placeholder.png",
       },
     ]);
@@ -127,48 +124,58 @@ export default function RegisterTenantPage() {
     setTempFlower({
       name: "",
       price: "",
-      color: "#ff0000",
+      stock: "",
       category: "romance",
       image: null,
       preview: "",
     });
   };
 
-  // --- HANDLERS: PACKAGING ---
+  const addVariantToPack = () => {
+    if (!variantInput.name || !variantInput.stock) return;
+
+    setTempPack({
+      ...tempPack,
+      variants: [
+        ...tempPack.variants,
+        {
+          color: variantInput.name,
+          hex: variantInput.hex,
+          stock: parseInt(variantInput.stock),
+        },
+      ],
+    });
+    setVariantInput({ name: "", hex: variantInput.hex, stock: "" }); // Keep hex to allow adding similar shades
+    setShowColorPicker(false);
+  };
+
   const savePackaging = (e) => {
     e.preventDefault();
-    const colorArray = tempPack.colors.split(",").map((c) => ({
-      name: c.trim(),
-      hex: "#000000",
-      class: "bg-gray-200",
-    }));
 
-    // Nama otomatis berdasarkan tipe
     const packName =
       tempPack.type === "wrapping"
-        ? "Premium Wrapping"
+        ? "Wrapping Paper"
         : tempPack.type === "box"
         ? "Flower Box"
-        : tempPack.type === "vas"
-        ? "Glass Vase"
-        : "Satin Ribbon";
+        : "Ribbon";
+
+    const totalStock = tempPack.variants.reduce((acc, v) => acc + v.stock, 0);
 
     setPackagings([
       ...packagings,
       {
         ...tempPack,
-        name: packName, // Auto name
+        name: packName,
         id: `p-${Date.now()}`,
         type: "packaging",
-        colors: colorArray,
-        stock: 100,
+        price: parseInt(tempPack.price),
+        stock: totalStock,
       },
     ]);
     setModalType(null);
-    setTempPack({ type: "wrapping", price: "", colors: "" });
+    setTempPack({ type: "wrapping", price: "", variants: [] });
   };
 
-  // --- HANDLERS: CATALOG ---
   const handleCatalogImage = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -190,9 +197,10 @@ export default function RegisterTenantPage() {
         ...tempCatalog,
         id: `c-${Date.now()}`,
         type: "product",
-        flowers: flowerArray, // Array string
+        flowers: flowerArray,
         stock: 5,
-        isBestSeller: false, // Default
+        isBestSeller: false,
+        price: parseInt(tempCatalog.price),
         image: tempCatalog.preview || "/assets/bouquet/placeholder.png",
       },
     ]);
@@ -212,9 +220,7 @@ export default function RegisterTenantPage() {
     });
   };
 
-  // --- HANDLERS: MAP SIMULATION ---
   const handleMapClick = () => {
-    // Simulasi pilih lokasi di map -> Auto fill alamat
     const mockAddress =
       "Jl. Dago Asri No. 102, Coblong, Bandung, Jawa Barat 40135";
     setShop({
@@ -225,19 +231,17 @@ export default function RegisterTenantPage() {
     alert("Lokasi dipilih: " + mockAddress);
   };
 
-  // --- FINAL SUBMIT ---
   const handleFinalSubmit = async () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 1500));
 
     const newShopId = Date.now();
 
-    // 1. Simpan Toko
     const registeredShop = registerShop({
       name: shop.name,
-      location: "Bandung", // Simplifikasi kota untuk card
-      fullAddress: shop.address, // Alamat lengkap
-      openTime: `${shop.openTime} - ${shop.closeTime}`, // Gabung Jam
+      location: "Bandung",
+      fullAddress: shop.address,
+      openTime: `${shop.openTime} - ${shop.closeTime}`,
       can_customize: shop.can_customize,
       desc: shop.desc,
       id: newShopId,
@@ -245,17 +249,15 @@ export default function RegisterTenantPage() {
       image: "/assets/flowershop/placeholder_store.png",
     });
 
-    // 2. Simpan Item
     const allItems = [...flowers, ...packagings, ...catalog];
     allItems.forEach((item) => {
       addItem({
         ...item,
         shopId: newShopId,
-        shop: registeredShop, // Link object shop
+        shop: registeredShop,
       });
     });
 
-    // 3. Register User
     register(
       account.name,
       account.email,
@@ -263,7 +265,6 @@ export default function RegisterTenantPage() {
       "tenant",
       registeredShop
     );
-
     setLoading(false);
   };
 
@@ -272,7 +273,7 @@ export default function RegisterTenantPage() {
   return (
     <div className="min-h-screen bg-cream-bg font-sans flex items-center justify-center p-6">
       <div className="w-full max-w-4xl bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-gray-100 flex flex-col md:flex-row min-h-[600px]">
-        {/* SIDEBAR */}
+        {/* SIDEBAR NAVIGATION */}
         <div className="bg-dark-green p-8 text-white w-full md:w-1/3 flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-sage-green/20 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
           <div>
@@ -323,9 +324,7 @@ export default function RegisterTenantPage() {
           <div className="text-xs text-white/40 mt-8">© 2025 HeartToPetals</div>
         </div>
 
-        {/* FORM CONTENT */}
         <div className="flex-1 p-8 md:p-12 overflow-y-auto max-h-[90vh] custom-scrollbar">
-          {/* STEP 1: OWNER */}
           {step === 1 && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -381,7 +380,6 @@ export default function RegisterTenantPage() {
             </motion.div>
           )}
 
-          {/* STEP 2: SHOP PROFILE */}
           {step === 2 && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -400,8 +398,6 @@ export default function RegisterTenantPage() {
                     onChange={(e) => setShop({ ...shop, name: e.target.value })}
                   />
                 </div>
-
-                {/* MAP & ADDRESS */}
                 <div>
                   <label className={LABEL_STYLE}>Lokasi & Alamat</label>
                   <div
@@ -409,16 +405,17 @@ export default function RegisterTenantPage() {
                     onClick={handleMapClick}
                   >
                     {shop.coordinate ? (
-                      <img
-                        src="/assets/map_placeholder.png"
-                        alt="Map"
-                        className="w-full h-full object-cover opacity-60"
-                      /> // Placeholder img
+                      <div className="flex flex-col items-center text-sage-green">
+                        <Check size={24} />
+                        <span className="text-xs font-bold mt-1">
+                          Lokasi Terpilih
+                        </span>
+                      </div>
                     ) : (
                       <div className="flex flex-col items-center text-gray-400 group-hover:text-sage-green transition">
                         <MapPin size={24} />
                         <span className="text-xs font-bold mt-1">
-                          Pilih di Peta (OpenStreetMap)
+                          Pilih di Peta
                         </span>
                       </div>
                     )}
@@ -433,8 +430,6 @@ export default function RegisterTenantPage() {
                     }
                   />
                 </div>
-
-                {/* TIME PICKER */}
                 <div>
                   <label className={LABEL_STYLE}>Jam Operasional</label>
                   <div className="flex items-center gap-2">
@@ -469,7 +464,6 @@ export default function RegisterTenantPage() {
                     </div>
                   </div>
                 </div>
-
                 <div>
                   <label className={LABEL_STYLE}>Deskripsi Singkat</label>
                   <textarea
@@ -495,7 +489,6 @@ export default function RegisterTenantPage() {
             </motion.div>
           )}
 
-          {/* STEP 3: CUSTOM CHECK */}
           {step === 3 && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -552,7 +545,6 @@ export default function RegisterTenantPage() {
             </motion.div>
           )}
 
-          {/* STEP 4: RAW MATERIALS */}
           {step === 4 && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -566,7 +558,6 @@ export default function RegisterTenantPage() {
                 <p className="text-xs text-gray-500">Min. 3 jenis bunga.</p>
               </div>
 
-              {/* FLOWERS */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <h3 className="font-bold text-sm text-gray-700">
@@ -594,7 +585,7 @@ export default function RegisterTenantPage() {
                       <div>
                         <p className="text-sm font-bold">{f.name}</p>
                         <p className="text-[10px] text-gray-500">
-                          Rp {f.price}
+                          Rp {f.price} • Stok {f.stock}
                         </p>
                       </div>
                     </div>
@@ -609,7 +600,6 @@ export default function RegisterTenantPage() {
                 ))}
               </div>
 
-              {/* PACKAGING */}
               <div className="space-y-3 pt-4 border-t border-gray-100">
                 <div className="flex justify-between items-center">
                   <h3 className="font-bold text-sm text-gray-700">
@@ -630,7 +620,7 @@ export default function RegisterTenantPage() {
                     <div>
                       <p className="text-sm font-bold capitalize">{p.name}</p>
                       <p className="text-[10px] text-gray-500">
-                        {p.colors.length} Warna • Rp {p.price}
+                        {p.variants?.length || 0} Warna • Rp {p.price}
                       </p>
                     </div>
                     <button
@@ -661,7 +651,6 @@ export default function RegisterTenantPage() {
             </motion.div>
           )}
 
-          {/* STEP 5: CATALOG */}
           {step === 5 && (
             <motion.div
               initial={{ opacity: 0, x: 20 }}
@@ -682,7 +671,6 @@ export default function RegisterTenantPage() {
                   <Plus size={16} /> Tambah
                 </button>
               </div>
-
               <div className="bg-gray-50 rounded-xl p-4 min-h-[200px] border-2 border-dashed border-gray-200 space-y-3">
                 {catalog.length === 0 ? (
                   <div className="text-center text-gray-400 py-12 text-sm">
@@ -727,7 +715,6 @@ export default function RegisterTenantPage() {
                   ))
                 )}
               </div>
-
               <div className="flex justify-between pt-6">
                 <button
                   onClick={() => setStep(shop.can_customize ? 4 : 3)}
@@ -748,6 +735,7 @@ export default function RegisterTenantPage() {
         </div>
       </div>
 
+      {/* --- MODAL DIALOGS --- */}
       <AnimatePresence>
         {modalType && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
@@ -766,6 +754,7 @@ export default function RegisterTenantPage() {
                 </button>
               </div>
 
+              {/* MODAL BUNGA */}
               {modalType === "flower" && (
                 <form onSubmit={saveFlower} className="space-y-4">
                   <div className="flex gap-4">
@@ -801,20 +790,37 @@ export default function RegisterTenantPage() {
                           }
                         />
                       </div>
-                      <div>
-                        <label className={LABEL_STYLE}>Harga/Tangkai</label>
-                        <input
-                          required
-                          type="number"
-                          className={INPUT_STYLE}
-                          value={tempFlower.price}
-                          onChange={(e) =>
-                            setTempFlower({
-                              ...tempFlower,
-                              price: e.target.value,
-                            })
-                          }
-                        />
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className={LABEL_STYLE}>Harga</label>
+                          <input
+                            required
+                            type="number"
+                            className={INPUT_STYLE}
+                            value={tempFlower.price}
+                            onChange={(e) =>
+                              setTempFlower({
+                                ...tempFlower,
+                                price: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className={LABEL_STYLE}>Stok</label>
+                          <input
+                            required
+                            type="number"
+                            className={INPUT_STYLE}
+                            value={tempFlower.stock}
+                            onChange={(e) =>
+                              setTempFlower({
+                                ...tempFlower,
+                                stock: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -848,53 +854,236 @@ export default function RegisterTenantPage() {
               )}
 
               {modalType === "packaging" && (
-                <form onSubmit={savePackaging} className="space-y-4">
-                  <div>
-                    <label className={LABEL_STYLE}>Tipe Packaging</label>
-                    <select
-                      className={INPUT_STYLE}
-                      value={tempPack.type}
-                      onChange={(e) =>
-                        setTempPack({ ...tempPack, type: e.target.value })
-                      }
-                    >
-                      <option value="wrapping">Wrapping Paper</option>
-                      <option value="box">Flower Box</option>
-                      <option value="vas">Glass Vase</option>
-                      <option value="ribbon">Ribbon Only</option>
-                    </select>
+                <form onSubmit={savePackaging} className="space-y-5">
+                  {/* --- Bagian Atas: Info Dasar --- */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={LABEL_STYLE}>Tipe Packaging</label>
+                      <select
+                        className={INPUT_STYLE}
+                        value={tempPack.type}
+                        onChange={(e) =>
+                          setTempPack({ ...tempPack, type: e.target.value })
+                        }
+                      >
+                        <option value="wrapping">Wrapping Paper</option>
+                        <option value="box">Flower Box</option>
+                        <option value="ribbon">Ribbon</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={LABEL_STYLE}>Harga Tambahan</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+                          Rp
+                        </span>
+                        <input
+                          required
+                          type="number"
+                          className={`${INPUT_STYLE} pl-8`}
+                          value={tempPack.price}
+                          onChange={(e) =>
+                            setTempPack({ ...tempPack, price: e.target.value })
+                          }
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className={LABEL_STYLE}>Harga Tambahan</label>
-                    <input
-                      required
-                      type="number"
-                      className={INPUT_STYLE}
-                      value={tempPack.price}
-                      onChange={(e) =>
-                        setTempPack({ ...tempPack, price: e.target.value })
-                      }
-                    />
+
+                  {/* --- Bagian Tengah: Builder Varian Warna (EYE DROP AREA IMPROVED) --- */}
+                  <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-inner">
+                    <h4 className="font-bold text-dark-green text-sm mb-4 flex items-center gap-2">
+                      <Palette size={18} /> Buat Varian Warna
+                    </h4>
+
+                    {/* Container Input Varian */}
+                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                      {/* ROW 1: Color Picker & Hex Code */}
+                      <div>
+                        <label className={LABEL_STYLE}>Pilih Warna & Hex</label>
+                        <div className="flex gap-3 items-center relative z-20">
+                          {/* Visual Picker Trigger */}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setShowColorPicker(!showColorPicker)}
+                              className="w-14 h-14 rounded-xl border-4 border-white shadow transition hover:scale-105 flex items-center justify-center"
+                              style={{ backgroundColor: variantInput.hex }}
+                            >
+                              {!showColorPicker && (
+                                <Palette
+                                  size={20}
+                                  className="text-white/60 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]"
+                                />
+                              )}
+                            </button>
+
+                            {/* The Floating Color Picker Popover */}
+                            <AnimatePresence>
+                              {showColorPicker && (
+                                <motion.div
+                                  initial={{ opacity: 0, y: -10 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  exit={{ opacity: 0, y: -10 }}
+                                  className="absolute top-16 left-0 z-50 p-3 bg-white shadow-2xl rounded-2xl border border-gray-100"
+                                >
+                                  <div
+                                    className="fixed inset-0 z-40"
+                                    onClick={() => setShowColorPicker(false)}
+                                  />
+                                  <div className="relative z-50">
+                                    <HexColorPicker
+                                      color={variantInput.hex}
+                                      onChange={(color) =>
+                                        setVariantInput({
+                                          ...variantInput,
+                                          hex: color,
+                                        })
+                                      }
+                                    />
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
+                          </div>
+
+                          {/* Hex Input Field */}
+                          <div className="relative flex-1">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono font-bold">
+                              #
+                            </span>
+                            <input
+                              placeholder="000000"
+                              className={`${INPUT_STYLE} pl-7 font-mono uppercase tracking-widest text-lg h-14`}
+                              value={variantInput.hex.replace("#", "")}
+                              onChange={(e) => {
+                                // Regex untuk memastikan hanya karakter hex valid
+                                const val = e.target.value
+                                  .replace(/[^0-9A-Fa-f]/g, "")
+                                  .slice(0, 6);
+                                setVariantInput({
+                                  ...variantInput,
+                                  hex: `#${val}`,
+                                });
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ROW 2: Nama Varian & Stok */}
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                          <label className={LABEL_STYLE}>
+                            Nama Varian (Label)
+                          </label>
+                          <input
+                            placeholder="Contoh: Hijau Sage, Merah Ati"
+                            className={INPUT_STYLE}
+                            value={variantInput.name}
+                            onChange={(e) =>
+                              setVariantInput({
+                                ...variantInput,
+                                name: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div>
+                          <label className={LABEL_STYLE}>Stok Awal</label>
+                          <input
+                            type="number"
+                            placeholder="0"
+                            className={`${INPUT_STYLE} text-center`}
+                            value={variantInput.stock}
+                            onChange={(e) =>
+                              setVariantInput({
+                                ...variantInput,
+                                stock: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+
+                      {/* ROW 3: Action Button */}
+                      <button
+                        type="button"
+                        onClick={addVariantToPack}
+                        disabled={!variantInput.name || !variantInput.stock}
+                        className="w-full py-3 bg-white border-2 border-dashed border-dark-green text-dark-green rounded-xl font-bold text-sm hover:bg-dark-green hover:text-white hover:border-solid transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Plus size={18} /> Tambahkan Varian Ini
+                      </button>
+                    </div>
+
+                    {/* --- Bagian Bawah: Daftar Varian --- */}
+                    <div className="mt-5">
+                      <label className={LABEL_STYLE}>
+                        Daftar Varian Siap Simpan ({tempPack.variants.length})
+                      </label>
+                      <div className="flex flex-wrap gap-2 mt-2 p-2 bg-white rounded-xl border border-gray-100 min-h-[60px]">
+                        {tempPack.variants.map((v, idx) => (
+                          <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            key={idx}
+                            className="pl-1 pr-2 py-1 bg-gray-50 border border-gray-200 rounded-full flex items-center gap-2 shadow-sm"
+                          >
+                            {/* Dot Warna Kecil */}
+                            <div
+                              className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                              style={{ backgroundColor: v.hex }}
+                            ></div>
+
+                            <div className="flex flex-col">
+                              <span className="text-xs font-bold text-gray-800 leading-tight">
+                                {v.color}
+                              </span>
+                              <span className="text-[9px] text-gray-500 leading-tight font-mono">
+                                {v.hex} • Qty: {v.stock}
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newVariants = [...tempPack.variants];
+                                newVariants.splice(idx, 1);
+                                setTempPack({
+                                  ...tempPack,
+                                  variants: newVariants,
+                                });
+                              }}
+                              className="ml-2 w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-100 text-gray-400 hover:text-red-500 transition"
+                            >
+                              <X size={14} />
+                            </button>
+                          </motion.div>
+                        ))}
+                        {tempPack.variants.length === 0 && (
+                          <div className="w-full h-full flex items-center justify-center text-xs text-gray-400 italic text-center py-4">
+                            Belum ada varian. Gunakan form di atas untuk
+                            menambahkan.
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className={LABEL_STYLE}>
-                      Warna Tersedia (Pisahkan koma)
-                    </label>
-                    <input
-                      required
-                      placeholder="Pink, Blue, Gold"
-                      className={INPUT_STYLE}
-                      value={tempPack.colors}
-                      onChange={(e) =>
-                        setTempPack({ ...tempPack, colors: e.target.value })
-                      }
-                    />
-                  </div>
+
+                  
                   <button
                     type="submit"
-                    className={`w-full mt-4 ${BTN_PRIMARY}`}
+                    disabled={tempPack.variants.length === 0}
+                    className={`w-full py-4 text-base ${BTN_PRIMARY} ${
+                      tempPack.variants.length === 0
+                        ? "bg-gray-400 hover:bg-gray-400 cursor-not-allowed opacity-100"
+                        : ""
+                    }`}
                   >
-                    Simpan Packaging
+                    {tempPack.variants.length === 0
+                      ? "Minimal 1 Varian Wajib Diisi"
+                      : "Simpan Packaging"}
                   </button>
                 </form>
               )}
@@ -902,7 +1091,7 @@ export default function RegisterTenantPage() {
               {modalType === "catalog" && (
                 <form onSubmit={saveCatalog} className="space-y-4">
                   <div className="flex gap-4">
-                    <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative overflow-hidden group">
+                    <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative overflow-hidden group cursor-pointer">
                       <input
                         type="file"
                         className="absolute inset-0 opacity-0 cursor-pointer"
@@ -951,7 +1140,6 @@ export default function RegisterTenantPage() {
                       </div>
                     </div>
                   </div>
-
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className={LABEL_STYLE}>Kategori</label>
@@ -983,32 +1171,12 @@ export default function RegisterTenantPage() {
                       >
                         <option value="Romance">Romance</option>
                         <option value="Gratitude">Gratitude</option>
-                        <option value="Gratitude">Regret</option>
-                        <option value="Gratitude">Grief</option>
+                        <option value="Grief">Grief</option>
+                        <option value="Regret">Regret</option>
                       </select>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className={LABEL_STYLE}>Theme</label>
-                      <select
-                        className={INPUT_STYLE}
-                        value={tempCatalog.theme}
-                        onChange={(e) =>
-                          setTempCatalog({
-                            ...tempCatalog,
-                            theme: e.target.value,
-                          })
-                        }
-                      >
-                        <option value="light">Light (Mood yang hangat)</option>
-                        <option value="dark">Dark (Mood yang melankolis)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div>
+                  <div className="space-y-1">
                     <label className={LABEL_STYLE}>Deskripsi</label>
                     <textarea
                       required
@@ -1020,7 +1188,7 @@ export default function RegisterTenantPage() {
                       }
                     />
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <label className={LABEL_STYLE}>Story (Makna)</label>
                     <textarea
                       required
@@ -1035,7 +1203,7 @@ export default function RegisterTenantPage() {
                       }
                     />
                   </div>
-                  <div>
+                  <div className="space-y-1">
                     <label className={LABEL_STYLE}>Care Instructions</label>
                     <input
                       required
@@ -1061,7 +1229,6 @@ export default function RegisterTenantPage() {
                       }
                     />
                   </div>
-
                   <button
                     type="submit"
                     className={`w-full mt-4 ${BTN_PRIMARY}`}
