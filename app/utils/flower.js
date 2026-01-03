@@ -6,6 +6,77 @@
 // 105: Luxe De Pere
 // 106: Petal & Paper
 
+export const MOCK_PACKAGINGS = [
+  {
+    id: "p-1",
+    shop_id: 101,
+    type: "wrapping",
+    name: "Premium Paper Wrap",
+    price: 15000,
+    variants: [
+      { name: "Pastel Pink", hex: "#FFD1DC", stock: 20 },
+      { name: "Sage Green", hex: "#A3B18A", stock: 15 },
+      { name: "Cream Ivory", hex: "#FFFFF0", stock: 50 },
+      { name: "Black Elegant", hex: "#2C2C2C", stock: 10 },
+      { name: "Lilac", hex: "#C8A2C8", stock: 5 },
+    ],
+  },
+  {
+    id: "p-2",
+    shop_id: 101,
+    type: "box",
+    name: "Bloom Box Round",
+    price: 35000,
+    variants: [
+      { name: "White Box", hex: "#FFFFFF", stock: 10 },
+      { name: "Pink Box", hex: "#FFC0CB", stock: 5 },
+      { name: "Black Box", hex: "#000000", stock: 8 },
+    ],
+  },
+  {
+    id: "p-3",
+    shop_id: 101,
+    type: "ribbon",
+    name: "Satin Ribbon Only",
+    price: 5000,
+    variants: [{ name: "Red Ribbon", hex: "#FFFFFF", stock: 100 }],
+  },
+  {
+    id: "p-4",
+    shop_id: 103,
+    type: "wrapping",
+    name: "Premium Paper Wrap",
+    price: 15000,
+    variants: [
+      { name: "Pastel Pink", hex: "#FFD1DC", stock: 20 },
+      { name: "Sage Green", hex: "#A3B18A", stock: 15 },
+      { name: "Cream Ivory", hex: "#FFFFF0", stock: 50 },
+      { name: "Black Elegant", hex: "#2C2C2C", stock: 10 },
+      { name: "Lilac", hex: "#C8A2C8", stock: 5 },
+    ],
+  },
+  {
+    id: "p-5",
+    shop_id: 103,
+    type: "box",
+    name: "Bloom Box Round",
+    price: 35000,
+    variants: [
+      { name: "White Box", hex: "#FFFFFF", stock: 10 },
+      { name: "Pink Box", hex: "#FFC0CB", stock: 5 },
+      { name: "Black Box", hex: "#000000", stock: 8 },
+    ],
+  },
+  {
+    id: "p-6",
+    shop_id: 103,
+    type: "ribbon",
+    name: "Satin Ribbon Only",
+    price: 5000,
+    variants: [{ name: "Red Ribbon", hex: "#FFFFFF", stock: 100 }],
+  },
+];
+
 export const FLOWER_LIBRARY = [
   // --- ROMANCE COLLECTION ---
   {
@@ -62,10 +133,10 @@ export const FLOWER_LIBRARY = [
     image: "/assets/romance/pink_orchid.png",
     color: "bg-red-600",
   },
-  
+
   {
     id: "r7",
-    shop_id: 102, 
+    shop_id: 102,
     name: "Red Rose",
     category: "romance",
     price: 18000,
@@ -173,7 +244,7 @@ export const FLOWER_LIBRARY = [
     image: "/assets/gratitude/gerbera.png",
     color: "bg-white",
   },
-    {
+  {
     id: "g6",
     shop_id: 104,
     name: "White Carnation",
@@ -219,7 +290,6 @@ export const FLOWER_LIBRARY = [
     color: "bg-yellow-300",
   },
 
-  
   // --- REGRET COLLECTION ---
   {
     id: "rg1",
@@ -249,7 +319,7 @@ export const FLOWER_LIBRARY = [
     image: "/assets/regret/black_rose.png",
     color: "bg-gray-900",
   },
-    {
+  {
     id: "rg4",
     shop_id: 104, // Sentra Bunga (filler grosir)
     name: "Baby's Breath",
@@ -340,114 +410,113 @@ export const FLOWER_LIBRARY = [
     color: "bg-gray-100",
   },
 
-  // --- PEACE COLLECTION ---
+  // --- grief COLLECTION ---
   {
     id: "p1",
     shop_id: 106, // Petal & Paper
     name: "Moonlight Serenity",
-    category: "peace",
+    category: "grief",
     price: 13000,
-    image: "/assets/bouquet/peace/moonlight_serenity.png",
+    image: "/assets/bouquet/grief/moonlight_serenity.png",
     color: "bg-purple-200",
   },
-    {
+  {
     id: "p2",
     shop_id: 104,
     name: "Baby's Breathe",
-    category: "peace",
+    category: "grief",
     price: 40000,
-    image: "/assets/peace/babys_breathe.png",
+    image: "/assets/grief/babys_breathe.png",
     color: "bg-gray-100",
   },
   {
     id: "p3",
     shop_id: 103,
     name: "Chamomile",
-    category: "peace",
+    category: "grief",
     price: 25000,
-    image: "/assets/peace/chamomile.png",
+    image: "/assets/grief/chamomile.png",
     color: "bg-yellow-100",
   },
   {
     id: "p4",
     shop_id: 105,
     name: "Cyan Hydrangea",
-    category: "peace",
+    category: "grief",
     price: 30000,
-    image: "/assets/peace/cyan_hydrangea.png",
+    image: "/assets/grief/cyan_hydrangea.png",
     color: "bg-blue-200",
   },
   {
     id: "p5",
     shop_id: 103,
     name: "Eucalyptus",
-    category: "peace",
+    category: "grief",
     price: 35000,
-    image: "/assets/peace/eucalyptus.png",
+    image: "/assets/grief/eucalyptus.png",
     color: "bg-green-700",
   },
   {
     id: "p6",
     shop_id: 106,
     name: "Lavender",
-    category: "peace",
+    category: "grief",
     price: 18000,
-    image: "/assets/peace/lavender.png",
+    image: "/assets/grief/lavender.png",
     color: "bg-purple-300",
   },
   {
     id: "p7",
     shop_id: 105,
     name: "Purple Orchid",
-    category: "peace",
+    category: "grief",
     price: 30000,
-    image: "/assets/peace/purple_orchid.png",
+    image: "/assets/grief/purple_orchid.png",
     color: "bg-purple-600",
   },
   {
     id: "p8",
     shop_id: 103,
     name: "Ranunculus",
-    category: "peace",
+    category: "grief",
     price: 55000,
-    image: "/assets/peace/ranunculus.png",
+    image: "/assets/grief/ranunculus.png",
     color: "bg-pink-200",
   },
   {
     id: "p9",
     shop_id: 102,
     name: "White Lily",
-    category: "peace",
-    price:27000,
-    image: "/assets/peace/white_lily.png",
+    category: "grief",
+    price: 27000,
+    image: "/assets/grief/white_lily.png",
     color: "bg-white",
   },
   {
     id: "p10",
     shop_id: 105,
     name: "White Lisianthus",
-    category: "peace",
+    category: "grief",
     price: 30000,
-    image: "/assets/peace/white_lisianthus.png",
+    image: "/assets/grief/white_lisianthus.png",
     color: "bg-white",
   },
   {
     id: "p11",
     shop_id: 101,
     name: "White Rose",
-    category: "peace",
+    category: "grief",
     price: 17000,
-    image: "/assets/peace/white_rose.png",
+    image: "/assets/grief/white_rose.png",
     color: "bg-white",
   },
   {
     id: "p12",
     shop_id: 104,
     name: "White Tulip",
-    category: "peace",
+    category: "grief",
     price: 18000,
-    image: "/assets/peace/white_tulip.png",
+    image: "/assets/grief/white_tulip.png",
     color: "bg-white",
   },
-
 ];
