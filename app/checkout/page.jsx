@@ -84,13 +84,12 @@ function CheckoutContent() {
       } else {
         setAvailableAddresses(INITIAL_ADDRESSES);
       }
-      
+
       const ids = localStorage.getItem("checkoutIds");
       if (ids) setSelectedCheckoutIds(JSON.parse(ids));
     }
   }, []);
 
-  // --- SHIPPING & CART LOGIC (Tetap) ---
   const isDirectBuy = searchParams.get("direct") === "true";
   const directId = searchParams.get("id");
 

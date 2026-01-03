@@ -75,7 +75,50 @@ export const SHOPS = [
 ];
 
 
-// DATA PRODUK (allItems) - UPDATE BAGIAN STOCK
+const INITIAL_INVENTORY = [
+  {
+    id: "f-101",
+    shopId: 101, 
+    type: "flower",
+    title: "Red Rose Premium",
+    price: 15000,
+    stock: 50,
+    category: "romance",
+    image: "https://images.unsplash.com/photo-1596073419667-9d77d59f033f?auto=format&fit=crop&q=80&w=300"
+  },
+  {
+    id: "f-102",
+    shopId: 101,
+    type: "flower",
+    title: "White Lily",
+    price: 20000,
+    stock: 30,
+    category: "gratitude",
+    image: "https://images.unsplash.com/photo-1572454591674-2739f30d8c40?auto=format&fit=crop&q=80&w=300"
+  },
+  {
+    id: "p-101",
+    shopId: 101,
+    type: "packaging",
+    packaging_type: "wrapping",
+    title: "Premium Paper",
+    price: 5000,
+    stock: 100,
+    colors: ["Pastel Pink", "Cream", "Black", "Transparan"] 
+  },
+  {
+    id: "p-102",
+    shopId: 101,
+    type: "packaging",
+    packaging_type: "ribbon",
+    title: "Satin Ribbon",
+    price: 2000,
+    stock: 200,
+    colors: ["Red", "Gold", "Silver"]
+  }
+];
+
+
 export const allItems = [
   {
     id: 1,
@@ -83,7 +126,7 @@ export const allItems = [
     type: "product",
     title: "Head Over Heels",
     price: 850000,
-    stock: 5, // <--- ADA STOCK
+    stock: 0, 
     image: "/assets/bouquet/peace/crimson_promise.png",
     category: "Warm",
     tag: "Romance",
@@ -100,7 +143,7 @@ export const allItems = [
     type: "product",
     title: "Sunset Harmony",
     price: 450000,
-    stock: 12, // <--- ADA STOCK
+    stock: 12,
     image: "/assets/bouquet/peace/sunset_harmony.png",
     category: "Peace",
     tag: "Friendship",
@@ -111,14 +154,13 @@ export const allItems = [
     care: "Semprotkan air (mist) ke kelopak.",
     flowers: ["White Tulip (5)", "Lily of the Valley"],
   },
-  // ... (Produk lain tambahkan stock: 10 atau angka bebas) ...
   {
     id: 8,
     shop: SHOPS[3],
     type: "product",
     title: "Midnight Velvet",
     price: 900000,
-    stock: 0, // <--- CONTOH STOCK HABIS
+    stock: 0,
     image: "/assets/bouquet/romance/midnight_velvet.png",
     category: "Warm",
     tag: "Romance",
@@ -129,7 +171,6 @@ export const allItems = [
     care: "Simpan di tempat sejuk.",
     flowers: ["Red Rose Premium"],
   },
-  // ... (Pastikan semua item lain punya properti stock: 10 misalnya) ...
   {
     id: 3,
     shop: SHOPS[0],
