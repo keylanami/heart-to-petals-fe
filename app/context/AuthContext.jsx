@@ -27,8 +27,18 @@ export function AuthProvider({ children }) {
     }
 
     const rawUsers = getStorage("users");
+    let existingUsers = [];
+    try {
+        existingUsers = rawUsers ? JSON.parse(rawUsers) : [];
+    } catch (e) {
+        existingUsers = [];
+    }
 
-    if (!rawUsers || rawUsers === "[]") {
+    const isSeeded = existingUsers.some(u => u.email === "user@gmail.com");
+
+    if (!isSeeded || existingUsers.length === 0) {
+        console.log("⚠️ Data Users Corrupt/Kosong. Melakukan Seeding Ulang...");
+        
         const dummyTenants = SHOPS.map(shop => ({
             id: `tenant-${shop.id}`,
             name: `Admin ${shop.name}`,
@@ -42,7 +52,7 @@ export function AuthProvider({ children }) {
         const dummyUsers = [
             {
                 id: 101,
-                name: "Kelylyly",
+                name: "User Demo",
                 email: "user@gmail.com",
                 password: "123",
                 role: "user",
@@ -57,7 +67,7 @@ export function AuthProvider({ children }) {
 
         const initialUsers = [...dummyTenants, ...dummyUsers];
         setStorage("users", JSON.stringify(initialUsers));
-        console.log("Database Users Seeding Complete:", initialUsers);
+        console.log("✅ Database Users Berhasil Diperbaiki:", initialUsers);
     }
   }, []);
 
@@ -111,7 +121,7 @@ export function AuthProvider({ children }) {
 
       if (role === "tenant") {
         showToast(
-          "Pendaftaran Berhasil! Menunggu persetujuan Admin.",
+          "Pendaftaran Berhasil! Menunggu persetujuan Admin. Silakan cek dengan login secara berkala!",
           "success"
         );
         router.push("/login");
@@ -193,7 +203,6 @@ export function AuthProvider({ children }) {
       setUser(updatedUser);
       setStorage("currentUser", JSON.stringify(updatedUser));
 
-      // Update juga di database 'users' localStorage agar permanen
       const rawData = getStorage("users");
       if (rawData) {
         const users = JSON.parse(rawData);
