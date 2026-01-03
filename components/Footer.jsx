@@ -6,12 +6,10 @@ export const Footer = () => {
   return (
     <footer className="bg-dark-green border-t border-gray-200 pt-12 md:pt-16 pb-6">
       <div className="max-w-7xl mx-auto px-6">
-        {/* Changed items-end to items-start on mobile, and flex-col */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 md:gap-12 mb-12">
           
           <div className="space-y-4 w-full md:max-w-lg">
             <h2 className="text-2xl font-serif font-bold text-cream-bg">HeartToPetals.</h2>
-            {/* Fixed w-3xl to max-w-3xl, though max-w-lg usually fits better in footers */}
             <p className="text-gray-100/60 text-sm leading-relaxed text-justify w-full">
               Platform florist marketplace pertama di Indonesia yang memungkinkan kamu merancang buket impianmu sendiri secara digital. Kami menghubungkan perasaanmu dengan karya terbaik dari florist lokal terpercaya. 
               <br/><br/>

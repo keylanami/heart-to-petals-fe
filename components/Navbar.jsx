@@ -12,7 +12,7 @@ import {
   LayoutDashboard,
   Menu,
   X,
-  LogOut // Optional: Added logout for mobile menu
+  LogOut 
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/app/context/ToastContext";
@@ -22,12 +22,12 @@ const Navbar = () => {
   const pathname = usePathname();
   const params = useParams();
   const { totalItems } = useCart();
-  const { user } = useAuth(); // Assuming logout function exists here too, if not, remove LogOut logic
+  const { user } = useAuth(); 
   const { showToast } = useToast();
 
   const [scrolled, setScrolled] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); // New State
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false); 
 
   const isAdmin = user?.role === "tenant" || user?.role === "superadmin";
 
@@ -35,7 +35,6 @@ const Navbar = () => {
     setIsClient(true);
   }, []);
 
-  // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
   }, [pathname]);
@@ -65,7 +64,6 @@ const Navbar = () => {
     ? `/custom/${params.id}/drafts`
     : `/custom/101/drafts`;
 
-  // Classes
   const iconBtnClass = `h-10 w-10 sm:w-auto sm:px-4 border rounded-full text-sm font-bold flex items-center justify-center gap-2 transition-all duration-300 relative ${
     scrolled
       ? "border-gray-200 text-gray-600 hover:border-dark-green hover:text-dark-green bg-transparent"
@@ -271,7 +269,6 @@ const Navbar = () => {
                   </Link>
                 ))}
                 
-                {/* Mobile specific links that are hidden in header */}
                 {user && !isAdmin && (
                    <Link
                    href={draftLink}
@@ -290,7 +287,6 @@ const Navbar = () => {
                 )}
               </div>
 
-              {/* Mobile Footer Area */}
               <div className="mt-auto pt-6 border-t border-dark-green/10">
                 {!user ? (
                    <Link href="/get-started" className="w-full bg-dark-green text-white py-3 rounded-xl font-bold flex justify-center">
