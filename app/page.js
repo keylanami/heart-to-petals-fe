@@ -285,13 +285,13 @@ const CustomBouquetSection = ({ onOpenModal }) => {
     e.stopPropagation();
 
     if (!user) {
-      showToast("Hey, login dulu baru bisa kustom!", "error");
+      showToast("Hey, login dulu baru bisa kustom! Khusus bu maria silakan login dengan email: user@gmail.com password: 123", "error");
       router.push("/login");
       return;
     }
 
     if (user && (user.role === "tenant" || user.role === "superadmin")) {
-      showToast("Gunakan akun user untuk belanja!", "error");
+      showToast("Gunakan akun user untuk belanja! Khusus bu maria silakan login dengan email: user@gmail.com password: 123", "error");
       return;
     }
     onOpenModal();

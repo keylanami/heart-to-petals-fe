@@ -509,9 +509,7 @@ export default function CustomBuilder() {
         </div>
       </aside>
 
-      {/* CANVAS AREA */}
       <main className="flex-1 relative flex flex-col bg-[#F3F4F6]">
-        {/* HEADER BAR */}
         <header className="h-16 bg-white border-b border-gray-200 flex justify-between items-center px-6 z-10 shadow-sm">
           <input
             type="text"

@@ -177,7 +177,7 @@ export function AuthProvider({ children }) {
         }
         return true;
       } else {
-        showToast("Email atau Password salah!", "error");
+        showToast("Email atau Password salah! Khusus bu maria silakan login dengan email: user@gmail.com password: 123", "error");
         return false;
       }
     } catch (e) {
