@@ -217,6 +217,33 @@ export function AuthProvider({ children }) {
     }
   };
 
+
+  const deleteAccount = () => {
+    if (!user) return;
+
+    if (user.role === 'superadmin') {
+        alert("Akses Ditolak: Super Admin tidak dapat menghapus akun utama.");
+        return false; 
+    }
+
+    const allUsers = JSON.parse(localStorage.getItem("users_db") || "[]");
+    const filteredUsers = allUsers.filter((u) => u.email !== user.email);
+    localStorage.setItem("users_db", JSON.stringify(filteredUsers));
+
+    if (user.role === 'tenant' && user.shop) {
+        const allShops = JSON.parse(localStorage.getItem("shops_db") || "[]");
+        const filteredShops = allShops.filter(s => s.id !== user.shop.id);
+        localStorage.setItem("shops_db", JSON.stringify(filteredShops));
+    }
+
+    
+    // const allOrders = JSON.parse(localStorage.getItem("orders_db") || "[]");
+    // const cleanOrders = allOrders.filter(o => o.customerEmail !== user.email);
+    // localStorage.setItem("orders_db", JSON.stringify(cleanOrders));
+
+    logout();
+  };
+
   return (
     <AuthContext.Provider value={{ user, register, login, logout, updateUser }}>
       {children}

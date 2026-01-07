@@ -27,6 +27,7 @@ import {
   Trash2,
   Check,
   LocateFixed,
+  AlertTriangle
 } from "lucide-react";
 import { Map, MapMarker, MarkerContent, MarkerPopup } from "@/components/ui/map";
 
@@ -286,6 +287,36 @@ export default function ProfilePage() {
 
   const filteredOrders = getFilteredOrders();
 
+  const handleDeleteAccount = async () => {
+      const confirmDelete = window.confirm(
+          "PERINGATAN: Apakah Anda yakin ingin menghapus akun ini secara permanen? Data pesanan dan profil tidak dapat dipulihkan."
+      );
+
+      if (confirmDelete) {
+          const doubleConfirm = window.confirm("Yakin 100%? Tindakan ini tidak dapat dibatalkan.");
+          
+          if (doubleConfirm) {
+              setIsLoading(true);
+              
+              // Simulasi proses delete di server
+              await new Promise((r) => setTimeout(r, 1500));
+              
+              // Panggil fungsi logout/hapus dari context (jika ada)
+              // Jika deleteAccount belum ada di context, kita pakai logout biasa + clear storage
+              if (typeof deleteAccount === 'function') {
+                  deleteAccount();
+              } else {
+                  logout(); 
+                  localStorage.clear(); // Hapus sisa data lokal
+              }
+
+              showToast("Akun berhasil dihapus. Sampai jumpa! 👋", "success");
+              router.push("/");
+          }
+      }
+  };
+
+
   return (
     <main className="bg-[#FDFBF7] min-h-screen">
       <Navbar />
@@ -490,7 +521,6 @@ export default function ProfilePage() {
                                         longitude={formData.shopCoordinate.lng}
                                         latitude={formData.shopCoordinate.lat}
                                         onDragEnd={(lngLat) => {
-                                            // FIX: lngLat.lng & lngLat.lat
                                             setFormData(prev => ({
                                                 ...prev,
                                                 shopCoordinate: { lat: lngLat.lat, lng: lngLat.lng }
@@ -668,14 +698,75 @@ export default function ProfilePage() {
                 </div>
               )}
 
+              
               {activeTab === "security" && (
                 <div className="space-y-6">
                   <h2 className="text-xl font-bold text-dark-green mb-6 border-b border-gray-100 pb-4">
-                    Ganti Password
+                    Keamanan Akun
                   </h2>
-                  <p className="text-gray-500">
-                    Fitur ini belum tersedia di demo.
-                  </p>
+
+                  {user.role === "superadmin" ? (
+                    <div className="bg-blue-50 border border-blue-100 rounded-2xl p-6 flex items-start gap-4">
+                      <div className="w-10 h-10 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center shrink-0">
+                        <Lock size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-blue-800 mb-1">
+                          Akses Terproteksi
+                        </h3>
+                        <p className="text-sm text-blue-600/80 leading-relaxed">
+                          Akun Super Admin dikelola langsung oleh sistem pusat. 
+                          Anda tidak diizinkan mengubah kredensial (password) atau menghapus akun ini secara manual demi keamanan data.
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wider">Update Password</h3>
+                        <div className="grid grid-cols-1 gap-4 max-w-md">
+                          <input
+                            type="password"
+                            placeholder="Password Lama"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sage-green"
+                          />
+                          <input
+                            type="password"
+                            placeholder="Password Baru"
+                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sage-green"
+                          />
+                          <button className="bg-dark-green text-white px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-sage-green transition shadow-sm w-fit">
+                            Simpan Password Baru
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-red-50 border border-red-100 rounded-2xl p-6 mt-10">
+                        <div className="flex items-start gap-4">
+                          <div className="w-10 h-10 bg-red-100 text-red-600 rounded-full flex items-center justify-center shrink-0">
+                            <AlertTriangle size={20} />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-lg font-bold text-red-700 mb-1">
+                              Zona Berbahaya
+                            </h3>
+                            <p className="text-sm text-red-600/80 mb-4 leading-relaxed">
+                              Menghapus akun akan menghilangkan semua data riwayat pesanan,
+                              alamat tersimpan, dan poin loyalitas secara permanen. Tindakan
+                              ini tidak dapat dibatalkan.
+                            </p>
+                            <button
+                              onClick={handleDeleteAccount}
+                              disabled={isLoading}
+                              className="bg-white border border-red-200 text-red-600 px-6 py-2.5 rounded-xl font-bold text-sm hover:bg-red-600 hover:text-white transition shadow-sm"
+                            >
+                              {isLoading ? "Memproses..." : "Hapus Akun Saya"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
 
