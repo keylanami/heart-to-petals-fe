@@ -84,6 +84,7 @@ export default function ProfilePage() {
         shopOpenTime: openT,
         shopCloseTime: closeT,
 
+        
         adminCode: user.adminCode || "SA-001",
         department: user.department || "Head Office",
       });
