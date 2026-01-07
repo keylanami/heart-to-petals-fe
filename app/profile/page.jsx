@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useAuth } from "@/app/context/AuthContext";
@@ -25,44 +25,65 @@ import {
   Clock,
   AlertCircle,
   Trash2,
+  Check,
+  LocateFixed,
 } from "lucide-react";
+import { Map, MapMarker, MarkerContent, MarkerPopup } from "@/components/ui/map";
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuth();
-  if (!user) {
-    return null;
-  }
   const { showToast } = useToast();
   const router = useRouter();
+  const { orders } = useOrder();
+  
+  const mapRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState("personal");
   const [orderFilter, setOrderFilter] = useState("all");
   const [isLoading, setIsLoading] = useState(false);
-  const { orders } = useOrder();
   const [savedAddresses, setSavedAddresses] = useState([]);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
- 
     shopName: "",
     shopAddress: "",
-    shopDesc: "",
-
+    shopOpenTime: "09:00",
+    shopCloseTime: "21:00",
+    shopCoordinate: { lat: -6.914744, lng: 107.609810 },
     adminCode: "",
     department: "",
   });
 
+  useEffect(() => {
+    if (!user) {
+      router.push("/"); 
+    }
+  }, [user, router]);
 
   useEffect(() => {
     if (user) {
+      let openT = "09:00";
+      let closeT = "21:00";
+      
+      if (user.shop?.openTime && user.shop.openTime.includes("-")) {
+        const times = user.shop.openTime.split("-");
+        openT = times[0].trim();
+        closeT = times[1].trim();
+      }
+
       setFormData({
         name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
+        
         shopName: user.shop?.name || "",
-        shopAddress: user.shop?.location || "",
-        shopDesc: user.shop?.desc || "",
+        shopAddress: user.shop?.location || "", 
+        shopCoordinate: user.shop?.coordinate || { lat: -6.914744, lng: 107.609810 }, 
+        shopOpenTime: openT,
+        shopCloseTime: closeT,
+
         adminCode: user.adminCode || "SA-001",
         department: user.department || "Head Office",
       });
@@ -73,10 +94,54 @@ export default function ProfilePage() {
           setSavedAddresses(JSON.parse(stored));
         }
       }
-    } else {
-      router.push("/");
     }
-  }, [user, router]);
+  }, [user]); 
+
+
+  if (!user) {
+    return null; 
+  }
+
+
+  const handleGetLocation = (e) => {
+    e.preventDefault(); 
+    if (navigator.geolocation) {
+      showToast("Mencari lokasi...", "info");
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLat = position.coords.latitude;
+          const newLng = position.coords.longitude;
+
+          setFormData(prev => ({
+            ...prev,
+            shopCoordinate: {
+              lat: newLat,
+              lng: newLng
+            }
+          }));
+
+          if (mapRef.current) {
+            mapRef.current.flyTo({
+              center: [newLng, newLat],
+              zoom: 15,
+              duration: 2000,
+              essential: true
+            });
+          }
+
+          showToast("Lokasi ditemukan!", "success");
+        },
+        (error) => {
+          console.error(error);
+          showToast("Gagal mengambil lokasi. Pastikan GPS aktif.", "error");
+        },
+        { enableHighAccuracy: true }
+      );
+    } else {
+      showToast("Browser tidak support geolocation.", "error");
+    }
+  };
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -93,8 +158,10 @@ export default function ProfilePage() {
       updates.shop = {
         ...user.shop,
         name: formData.shopName,
-        location: formData.shopAddress,
-        desc: formData.shopDesc,
+        location: formData.shopAddress, 
+        coordinate: formData.shopCoordinate, 
+        openTime: `${formData.shopOpenTime} - ${formData.shopCloseTime}`,
+        desc: "" 
       };
     }
 
@@ -107,7 +174,6 @@ export default function ProfilePage() {
     setIsLoading(false);
     showToast("Profil berhasil diperbarui! ✨", "success");
   };
-
 
   const handleDeleteAddress = (id) => {
     if (window.confirm("Hapus alamat ini?")) {
@@ -124,8 +190,6 @@ export default function ProfilePage() {
       router.push("/");
     }
   };
-
-  if (!user) return null;
 
   const getRoleBadge = () => {
     if (user.role === "superadmin")
@@ -156,13 +220,11 @@ export default function ProfilePage() {
     { id: "security", label: "Keamanan", icon: Lock },
   ];
 
-  const visibleTabs = allTabs.filter((tab) => !tab.hidden);
-
   const sidebarTabs = allTabs.filter((tab) => {
     if (tab.id === "order" || tab.id === "address") {
       return user.role !== "tenant" && user.role !== "superadmin";
     }
-    return true;
+    return !tab.hidden;
   });
 
   const getStatusStyle = (status) => {
@@ -362,7 +424,7 @@ export default function ProfilePage() {
                             <Store size={18} /> Informasi Toko
                           </h3>
                         </div>
-                        <div className="space-y-2">
+                        <div className="md:col-span-2 space-y-2">
                           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
                             Nama Toko
                           </label>
@@ -378,9 +440,9 @@ export default function ProfilePage() {
                             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
                           />
                         </div>
-                        <div className="space-y-2">
+                        <div className="md:col-span-2 space-y-2">
                           <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                            Lokasi Toko
+                            Alamat Lengkap
                           </label>
                           <input
                             type="text"
@@ -391,29 +453,95 @@ export default function ProfilePage() {
                                 shopAddress: e.target.value,
                               })
                             }
+                            placeholder="Jl. Mawar No. 123, Bandung"
                             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
                           />
                         </div>
-                        <div className="space-y-2 md:col-span-2">
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                            Deskripsi Singkat
-                          </label>
-                          <textarea
-                            rows={3}
-                            value={formData.shopDesc}
-                            onChange={(e) =>
-                              setFormData({
-                                ...formData,
-                                shopDesc: e.target.value,
-                              })
-                            }
-                            className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
-                          />
+
+                        <div className="md:col-span-2 space-y-2">
+                          <div className="flex justify-between items-center">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                Titik Lokasi (Geser Pin untuk menyesuaikan)
+                            </label>
+                            <button 
+                                type="button" 
+                                onClick={handleGetLocation} 
+                                className="text-[10px] font-bold text-sage-green flex items-center gap-1 hover:text-dark-green transition bg-white border border-sage-green/30 px-2 py-1 rounded-full shadow-sm"
+                            >
+                                <LocateFixed size={12}/> Ambil Lokasi Saya
+                            </button>
+                          </div>
+                          
+                          <div className="h-[200px] w-full rounded-2xl overflow-hidden border border-gray-200 relative z-0">
+                             {formData.shopCoordinate && (
+                                <Map 
+                                    ref={mapRef} 
+                                    initialViewState={{
+                                        longitude: formData.shopCoordinate.lng,
+                                        latitude: formData.shopCoordinate.lat,
+                                        zoom: 14
+                                    }}
+                                    center={[formData.shopCoordinate.lng, formData.shopCoordinate.lat]} 
+                                    zoom={14}
+                                >
+                                    <MapMarker
+                                        draggable
+                                        longitude={formData.shopCoordinate.lng}
+                                        latitude={formData.shopCoordinate.lat}
+                                        onDragEnd={(lngLat) => {
+                                            // FIX: lngLat.lng & lngLat.lat
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                shopCoordinate: { lat: lngLat.lat, lng: lngLat.lng }
+                                            }));
+                                        }}
+                                    >
+                                        <MarkerContent>
+                                            <div className="cursor-move drop-shadow-lg transition-transform hover:scale-110 group">
+                                                <MapPin className="fill-dark-green stroke-white text-dark-green" size={32} />
+                                            </div>
+                                        </MarkerContent>
+                                        <MarkerPopup>
+                                            <div className="text-xs font-bold text-dark-green">
+                                                {formData.shopName || "Toko Saya"}
+                                            </div>
+                                        </MarkerPopup>
+                                    </MapMarker>
+                                </Map>
+                             )}
+                          </div>
+                          <p className="text-[10px] text-gray-400 font-mono text-right">
+                             Lat: {formData.shopCoordinate?.lat.toFixed(6)}, Lng: {formData.shopCoordinate?.lng.toFixed(6)}
+                          </p>
+                        </div>
+
+                        <div className="md:col-span-2 grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                    <Clock size={12}/> Jam Buka
+                                </label>
+                                <input
+                                    type="time"
+                                    value={formData.shopOpenTime}
+                                    onChange={(e) => setFormData({...formData, shopOpenTime: e.target.value})}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                                    <Clock size={12}/> Jam Tutup
+                                </label>
+                                <input
+                                    type="time"
+                                    value={formData.shopCloseTime}
+                                    onChange={(e) => setFormData({...formData, shopCloseTime: e.target.value})}
+                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
+                                />
+                            </div>
                         </div>
                       </>
                     )}
 
-                    {/* --- SUPERADMIN SPECIFIC FIELDS --- */}
                     {user.role === "superadmin" && (
                       <>
                         <div className="md:col-span-2 mt-4 pt-4 border-t border-gray-100">
@@ -464,7 +592,6 @@ export default function ProfilePage() {
                 </form>
               )}
 
-              {/* --- TAB ADDRESS (LOADED FROM LOCALSTORAGE) --- */}
               {activeTab === "address" && (
                 <div className="space-y-6">
                   <div className="flex justify-between items-center border-b border-gray-100 pb-4">
@@ -540,7 +667,6 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* --- TAB SECURITY --- */}
               {activeTab === "security" && (
                 <div className="space-y-6">
                   <h2 className="text-xl font-bold text-dark-green mb-6 border-b border-gray-100 pb-4">
@@ -552,7 +678,6 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* --- TAB ORDER (ORIGINAL UI) --- */}
               {activeTab === "order" && (
                 <div className="space-y-6">
                   <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-gray-100 pb-4">
