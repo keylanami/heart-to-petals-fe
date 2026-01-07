@@ -97,6 +97,7 @@ export default function FloristAdminPage() {
   }, [user, router, mounted]);
 
   const SHOP_ID = user?.shop?.id;
+  const CAN_CUSTOMIZE = user?.shop?.can_customize;
 
   const getItemShopId = (item) => {
     if (!item) return null;
@@ -113,7 +114,6 @@ export default function FloristAdminPage() {
       )
     : [];
 
-  // FIXED: Hanya ambil inventory dari context (dinamis dari localStorage)
   const getMyInventory = () => {
     if (!SHOP_ID) return [];
     
@@ -166,7 +166,6 @@ export default function FloristAdminPage() {
     showToast("Pesanan ditolak.", "error");
   };
 
-  // --- LOGIC MODALS & FORMS ---
   const resetForms = () => {
     setTempFlower({
       name: "",
@@ -602,18 +601,24 @@ export default function FloristAdminPage() {
         </h2>
 
         <div className="flex gap-2">
-          <button
-            onClick={() => openAddModal("flower")}
-            className="bg-white border border-sage-green text-dark-green px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-sage-green hover:text-white transition"
-          >
-            <Flower2 size={16} /> + Bunga
-          </button>
-          <button
-            onClick={() => openAddModal("packaging")}
-            className="bg-white border border-sage-green text-dark-green px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-sage-green hover:text-white transition"
-          >
-            <Package size={16} /> + Packaging
-          </button>
+          {CAN_CUSTOMIZE && (
+            <>
+                <button
+                    onClick={() => openAddModal("flower")}
+                    className="bg-white border border-sage-green text-dark-green px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-sage-green hover:text-white transition"
+                >
+                    <Flower2 size={16} /> + Bunga
+                </button>
+                <button
+                    onClick={() => openAddModal("packaging")}
+                    className="bg-white border border-sage-green text-dark-green px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-sage-green hover:text-white transition"
+                >
+                    <Package size={16} /> + Packaging
+                </button>
+            </>
+          )}
+          
+          {/* Tombol Katalog Selalu Muncul */}
           <button
             onClick={() => openAddModal("catalog")}
             className="bg-dark-green text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-sage-green transition shadow-lg"
@@ -731,10 +736,8 @@ export default function FloristAdminPage() {
                       )}
                     </td>
 
-                    {/* KOLOM AKSI */}
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-center gap-2">
-                        {/* Update Stok Cepat */}
                         <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm mr-2">
                           <button
                             onClick={() => updateStock(item.id, -1)}
@@ -761,7 +764,7 @@ export default function FloristAdminPage() {
                         </button>
 
                         <button
-                          onClick={() => handleDelete(item.id)} 
+                          onClick={() => handleDeleteItem(item.id)} 
                           className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-100"
                           title="Hapus Item"
                         >
@@ -972,9 +975,10 @@ export default function FloristAdminPage() {
                           })
                         }
                       >
-                        <option value="romance">Romance</option>
-                        <option value="gratitude">Gratitude</option>
-                        <option value="grief">Grief</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Gratitude">Gratitude</option>
+                        <option value="Grief">Grief</option>
+                        <option value="Regret">Regret</option>
                       </select>
                     </div>
                   </div>
@@ -1154,7 +1158,6 @@ export default function FloristAdminPage() {
                 </form>
               )}
 
-              {/* === FORM KATALOG === */}
               {modalType === "catalog" && (
                 <form onSubmit={saveCatalog} className="space-y-4">
                   <div className="flex gap-4">
