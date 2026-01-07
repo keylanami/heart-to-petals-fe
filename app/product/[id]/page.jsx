@@ -7,16 +7,15 @@ import {
   Minus,
   Plus,
   ShoppingBag,
-  Heart,
   Droplets,
   Leaf,
-  BookOpen,
   Star,
-  User,
   Store,
   CreditCard,
   AlertCircle,
-  Truck
+  Lock,
+  CheckCircle,
+  ShieldAlert // Icon baru buat admin
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -39,6 +38,11 @@ export default function ProductDetailPage() {
   const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState({ rating: 0, text: "" });
   const [hoverRating, setHoverRating] = useState(0);
+
+  const [reviewStatus, setReviewStatus] = useState({
+    canReview: false,
+    message: "" // "login_required", "role_restricted", "purchase_required", "already_reviewed", "ok"
+  });
 
   const product = allItems.find((p) => String(p.id) === String(id));
   
@@ -73,6 +77,7 @@ export default function ProductDetailPage() {
           {
             id: 1,
             name: "Sinta Melati",
+            userId: "mock_user_1",
             rating: 5,
             text: "Bunganya segar banget, tahan lama!",
             date: "12 Okt 2025",
@@ -80,6 +85,7 @@ export default function ProductDetailPage() {
           {
             id: 2,
             name: "Budi Santoso",
+            userId: "mock_user_2",
             rating: 4,
             text: "", 
             date: "10 Okt 2025",
@@ -89,8 +95,47 @@ export default function ProductDetailPage() {
     }
   }, [product]);
 
+  useEffect(() => {
+    // 1. Cek Login
+    if (!user) {
+        setReviewStatus({ canReview: false, message: "login_required" });
+        return;
+    }
+
+    // 2. Cek Role (Admin/Tenant GABOLEH Review)
+    if (['tenant', 'superadmin'].includes(user.role)) {
+        setReviewStatus({ canReview: false, message: "role_restricted" });
+        return;
+    }
+
+    // 3. Cek Sudah Review Belum (Limit 1x)
+    const alreadyReviewed = reviews.some(r => r.userEmail === user.email || r.userId === user.id);
+    if (alreadyReviewed) {
+        setReviewStatus({ canReview: false, message: "already_reviewed" });
+        return;
+    }
+
+    // 4. Cek Purchase History (Hanya yang sudah beli)
+    // TODO: Di real app, panggil API ke backend checkPurchaseApi(user.id, product.id)
+    const hasPurchased = true; 
+    
+    if (!hasPurchased) {
+        setReviewStatus({ canReview: false, message: "purchase_required" });
+    } else {
+        setReviewStatus({ canReview: true, message: "ok" });
+    }
+
+  }, [user, reviews, product]);
+
   const handleSubmitReview = (e) => {
     e.preventDefault();
+    if (!user) return;
+
+    if (['admin', 'superadmin', 'tenant'].includes(user.role)) {
+        showToast("Admin tidak dapat mengirim ulasan.", "error");
+        return;
+    }
+
     if (newReview.rating === 0) {
         showToast("Mohon beri bintang terlebih dahulu ⭐", "error");
         return;
@@ -98,7 +143,9 @@ export default function ProductDetailPage() {
 
     const reviewItem = {
       id: Date.now(),
-      name: user ? user.name : "Anonymous Guest",
+      name: user.name || user.email,
+      userId: user.id,
+      userEmail: user.email,
       rating: newReview.rating,
       text: newReview.text,
       date: new Date().toLocaleDateString("id-ID", {
@@ -287,17 +334,48 @@ export default function ProductDetailPage() {
                     )}
                     {activeTab === "reviews" && (
                         <motion.div key="reviews" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            <form onSubmit={handleSubmitReview} className="mb-4 bg-gray-50 p-3 rounded-xl">
-                                <div className="flex gap-1 mb-2">
-                                    {[1,2,3,4,5].map(s => (
-                                        <Star key={s} size={16} className={`cursor-pointer ${s <= (hoverRating||newReview.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
-                                            onClick={() => setNewReview({...newReview, rating: s})} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} />
-                                    ))}
+                            
+                            {reviewStatus.canReview ? (
+                                <form onSubmit={handleSubmitReview} className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                    <div className="flex gap-1 mb-2">
+                                        {[1,2,3,4,5].map(s => (
+                                            <Star key={s} size={16} className={`cursor-pointer ${s <= (hoverRating||newReview.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                                                onClick={() => setNewReview({...newReview, rating: s})} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} />
+                                        ))}
+                                    </div>
+                                    <input className="w-full text-xs bg-white p-2 rounded border border-gray-200 mb-2 focus:outline-none focus:border-sage-green" placeholder="Ceritakan pengalamanmu..."
+                                        value={newReview.text} onChange={e => setNewReview({...newReview, text: e.target.value})} />
+                                    <button type="submit" className="text-[10px] font-bold bg-dark-green text-white px-3 py-1.5 rounded hover:bg-sage-green transition">Kirim Ulasan</button>
+                                </form>
+                            ) : (
+                                <div className="mb-4 bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
+                                    {reviewStatus.message === "login_required" && (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Lock size={20} className="text-gray-400"/>
+                                            <p className="text-xs text-gray-500">Silakan <Link href="/login" className="text-dark-green font-bold underline">Login</Link> untuk menulis ulasan.</p>
+                                        </div>
+                                    )}
+                                    {reviewStatus.message === "role_restricted" && (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <ShieldAlert size={20} className="text-orange-500"/>
+                                            <p className="text-xs text-gray-500">Admin/Tenant tidak dapat memberikan ulasan produk.</p>
+                                        </div>
+                                    )}
+                                    {reviewStatus.message === "purchase_required" && (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <ShoppingBag size={20} className="text-gray-400"/>
+                                            <p className="text-xs text-gray-500">Hanya pembeli yang dapat memberikan ulasan.</p>
+                                        </div>
+                                    )}
+                                    {reviewStatus.message === "already_reviewed" && (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <CheckCircle size={20} className="text-sage-green"/>
+                                            <p className="text-xs text-gray-500">Kamu sudah memberikan ulasan untuk produk ini. Terima kasih!</p>
+                                        </div>
+                                    )}
                                 </div>
-                                <input className="w-full text-xs bg-white p-2 rounded border border-gray-200 mb-2" placeholder="Ulasan (opsional)..."
-                                    value={newReview.text} onChange={e => setNewReview({...newReview, text: e.target.value})} />
-                                <button type="submit" className="text-[10px] font-bold bg-dark-green text-white px-3 py-1.5 rounded hover:bg-sage-green transition">Kirim</button>
-                            </form>
+                            )}
+
                             <div className="space-y-3 max-h-40 overflow-y-auto">
                                 {reviews.length === 0 ? <p className="text-gray-400 text-xs italic">Belum ada ulasan.</p> : reviews.map(r => (
                                     <div key={r.id} className="pb-2 border-b border-gray-100 last:border-0">
@@ -316,7 +394,7 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-             
+              
               <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 z-50 md:static md:bg-transparent md:border-0 md:p-0 md:z-0">
                 <div className="max-w-6xl mx-auto md:max-w-none flex items-center gap-3">
                     
@@ -362,7 +440,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
 
-        {/* RELATED PRODUCTS */}
         <div className="mt-16 mb-8">
           <h3 className="text-lg font-bold text-dark-green mb-6 text-center md:text-left border-b border-gray-200 pb-2 inline-block">
             You might also love
