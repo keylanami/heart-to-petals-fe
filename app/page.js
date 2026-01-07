@@ -23,7 +23,8 @@ import {
   AlertCircle,
   RefreshCw,
   Search,
-  LocateFixed
+  LocateFixed,
+  Package
 } from "lucide-react";
 import { allItems, SHOPS } from "@/app/utils/shop";
 import { PROMOS } from "./utils/data";
@@ -232,14 +233,10 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
   const FALLBACK_CENTER = [107.6107, -6.8915];
   const RADIUS_LIMIT = 5;
 
-  const [viewState, setViewState] = useState({
-    center: FALLBACK_CENTER,
-    zoom: 13,
-  });
-
   const [userLocation, setUserLocation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showAllShops, setShowAllShops] = useState(false);
+  const [isMapReady, setIsMapReady] = useState(false);
   const showToast = useToast();
   
   const mapRef = useRef(null);
@@ -254,15 +251,11 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setUserLocation({ lat: latitude, lng: longitude });
-        
-        if (!isSearching) {
-          setViewState((prev) => ({
-            ...prev,
-            center: [longitude, latitude],
-            zoom: 13,
-          }));
-        }
         setIsLoading(false);
+        setTimeout(() => {
+          setIsMapReady(true);
+        }, 300);
+
       },
       (err) => {
         console.error("GPS Error:", err);
@@ -270,9 +263,7 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
       },
       { enableHighAccuracy: true }
     );
-  }, [isSearching]);
-
-
+  }, []);
 
   useEffect(() => {
     if (isSearching && shops && shops.length > 0 && mapRef.current) {
@@ -287,17 +278,9 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
           duration: 1500, 
           essential: true
         });
-        
-        setViewState(prev => ({
-          ...prev,
-          center: [lng, lat],
-          zoom: 14
-        }));
       }
     }
   }, [shops, isSearching]);
-
-
 
   const { visibleShops, nearbyCount } = useMemo(() => {
     const shopsWithDistance = shops.map((shop) => {
@@ -328,8 +311,6 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
     };
   }, [userLocation, shops, showAllShops, isSearching]);
 
-
-
   const handleRecenter = () => {
     if (userLocation && mapRef.current) {
       mapRef.current.flyTo({
@@ -338,20 +319,12 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
         duration: 1500,
         essential: true
       });
-      
-      setViewState(prev => ({
-        ...prev,
-        center: [userLocation.lng, userLocation.lat],
-        zoom: 14,
-      }));
     } else {
       showToast("Lokasi kamu belum terdeteksi. Pastikan GPS aktif.", "error");
     }
   };
 
-
-  
-  if (isLoading) {
+  if (isLoading || !userLocation) {
     return (
       <div className="w-full h-[400px] bg-gray-50 rounded-[2rem] flex flex-col items-center justify-center text-gray-400 gap-2 border border-gray-200">
         <Loader2 size={32} className="animate-spin text-sage-green" />
@@ -362,35 +335,32 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
     );
   }
 
+
   return (
     <div className="relative w-full h-[400px] md:h-[500px] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-sage-green/20 shadow-inner mb-8 group touch-none z-0 bg-gray-100">
       <Map 
         ref={mapRef}
         initialViewState={{
-          longitude: viewState.center[0],
-          latitude: viewState.center[1],
-          zoom: viewState.zoom
+          longitude: userLocation.lng,
+          latitude: userLocation.lat,
+          zoom: 13
         }}
-        onMove={(evt) => {
-          setViewState({
-            center: [evt.viewState.longitude, evt.viewState.latitude],
-            zoom: evt.viewState.zoom
-          });
-        }}
+        center={[
+          userLocation.lng,
+          userLocation.lat,]}
+        zoom={13}
       >
-        {userLocation && (
-          <MapMarker longitude={userLocation.lng} latitude={userLocation.lat}>
-            <MarkerContent>
-              <div className="relative flex items-center justify-center size-8">
-                <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-30"></div>
-                <div className="size-5 rounded-full bg-blue-600 border-[3px] border-white shadow-xl relative z-10 flex items-center justify-center">
-                  <User size={10} className="text-white" />
-                </div>
+        <MapMarker longitude={userLocation.lng} latitude={userLocation.lat}>
+          <MarkerContent>
+            <div className="relative flex items-center justify-center size-8">
+              <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-30"></div>
+              <div className="size-5 rounded-full bg-blue-600 border-[3px] border-white shadow-xl relative z-10 flex items-center justify-center">
+                <User size={10} className="text-white" />
               </div>
-            </MarkerContent>
-            <MarkerTooltip>Lokasi Kamu</MarkerTooltip>
-          </MapMarker>
-        )}
+            </div>
+          </MarkerContent>
+          <MarkerTooltip>Lokasi Kamu</MarkerTooltip>
+        </MapMarker>
 
         {visibleShops.map((shop) => (
           <MapMarker key={shop.id} longitude={shop.finalLng} latitude={shop.finalLat}>
@@ -398,11 +368,7 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
               <div className="relative hover:-translate-y-2 transition-transform duration-300 group/pin cursor-pointer">
                 <MapPin
                   size={36}
-                  className={`${
-                    shop.realDistance > RADIUS_LIMIT && !isSearching
-                      ? "text-gray-400 fill-gray-400"
-                      : "text-red-500 fill-red-500"
-                  } drop-shadow-lg`}
+                  className="text-red-500 fill-red-500 drop-shadow-lg"
                 />
                 <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white rounded-full shadow-sm"></div>
               </div>
@@ -417,8 +383,8 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
                   {shop.realDistance.toFixed(1)} km
                 </div>
                 {shop.can_customize && (
-                  <div className="absolute top-2 left-2 bg-sage-green/90 backdrop-blur px-2 py-0.5 rounded-lg text-[10px] font-bold text-white shadow-sm border border-white/20">
-                    ✨ Custom Available
+                  <div className="absolute top-2 left-2 bg-sage-green/90 backdrop-blur px-2 py-0.5 rounded-lg text-[10px] font-bold text-white shadow-sm border border-white/20 flex items-center gap-1">
+                    <Package size={10} /> Custom
                   </div>
                 )}
               </div>
@@ -457,20 +423,18 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
         ))}
       </Map>
 
-      {userLocation && (
-        <div className="absolute bottom-16 right-4 z-[20]">
-          <Button
-            onClick={handleRecenter}
-            size="icon"
-            className="bg-white hover:bg-gray-50 text-dark-green shadow-xl rounded-full w-10 h-10 border border-gray-200 transition-transform active:scale-95"
-            title="Kembali ke Lokasi Saya"
-          >
-            <LocateFixed size={20} />
-          </Button>
-        </div>
-      )}
+      <div className="absolute bottom-16 right-4 z-[20]">
+        <Button
+          onClick={handleRecenter}
+          size="icon"
+          className="bg-white hover:bg-gray-50 text-dark-green shadow-xl rounded-full w-10 h-10 border border-gray-200 transition-transform active:scale-95"
+          title="Kembali ke Lokasi Saya"
+        >
+          <LocateFixed size={20} />
+        </Button>
+      </div>
 
-      {userLocation && nearbyCount === 0 && !showAllShops && !isSearching && (
+      {nearbyCount === 0 && !showAllShops && !isSearching && (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-xs z-[20]">
           <div className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-red-100 text-center animate-in fade-in zoom-in duration-300">
             <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
@@ -492,7 +456,6 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
                     essential: true
                   });
                 }
-                setViewState((prev) => ({ ...prev, zoom: 11 }));
               }}
               className="w-full bg-dark-green hover:bg-sage-green text-white rounded-xl text-xs font-bold h-10 shadow-lg"
             >
@@ -502,7 +465,7 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
         </div>
       )}
 
-      {showAllShops && userLocation && !isSearching && (
+      {showAllShops && !isSearching && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[20]">
           <Button
             onClick={() => {
@@ -515,11 +478,6 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
                   essential: true
                 });
               }
-              setViewState((prev) => ({
-                ...prev,
-                center: [userLocation.lng, userLocation.lat],
-                zoom: 13,
-              }));
             }}
             variant="secondary"
             className="bg-white text-dark-green hover:bg-gray-50 rounded-full shadow-lg border border-gray-200 text-xs font-bold px-6 h-10 gap-2"
@@ -533,7 +491,7 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
         <div className={`backdrop-blur px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm border flex items-center gap-2 pointer-events-none ${nearbyCount === 0 && !showAllShops && !isSearching ? "bg-red-50/90 text-red-600 border-red-200" : "bg-white/90 text-sage-green border-white/50"}`}>
           <Navigation size={14} className={nearbyCount === 0 && !isSearching ? "text-red-500" : "text-blue-500"} />
           <span className="hidden xs:inline">
-            {isSearching ? `Hasil Pencarian (${visibleShops.length})` : userLocation ? (showAllShops ? "Semua Area" : `Radius 5km (${nearbyCount} Toko)`) : "Mode Peta"}
+            {isSearching ? `Hasil Pencarian (${visibleShops.length})` : showAllShops ? "Semua Area" : `Radius 5km (${nearbyCount} Toko)`}
           </span>
         </div>
       </div>
