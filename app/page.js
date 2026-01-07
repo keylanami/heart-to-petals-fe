@@ -24,7 +24,8 @@ import {
   RefreshCw,
   Search,
   LocateFixed,
-  Package
+  Package,
+  Compass
 } from "lucide-react";
 import { allItems, SHOPS } from "@/app/utils/shop";
 import { PROMOS } from "./utils/data";
@@ -230,20 +231,23 @@ const Snowfall = () => {
 };
 
 const NeighborhoodMap = ({ shops, isSearching = false }) => {
-  const FALLBACK_CENTER = [107.6107, -6.8915];
+  const FALLBACK_CENTER = [107.6107, -6.8915]; // Bandung
   const RADIUS_LIMIT = 5;
 
   const [userLocation, setUserLocation] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [locationDenied, setLocationDenied] = useState(false);
   const [showAllShops, setShowAllShops] = useState(false);
   const [isMapReady, setIsMapReady] = useState(false);
   const showToast = useToast();
+  const Router = useRouter();
   
   const mapRef = useRef(null);
 
   useEffect(() => {
     if (!navigator.geolocation) {
       setIsLoading(false);
+      setLocationDenied(true);
       return;
     }
 
@@ -251,17 +255,17 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
       (pos) => {
         const { latitude, longitude } = pos.coords;
         setUserLocation({ lat: latitude, lng: longitude });
+        setLocationDenied(false);
         setIsLoading(false);
         setTimeout(() => {
           setIsMapReady(true);
         }, 300);
-
       },
       (err) => {
-        console.error("GPS Error:", err);
+        setLocationDenied(true);
         setIsLoading(false);
       },
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   }, []);
 
@@ -275,7 +279,7 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
         mapRef.current.flyTo({
           center: [lng, lat],
           zoom: 14,
-          duration: 1500, 
+          duration: 1500,
           essential: true
         });
       }
@@ -287,14 +291,14 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
       const lat = shop.lat || shop.coordinate?.lat || FALLBACK_CENTER[1];
       const lng = shop.lng || shop.coordinate?.lng || FALLBACK_CENTER[0];
       
-      const dist = userLocation
+      const dist = userLocation && !locationDenied
         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
         : 0;
 
       return { ...shop, realDistance: dist, finalLat: lat, finalLng: lng };
     });
 
-    if (!userLocation || isSearching || showAllShops) {
+    if (locationDenied || !userLocation || isSearching || showAllShops) {
       return { 
         visibleShops: shopsWithDistance, 
         nearbyCount: shopsWithDistance.length 
@@ -309,10 +313,10 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
       visibleShops: nearby,
       nearbyCount: nearby.length,
     };
-  }, [userLocation, shops, showAllShops, isSearching]);
+  }, [userLocation, shops, showAllShops, isSearching, locationDenied]);
 
   const handleRecenter = () => {
-    if (userLocation && mapRef.current) {
+    if (userLocation && !locationDenied && mapRef.current) {
       mapRef.current.flyTo({
         center: [userLocation.lng, userLocation.lat],
         zoom: 14,
@@ -320,11 +324,85 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
         essential: true
       });
     } else {
-      showToast("Lokasi kamu belum terdeteksi. Pastikan GPS aktif.", "error");
+      showToast("Lokasi kamu belum terdeteksi. Pastikan akses lokasi diizinkan.", "error");
     }
   };
 
-  if (isLoading || !userLocation) {
+  const handleEnableLocation = () => {
+    if (!navigator.geolocation) {
+      showToast("Browser kamu tidak mendukung geolocation", "error");
+      return;
+    }
+
+    showToast("Mengizinkan akses lokasi...", "info");
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        setLocationDenied(false);
+        showToast("Lokasi berhasil diaktifkan! Memperbarui peta...", "success");
+        
+        setTimeout(() => {
+          if (mapRef.current) {
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 13,
+              duration: 1500,
+              essential: true
+            });
+          }
+        }, 500);
+      },
+      (err) => {
+        console.error("Masih ditolak:", err);
+        showToast("Izin lokasi masih ditolak. Periksa pengaturan browser.", "error");
+      },
+      { enableHighAccuracy: true }
+    );
+  };
+
+  if (locationDenied) {
+    return (
+      <div className="w-full h-[400px] md:h-[500px] rounded-[2rem] md:rounded-[2.5rem] bg-gradient-to-br from-gray-50 to-white border-2 border-dashed border-gray-300 mb-8 flex flex-col items-center justify-center p-8 text-center">
+        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
+          <Compass size={32} className="text-gray-400" />
+        </div>
+        
+        <h3 className="text-xl font-bold text-gray-800 mb-2">
+          Izinkan Lokasi
+        </h3>
+        
+        <p className="text-gray-600 mb-6 max-w-md">
+          Untuk melihat florist terdekat dari lokasimu, izinkan akses lokasi.
+        </p>
+        
+        <button
+          onClick={() => {
+            if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                  const { latitude, longitude } = pos.coords;
+                  setUserLocation({ lat: latitude, lng: longitude });
+                  setLocationDenied(false);
+                },
+                () => {
+                  alert("Silakan ubah pengaturan lokasi di browser");
+                }
+              );
+            }
+          }}
+          className="bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition-colors"
+        >
+          Izinkan Lokasi
+        </button>
+        
+      </div>
+    );
+  }
+
+
+  if (isLoading) {
     return (
       <div className="w-full h-[400px] bg-gray-50 rounded-[2rem] flex flex-col items-center justify-center text-gray-400 gap-2 border border-gray-200">
         <Loader2 size={32} className="animate-spin text-sage-green" />
@@ -334,7 +412,6 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
       </div>
     );
   }
-
 
   return (
     <div className="relative w-full h-[400px] md:h-[500px] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-sage-green/20 shadow-inner mb-8 group touch-none z-0 bg-gray-100">
@@ -350,6 +427,7 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
           userLocation.lat,]}
         zoom={13}
       >
+        {/* User marker */}
         <MapMarker longitude={userLocation.lng} latitude={userLocation.lat}>
           <MarkerContent>
             <div className="relative flex items-center justify-center size-8">
@@ -362,6 +440,7 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
           <MarkerTooltip>Lokasi Kamu</MarkerTooltip>
         </MapMarker>
 
+        {/* Shop markers */}
         {visibleShops.map((shop) => (
           <MapMarker key={shop.id} longitude={shop.finalLng} latitude={shop.finalLat}>
             <MarkerContent>
@@ -393,7 +472,7 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
                   <div className="flex items-center gap-1 text-[10px] font-bold text-sage-green uppercase tracking-wider">
                     <MapPin size={10} /> {shop.location || "Bandung"}
                   </div>
-                  <div className="flex items-center gap-1 bg-yellow-50 border border-yellow-100 px-1.5 py-0.5 rounded text-yellow-700 text-[10px] font-bold">
+                  <div className="flex items-center gap-1 bg-yellow-50 border border-yellow-100 px 1.5 py-0.5 rounded text-yellow-700 text-[10px] font-bold">
                     <Star size={10} className="fill-yellow-400 text-yellow-400" />
                     {shop.rating || 5.0}
                   </div>
@@ -498,6 +577,7 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
     </div>
   );
 };
+
 
 const CustomBouquetSection = ({ onOpenModal }) => {
   const { user } = useAuth();
@@ -631,6 +711,7 @@ export default function DashboardPage() {
 
   const [userLoc, setUserLoc] = useState(null);
   const [isLocLoading, setIsLocLoading] = useState(true);
+  const [locationPermissionDenied, setLocationPermissionDenied] = useState(false);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -640,14 +721,17 @@ export default function DashboardPage() {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setLocationPermissionDenied(false);
           setIsLocLoading(false);
         },
         (err) => {
-          console.error("GPS Error", err);
+          setLocationPermissionDenied(true);
           setIsLocLoading(false);
-        }
+        },
+        { timeout: 10000 }
       );
     } else {
+      setLocationPermissionDenied(true);
       setIsLocLoading(false);
     }
 
@@ -658,31 +742,6 @@ export default function DashboardPage() {
   }, []);
 
   const bestSellers = allItems.filter((i) => i.type !== "promo").slice(0, 5);
-
-  const RADIUS_LIMIT_KM = 5; 
-  const { nearbyShops, hasNearby } = useMemo(() => {
-    if (!userLoc) return { nearbyShops: SHOPS.slice(0, 4), hasNearby: true };
-
-    const sortedShops = SHOPS.map((shop) => {
-      const sLat = shop.lat || shop.coordinate?.lat || 0;
-      const sLng = shop.lng || shop.coordinate?.lng || 0;
-      const dist = calculateDistance(userLoc.lat, userLoc.lng, sLat, sLng);
-      return { 
-          ...shop, 
-          realDistanceVal: dist, 
-          distance: `${dist.toFixed(1)} km` 
-      };
-    }).sort((a, b) => a.realDistanceVal - b.realDistanceVal);
-
-    const withinRadius = sortedShops.filter(s => s.realDistanceVal <= RADIUS_LIMIT_KM);
-
-    if (withinRadius.length > 0) {
-        return { nearbyShops: withinRadius.slice(0, 4), hasNearby: true };
-    } else {
-        return { nearbyShops: [], hasNearby: false };
-    }
-  }, [userLoc]);
-
 
   const displayedShops = useMemo(() => {
     if (searchQuery.trim() !== "") {
@@ -695,7 +754,7 @@ export default function DashboardPage() {
 
       return filtered.map(shop => {
         let distStr = "";
-        if (userLoc) {
+        if (userLoc && !locationPermissionDenied) {
              const sLat = shop.lat || shop.coordinate?.lat || 0;
              const sLng = shop.lng || shop.coordinate?.lng || 0;
              const dist = calculateDistance(userLoc.lat, userLoc.lng, sLat, sLng);
@@ -704,7 +763,8 @@ export default function DashboardPage() {
         return { ...shop, distance: distStr };
       });
     }
-  if (!userLoc) return SHOPS.slice(0, 4); 
+    
+    if (!userLoc || locationPermissionDenied) return SHOPS.slice(0, 4);
 
     const sorted = SHOPS.map((shop) => {
         const sLat = shop.lat || shop.coordinate?.lat || 0;
@@ -713,11 +773,10 @@ export default function DashboardPage() {
         return { ...shop, realDistanceVal: dist, distance: `${dist.toFixed(1)} km` };
     }).sort((a, b) => a.realDistanceVal - b.realDistanceVal);
 
-    const nearby = sorted.filter(s => s.realDistanceVal <= 5); 
-    return nearby.length > 0 ? nearby.slice(0, 4) : []; 
+    const nearby = sorted.filter(s => s.realDistanceVal <= 5);
+    return nearby.length > 0 ? nearby.slice(0, 4) : [];
     
-  }, [userLoc, searchQuery]); 
-
+  }, [userLoc, searchQuery, locationPermissionDenied]);
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
@@ -870,7 +929,6 @@ export default function DashboardPage() {
       <section className="bg-white/70 py-12 md:py-16 md:rounded-t-[6rem] -mx-0">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-end mb-8 md:pr-6 gap-4">
-            
             <div className="w-full md:w-auto">
               <div className="flex items-center gap-2 text-sage-green mb-2">
                 <MapPin size={16} />
@@ -883,89 +941,106 @@ export default function DashboardPage() {
                     ? `Hasil: "${searchQuery}"` 
                     : (displayedShops.length > 0 ? "Florist Terdekat" : "Jelajahi Florist")}
               </h2>
+              
+              {locationPermissionDenied && !isSearching && (
+                <div className="flex items-center gap-2 mt-2 text-sm text-amber-600 bg-amber-50 px-3 py-1.5 rounded-full inline-flex">
+                  <AlertCircle size={14} />
+                  <span>Izinkan akses lokasi untuk melihat toko terdekat</span>
+                </div>
+              )}
             </div>
 
             <div className="w-full md:w-96 relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                    <Search size={18} />
-                </div>
-                <input 
-                    type="text"
-                    placeholder="Cari lokasi (e.g. Dago, Tebet)..."
-                    value={searchQuery}
-                    onChange={handleSearch}
-                    className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sage-green/50 focus:border-sage-green bg-white shadow-sm text-sm"
-                />
-                {searchQuery && (
-                    <button 
-                        onClick={() => { setSearchQuery(""); setIsSearching(false); }}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-100 p-1 rounded-full text-gray-500 hover:bg-gray-200"
-                    >
-                        <X size={14} />
-                    </button>
-                )}
+              <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                <Search size={18} />
+              </div>
+              <input 
+                type="text"
+                placeholder="Cari lokasi (e.g. Dago, Tebet)..."
+                value={searchQuery}
+                onChange={handleSearch}
+                className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sage-green/50 focus:border-sage-green bg-white shadow-sm text-sm"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => { setSearchQuery(""); setIsSearching(false); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-100 p-1 rounded-full text-gray-500 hover:bg-gray-200"
+                >
+                  <X size={14} />
+                </button>
+              )}
             </div>
           </div>
 
-
-          <NeighborhoodMap shops={displayedShops.length > 0 ? displayedShops : SHOPS} isSearching={isSearching} />
+          <NeighborhoodMap 
+            shops={displayedShops.length > 0 ? displayedShops : SHOPS} 
+            isSearching={isSearching} 
+          />
 
           <div className="-mx-6 px-6 md:mx-0 md:px-0">
-             
-             {isLocLoading && !isSearching ? (
-                 <div className="w-full text-center py-10 flex flex-col items-center gap-2 text-gray-400">
-                    <Loader2 className="animate-spin text-sage-green" /> Mengambil lokasi...
-                 </div>
-             ) : (
-                <>
-                    {displayedShops.length === 0 ? (
-                        <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center shadow-sm">
-                            <div className="w-16 h-16 bg-cream-bg rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">
-                                🍃
-                            </div>
-                            <h3 className="font-serif font-bold text-xl text-dark-green mb-2">
-                                {isSearching ? "Florist tidak ditemukan" : "Belum ada Florist di Sekitarmu"}
-                            </h3>
-                            <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
-                                {isSearching 
-                                    ? `Kami tidak menemukan florist di area "${searchQuery}". Coba kata kunci lain.`
-                                    : "Kamu berada di luar jangkauan mitra kami. Coba cari manual menggunakan kolom pencarian di atas."}
-                            </p>
-                            
-                            {!isSearching && (
-                                <Button 
-                                    onClick={() => document.querySelector('input[type="text"]').focus()}
-                                    className="bg-dark-green text-white hover:bg-sage-green rounded-full px-6"
-                                >
-                                    Cari Manual
-                                </Button>
-                            )}
-                        </div>
+            {isLocLoading && !isSearching ? (
+              <div className="w-full text-center py-10 flex flex-col items-center gap-2 text-gray-400">
+                <Loader2 className="animate-spin text-sage-green" /> Mengambil lokasi...
+              </div>
+            ) : (
+              <>
+                {displayedShops.length === 0 && !isSearching ? (
+                  <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center shadow-sm">
+                    <div className="w-16 h-16 bg-cream-bg rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">
+                      🍃
+                    </div>
+                    <h3 className="font-serif font-bold text-xl text-dark-green mb-2">
+                      {locationPermissionDenied 
+                        ? "Izinkan Lokasi untuk Melihat Florist Terdekat" 
+                        : "Belum ada Florist di Sekitarmu"}
+                    </h3>
+                    <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+                      {locationPermissionDenied
+                        ? "Aktifkan akses lokasi di browser untuk menemukan florist terdekat dari posisimu."
+                        : "Kamu berada di luar jangkauan mitra kami. Coba cari manual menggunakan kolom pencarian di atas."}
+                    </p>
+                    
+                    {locationPermissionDenied ? (
+                      <Button 
+                        onClick={() => window.location.reload()}
+                        className="bg-dark-green text-white hover:bg-sage-green rounded-full px-6"
+                      >
+                        Coba Lagi
+                      </Button>
                     ) : (
-                        <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-hide">
-                            {displayedShops.map((shop) => (
-                            <Link href={`/shop/${shop.id}`} key={shop.id} className="flex-shrink-0 w-64 md:w-72 group cursor-pointer">
-                                <div className="h-40 md:h-48 rounded-xl overflow-hidden relative mb-4">
-                                    <img src={shop.image} className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" />
-                                    {shop.distance && (
-                                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur text-[10px] font-bold px-2 py-1 rounded-md shadow-sm text-dark-green">
-                                            📍 {shop.distance}
-                                        </div>
-                                    )}
-                                </div>
-                                <h3 className="text-lg md:text-xl font-serif font-bold text-dark-green leading-tight group-hover:text-sage-green">
-                                    {shop.name}
-                                </h3>
-                                <div className="flex items-center gap-1 text-orange-400 text-xs md:text-sm mt-1">
-                                    <Star size={12} fill="currentColor" /> {shop.rating}
-                                    <span className="text-gray-400 ml-2">• {shop.location}</span>
-                                </div>
-                            </Link>
-                            ))}
-                        </div>
+                      <Button 
+                        onClick={() => document.querySelector('input[type="text"]').focus()}
+                        className="bg-dark-green text-white hover:bg-sage-green rounded-full px-6"
+                      >
+                        Cari Manual
+                      </Button>
                     )}
-                </>
-             )}
+                  </div>
+                ) : (
+                  <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                    {displayedShops.map((shop) => (
+                      <Link href={`/shop/${shop.id}`} key={shop.id} className="flex-shrink-0 w-64 md:w-72 group cursor-pointer">
+                        <div className="h-40 md:h-48 rounded-xl overflow-hidden relative mb-4">
+                          <img src={shop.image} className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" />
+                          {shop.distance && !locationPermissionDenied && (
+                            <div className="absolute top-3 left-3 bg-white/90 backdrop-blur text-[10px] font-bold px-2 py-1 rounded-md shadow-sm text-dark-green">
+                              📍 {shop.distance}
+                            </div>
+                          )}
+                        </div>
+                        <h3 className="text-lg md:text-xl font-serif font-bold text-dark-green leading-tight group-hover:text-sage-green">
+                          {shop.name}
+                        </h3>
+                        <div className="flex items-center gap-1 text-orange-400 text-xs md:text-sm mt-1">
+                          <Star size={12} fill="currentColor" /> {shop.rating}
+                          <span className="text-gray-400 ml-2">• {shop.location}</span>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </section>

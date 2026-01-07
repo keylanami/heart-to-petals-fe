@@ -42,7 +42,6 @@ export default function ProductDetailPage() {
 
   const product = allItems.find((p) => String(p.id) === String(id));
   
-  // Logic Related Products
   const relatedProducts = product
     ? allItems
         .filter(
@@ -51,7 +50,6 @@ export default function ProductDetailPage() {
         .slice(0, 3) 
     : [];
 
-  // Fallback related products
   if (product && relatedProducts.length < 3) {
     const others = allItems.filter(
       (p) => String(p.id) !== String(id) && p.category !== product.category
@@ -63,7 +61,6 @@ export default function ProductDetailPage() {
     }
   }
 
-  // Load Reviews
   useEffect(() => {
     if (product) {
       const storageKey = `reviews_${product.id}`;
@@ -183,10 +180,8 @@ export default function ProductDetailPage() {
     <main className="bg-cream-bg min-h-screen">
       <Navbar />
       
-      {/* Container Utama: Padding Bottom Extra untuk Mobile biar konten ga ketutup tombol sticky */}
       <div className="max-w-6xl mx-auto px-4 md:px-6 pt-28 pb-32 md:pb-16">
         
-        {/* Breadcrumb */}
         <button
           onClick={() => router.back()}
           className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-dark-green mb-6 transition-colors group"
@@ -198,7 +193,6 @@ export default function ProductDetailPage() {
         <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-5 md:p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             
-            {/* --- KOLOM KIRI: GAMBAR --- */}
             <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 group">
               <img
                 src={product.image}
@@ -224,10 +218,7 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {/* --- KOLOM KANAN: DETAIL --- */}
             <div className="flex flex-col h-full">
-              
-              {/* Info Utama */}
               <div className="mb-6">
                 <Link href={`/shop/${product.shop?.id}`} className="inline-flex items-center gap-2 mb-2 text-gray-500 hover:text-dark-green transition-colors">
                     <Store size={14} />
@@ -259,7 +250,6 @@ export default function ProductDetailPage() {
                 {product.desc}
               </p>
 
-              {/* Tabs Info */}
               <div className="mb-8 flex-1">
                 <div className="flex gap-6 border-b border-gray-100 mb-4 overflow-x-auto scrollbar-hide">
                   {["story", "flowers", "care", "reviews"].map((tab) => (
@@ -326,14 +316,10 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              {/* --- ACTION SECTION (RESPONSIVE STICKY) --- */}
-              {/* Mobile: Fixed di bawah layar (Sticky)
-                  Desktop: Posisi statis di dalam kolom
-              */}
+             
               <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 z-50 md:static md:bg-transparent md:border-0 md:p-0 md:z-0">
                 <div className="max-w-6xl mx-auto md:max-w-none flex items-center gap-3">
                     
-                    {/* Qty Selector */}
                     <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-3 py-2 border border-gray-200 h-12">
                         <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-8 h-full flex items-center justify-center hover:text-sage-green disabled:opacity-30" disabled={isOutOfStock}>
                             <Minus size={16} />
@@ -344,7 +330,6 @@ export default function ProductDetailPage() {
                         </button>
                     </div>
 
-                    {/* Buttons */}
                     <div className="flex gap-2 flex-1 h-12">
                         <button
                             onClick={handleAddToCart}
