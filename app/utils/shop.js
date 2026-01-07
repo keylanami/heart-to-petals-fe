@@ -46,7 +46,7 @@ export const SHOPS = [
     distance: "12 km",
     can_customize: false,
     openTime: "24 Jam",
-    lat: -6.8869, lng: 107.6153,
+    lat: -6.9175, lng: 107.6092,
   },
   {
     id: 105,
@@ -58,7 +58,7 @@ export const SHOPS = [
     distance: "4.2 km",
     can_customize: true,
     openTime: "09.00 - 17.00",
-    lat: -6.8869, lng: 107.6153,
+    lat: -6.8604, lng: 107.5977,
   },
   {
     id: 106,

@@ -9,7 +9,6 @@ export function InventoryProvider({ children }) {
   const [inventory, setInventory] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // 1. LOAD DATA ON MOUNT
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedInv = localStorage.getItem("inventory");

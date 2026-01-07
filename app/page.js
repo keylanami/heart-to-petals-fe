@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import NextImage from "next/image";
 import {
   MapPin,
   Star,
@@ -16,14 +17,44 @@ import {
   PenTool,
   Gift,
   X,
+  Clock,
+  ExternalLink,
+  Loader2,
+  AlertCircle,
+  RefreshCw,
+  Search,
+  LocateFixed
 } from "lucide-react";
-import { allItems } from "@/app/utils/shop";
-import { SHOPS } from "./utils/tenants";
+import { allItems, SHOPS } from "@/app/utils/shop";
 import { PROMOS } from "./utils/data";
 import { useAuth } from "./context/AuthContext";
 import { useToast } from "./context/ToastContext";
+import {
+  Map,
+  MapMarker,
+  MarkerContent,
+  MarkerPopup,
+  MarkerTooltip,
+  Source,
+  Layer,
+} from "@/components/ui/map";
+import { Button } from "@/components/ui/button";
 
-// --- Components ---
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return 9999;
+
+  const R = 6371;
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) *
+      Math.cos(lat2 * (Math.PI / 180)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
 
 const FloristSelectionModal = ({ isOpen, onClose }) => {
   const customShops = SHOPS.filter((shop) => shop.can_customize);
@@ -111,7 +142,6 @@ const DashboardProductCard = ({ item }) => {
   return (
     <Link
       href={`/product/${item.id}`}
-      // Mobile: Fixed width 80vw (peek effect), Desktop: Fixed 300px
       className="group relative flex-shrink-0 w-[80vw] md:w-[300px] h-[420px] md:h-[480px] cursor-pointer block snap-center"
     >
       <div className="absolute -top-3 -left-3 z-20">
@@ -198,78 +228,314 @@ const Snowfall = () => {
   );
 };
 
-const NeighborhoodMap = ({ shops }) => {
-  return (
-    <div className="relative w-full h-[320px] md:h-[400px] bg-[#E8F1EE] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-sage-green/20 shadow-inner mb-8 group touch-none">
-      <div
-        className="absolute inset-0 opacity-10 pointer-events-none"
-        style={{
-          backgroundImage: "radial-gradient(#1A2F24 1px, transparent 1px)",
-          backgroundSize: "20px 20px",
-        }}
-      />
+const NeighborhoodMap = ({ shops, isSearching = false }) => {
+  const FALLBACK_CENTER = [107.6107, -6.8915];
+  const RADIUS_LIMIT = 5;
 
-      <div className="absolute top-1/2 left-0 w-full h-8 bg-white/40 -rotate-3 blur-sm"></div>
-      <div className="absolute top-0 right-1/3 h-full w-8 bg-white/40 rotate-12 blur-sm"></div>
+  const [viewState, setViewState] = useState({
+    center: FALLBACK_CENTER,
+    zoom: 13,
+  });
 
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-20">
-        <div className="relative">
-          <div className="w-4 h-4 bg-blue-500 rounded-full border-2 border-white shadow-lg z-10 relative"></div>
-          <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-50"></div>
-          <div className="absolute inset-[-12px] bg-blue-500/20 rounded-full animate-pulse"></div>
-        </div>
-        <div className="mt-2 bg-white/90 backdrop-blur px-2 py-1 rounded-lg text-[9px] md:text-[10px] font-bold text-blue-600 shadow-sm border border-blue-100 flex items-center gap-1">
-          <User size={10} /> You
-        </div>
+  const [userLocation, setUserLocation] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [showAllShops, setShowAllShops] = useState(false);
+  const showToast = useToast();
+  
+  const mapRef = useRef(null);
+
+  useEffect(() => {
+    if (!navigator.geolocation) {
+      setIsLoading(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude } = pos.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        
+        if (!isSearching) {
+          setViewState((prev) => ({
+            ...prev,
+            center: [longitude, latitude],
+            zoom: 13,
+          }));
+        }
+        setIsLoading(false);
+      },
+      (err) => {
+        console.error("GPS Error:", err);
+        setIsLoading(false);
+      },
+      { enableHighAccuracy: true }
+    );
+  }, [isSearching]);
+
+
+
+  useEffect(() => {
+    if (isSearching && shops && shops.length > 0 && mapRef.current) {
+      const firstShop = shops[0];
+      const lat = firstShop.lat || firstShop.coordinate?.lat;
+      const lng = firstShop.lng || firstShop.coordinate?.lng;
+
+      if (lat && lng) {
+        mapRef.current.flyTo({
+          center: [lng, lat],
+          zoom: 14,
+          duration: 1500, 
+          essential: true
+        });
+        
+        setViewState(prev => ({
+          ...prev,
+          center: [lng, lat],
+          zoom: 14
+        }));
+      }
+    }
+  }, [shops, isSearching]);
+
+
+
+  const { visibleShops, nearbyCount } = useMemo(() => {
+    const shopsWithDistance = shops.map((shop) => {
+      const lat = shop.lat || shop.coordinate?.lat || FALLBACK_CENTER[1];
+      const lng = shop.lng || shop.coordinate?.lng || FALLBACK_CENTER[0];
+      
+      const dist = userLocation
+        ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
+        : 0;
+
+      return { ...shop, realDistance: dist, finalLat: lat, finalLng: lng };
+    });
+
+    if (!userLocation || isSearching || showAllShops) {
+      return { 
+        visibleShops: shopsWithDistance, 
+        nearbyCount: shopsWithDistance.length 
+      };
+    }
+
+    const nearby = shopsWithDistance.filter(
+      (s) => s.realDistance <= RADIUS_LIMIT
+    );
+
+    return {
+      visibleShops: nearby,
+      nearbyCount: nearby.length,
+    };
+  }, [userLocation, shops, showAllShops, isSearching]);
+
+
+
+  const handleRecenter = () => {
+    if (userLocation && mapRef.current) {
+      mapRef.current.flyTo({
+        center: [userLocation.lng, userLocation.lat],
+        zoom: 14,
+        duration: 1500,
+        essential: true
+      });
+      
+      setViewState(prev => ({
+        ...prev,
+        center: [userLocation.lng, userLocation.lat],
+        zoom: 14,
+      }));
+    } else {
+      showToast("Lokasi kamu belum terdeteksi. Pastikan GPS aktif.", "error");
+    }
+  };
+
+
+  
+  if (isLoading) {
+    return (
+      <div className="w-full h-[400px] bg-gray-50 rounded-[2rem] flex flex-col items-center justify-center text-gray-400 gap-2 border border-gray-200">
+        <Loader2 size={32} className="animate-spin text-sage-green" />
+        <span className="text-xs font-bold animate-pulse">
+          Melacak Lokasi...
+        </span>
       </div>
+    );
+  }
 
-      {shops.map((shop, idx) => {
-        const positions = [
-          { top: "25%", left: "15%" },
-          { top: "20%", left: "75%" },
-          { top: "75%", left: "25%" },
-          { top: "65%", left: "85%" },
-        ];
-        const pos = positions[idx] || { top: "50%", left: "50%" };
-
-        return (
-          <motion.div
-            key={shop.id}
-            className="absolute flex flex-col items-center group/pin cursor-pointer"
-            style={pos}
-            initial={{ scale: 0, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            transition={{ delay: idx * 0.2 }}
-          >
-            <div className="relative hover:-translate-y-2 transition-transform duration-300">
-              <MapPin
-                size={24}
-                className="text-red-500 fill-red-500 drop-shadow-md md:w-8 md:h-8"
-              />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 md:w-3 md:h-3 bg-white rounded-full"></div>
-            </div>
-
-            <div className="absolute top-full mt-1 bg-white/90 backdrop-blur-sm p-1.5 md:p-2 rounded-xl shadow-xl border border-gray-100 flex items-center gap-2 w-max opacity-0 group-hover/pin:opacity-100 transition-opacity z-30 pointer-events-none transform translate-y-1 group-hover/pin:translate-y-0">
-              <img
-                src={shop.image}
-                className="w-6 h-6 md:w-8 md:h-8 rounded-lg object-cover hidden xs:block"
-              />
-              <div>
-                <p className="text-[9px] md:text-[10px] font-bold text-dark-green leading-tight">
-                  {shop.name}
-                </p>
-                <p className="text-[8px] md:text-[9px] text-gray-400">
-                  {shop.distance}
-                </p>
+  return (
+    <div className="relative w-full h-[400px] md:h-[500px] rounded-[2rem] md:rounded-[2.5rem] overflow-hidden border border-sage-green/20 shadow-inner mb-8 group touch-none z-0 bg-gray-100">
+      <Map 
+        ref={mapRef}
+        initialViewState={{
+          longitude: viewState.center[0],
+          latitude: viewState.center[1],
+          zoom: viewState.zoom
+        }}
+        onMove={(evt) => {
+          setViewState({
+            center: [evt.viewState.longitude, evt.viewState.latitude],
+            zoom: evt.viewState.zoom
+          });
+        }}
+      >
+        {userLocation && (
+          <MapMarker longitude={userLocation.lng} latitude={userLocation.lat}>
+            <MarkerContent>
+              <div className="relative flex items-center justify-center size-8">
+                <div className="absolute inset-0 bg-blue-500 rounded-full animate-ping opacity-30"></div>
+                <div className="size-5 rounded-full bg-blue-600 border-[3px] border-white shadow-xl relative z-10 flex items-center justify-center">
+                  <User size={10} className="text-white" />
+                </div>
               </div>
-            </div>
-          </motion.div>
-        );
-      })}
+            </MarkerContent>
+            <MarkerTooltip>Lokasi Kamu</MarkerTooltip>
+          </MapMarker>
+        )}
 
-      <div className="absolute top-4 right-4 bg-white/80 backdrop-blur px-3 py-1.5 rounded-lg text-xs font-bold text-sage-green shadow-sm flex items-center gap-2">
-        <Navigation size={14} />{" "}
-        <span className="hidden xs:inline">Live Map View</span>
+        {visibleShops.map((shop) => (
+          <MapMarker key={shop.id} longitude={shop.finalLng} latitude={shop.finalLat}>
+            <MarkerContent>
+              <div className="relative hover:-translate-y-2 transition-transform duration-300 group/pin cursor-pointer">
+                <MapPin
+                  size={36}
+                  className={`${
+                    shop.realDistance > RADIUS_LIMIT && !isSearching
+                      ? "text-gray-400 fill-gray-400"
+                      : "text-red-500 fill-red-500"
+                  } drop-shadow-lg`}
+                />
+                <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-2.5 h-2.5 bg-white rounded-full shadow-sm"></div>
+              </div>
+            </MarkerContent>
+
+            <MarkerPopup className="p-0 w-[290px] border-none shadow-2xl rounded-xl overflow-hidden bg-white font-sans">
+              <div className="relative h-36 w-full bg-gray-100 group">
+                <NextImage fill src={shop.image} alt={shop.name} className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-60"></div>
+                <div className="absolute top-2 right-2 bg-white/95 backdrop-blur px-2 py-0.5 rounded-lg text-[10px] font-bold text-dark-green shadow-sm flex items-center gap-1">
+                  <Navigation size={10} className="text-sage-green" />
+                  {shop.realDistance.toFixed(1)} km
+                </div>
+                {shop.can_customize && (
+                  <div className="absolute top-2 left-2 bg-sage-green/90 backdrop-blur px-2 py-0.5 rounded-lg text-[10px] font-bold text-white shadow-sm border border-white/20">
+                    ✨ Custom Available
+                  </div>
+                )}
+              </div>
+              <div className="p-3.5 bg-white space-y-2.5 relative -mt-4 rounded-t-md">
+                <div className="flex justify-between items-start">
+                  <div className="flex items-center gap-1 text-[10px] font-bold text-sage-green uppercase tracking-wider">
+                    <MapPin size={10} /> {shop.location || "Bandung"}
+                  </div>
+                  <div className="flex items-center gap-1 bg-yellow-50 border border-yellow-100 px-1.5 py-0.5 rounded text-yellow-700 text-[10px] font-bold">
+                    <Star size={10} className="fill-yellow-400 text-yellow-400" />
+                    {shop.rating || 5.0}
+                  </div>
+                </div>
+                <h3 className="font-serif font-bold text-lg text-gray-900 leading-tight line-clamp-1">
+                  {shop.name}
+                </h3>
+                <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-50 p-2 rounded-lg border border-gray-100">
+                  <Clock size={14} className="text-sage-green" />
+                  <span className="font-medium">{shop.openTime || "08:00 - 20:00"}</span>
+                  <span className="text-gray-300">|</span>
+                  <span className="text-[10px] text-gray-400">({shop.reviewCount || 0} Ulasan)</span>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button size="sm" className="flex-1 h-9 text-xs font-bold bg-dark-green hover:bg-sage-green text-white shadow-md hover:shadow-lg transition-all" onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${shop.finalLat},${shop.finalLng}`, "_blank")}>
+                    <Navigation size={14} className="mr-1.5" /> Rute
+                  </Button>
+                  <Link href={`/shop/${shop.id}`} className="flex-none">
+                    <Button size="sm" variant="outline" className="h-9 w-10 p-0 border-gray-200 text-gray-500 hover:text-dark-green hover:border-dark-green hover:bg-green-50 transition-all">
+                      <ExternalLink size={16} />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </MarkerPopup>
+          </MapMarker>
+        ))}
+      </Map>
+
+      {userLocation && (
+        <div className="absolute bottom-16 right-4 z-[20]">
+          <Button
+            onClick={handleRecenter}
+            size="icon"
+            className="bg-white hover:bg-gray-50 text-dark-green shadow-xl rounded-full w-10 h-10 border border-gray-200 transition-transform active:scale-95"
+            title="Kembali ke Lokasi Saya"
+          >
+            <LocateFixed size={20} />
+          </Button>
+        </div>
+      )}
+
+      {userLocation && nearbyCount === 0 && !showAllShops && !isSearching && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-xs z-[20]">
+          <div className="bg-white/95 backdrop-blur-md p-5 rounded-2xl shadow-2xl border border-red-100 text-center animate-in fade-in zoom-in duration-300">
+            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-3">
+              <AlertCircle className="text-red-500" size={24} />
+            </div>
+            <h4 className="font-bold text-gray-800 text-sm mb-1">
+              Yah, belum ada florist dekat sini 🙏🏻
+            </h4>
+            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+              Tidak ada mitra dalam radius 5 km dari lokasimu saat ini.
+            </p>
+            <Button
+              onClick={() => {
+                setShowAllShops(true);
+                if (mapRef.current) {
+                  mapRef.current.flyTo({
+                    zoom: 11,
+                    duration: 1000,
+                    essential: true
+                  });
+                }
+                setViewState((prev) => ({ ...prev, zoom: 11 }));
+              }}
+              className="w-full bg-dark-green hover:bg-sage-green text-white rounded-xl text-xs font-bold h-10 shadow-lg"
+            >
+              Tampilkan Semua Toko
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {showAllShops && userLocation && !isSearching && (
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-[20]">
+          <Button
+            onClick={() => {
+              setShowAllShops(false);
+              if (mapRef.current) {
+                mapRef.current.flyTo({
+                  center: [userLocation.lng, userLocation.lat],
+                  zoom: 13,
+                  duration: 1500,
+                  essential: true
+                });
+              }
+              setViewState((prev) => ({
+                ...prev,
+                center: [userLocation.lng, userLocation.lat],
+                zoom: 13,
+              }));
+            }}
+            variant="secondary"
+            className="bg-white text-dark-green hover:bg-gray-50 rounded-full shadow-lg border border-gray-200 text-xs font-bold px-6 h-10 gap-2"
+          >
+            <RefreshCw size={14} /> Reset ke Radius 5km
+          </Button>
+        </div>
+      )}
+
+      <div className="absolute top-4 right-4 z-[10] flex flex-col gap-2">
+        <div className={`backdrop-blur px-3 py-1.5 rounded-lg text-xs font-bold shadow-sm border flex items-center gap-2 pointer-events-none ${nearbyCount === 0 && !showAllShops && !isSearching ? "bg-red-50/90 text-red-600 border-red-200" : "bg-white/90 text-sage-green border-white/50"}`}>
+          <Navigation size={14} className={nearbyCount === 0 && !isSearching ? "text-red-500" : "text-blue-500"} />
+          <span className="hidden xs:inline">
+            {isSearching ? `Hasil Pencarian (${visibleShops.length})` : userLocation ? (showAllShops ? "Semua Area" : `Radius 5km (${nearbyCount} Toko)`) : "Mode Peta"}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -285,13 +551,19 @@ const CustomBouquetSection = ({ onOpenModal }) => {
     e.stopPropagation();
 
     if (!user) {
-      showToast("Hey, login dulu baru bisa kustom! Khusus bu maria silakan login dengan email: user@gmail.com password: 123", "error");
+      showToast(
+        "Hey, login dulu baru bisa kustom! Khusus bu maria silakan login dengan email: user@gmail.com password: 123",
+        "error"
+      );
       router.push("/login");
       return;
     }
 
     if (user && (user.role === "tenant" || user.role === "superadmin")) {
-      showToast("Gunakan akun user untuk belanja! Khusus bu maria silakan login dengan email: user@gmail.com password: 123", "error");
+      showToast(
+        "Gunakan akun user untuk belanja! Khusus bu maria silakan login dengan email: user@gmail.com password: 123",
+        "error"
+      );
       return;
     }
     onOpenModal();
@@ -399,7 +671,28 @@ export default function DashboardPage() {
   const [isFloristModalOpen, setIsFloristModalOpen] = useState(false);
   const { user } = useAuth();
 
+  const [userLoc, setUserLoc] = useState(null);
+  const [isLocLoading, setIsLocLoading] = useState(true);
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+
   useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+          setIsLocLoading(false);
+        },
+        (err) => {
+          console.error("GPS Error", err);
+          setIsLocLoading(false);
+        }
+      );
+    } else {
+      setIsLocLoading(false);
+    }
+
     const timer = setInterval(() => {
       setCurrentPromo((prev) => (prev + 1) % PROMOS.length);
     }, 4000);
@@ -407,7 +700,73 @@ export default function DashboardPage() {
   }, []);
 
   const bestSellers = allItems.filter((i) => i.type !== "promo").slice(0, 5);
-  const nearestShops = SHOPS.slice(0, 4);
+
+  const RADIUS_LIMIT_KM = 5; 
+  const { nearbyShops, hasNearby } = useMemo(() => {
+    if (!userLoc) return { nearbyShops: SHOPS.slice(0, 4), hasNearby: true };
+
+    const sortedShops = SHOPS.map((shop) => {
+      const sLat = shop.lat || shop.coordinate?.lat || 0;
+      const sLng = shop.lng || shop.coordinate?.lng || 0;
+      const dist = calculateDistance(userLoc.lat, userLoc.lng, sLat, sLng);
+      return { 
+          ...shop, 
+          realDistanceVal: dist, 
+          distance: `${dist.toFixed(1)} km` 
+      };
+    }).sort((a, b) => a.realDistanceVal - b.realDistanceVal);
+
+    const withinRadius = sortedShops.filter(s => s.realDistanceVal <= RADIUS_LIMIT_KM);
+
+    if (withinRadius.length > 0) {
+        return { nearbyShops: withinRadius.slice(0, 4), hasNearby: true };
+    } else {
+        return { nearbyShops: [], hasNearby: false };
+    }
+  }, [userLoc]);
+
+
+  const displayedShops = useMemo(() => {
+    if (searchQuery.trim() !== "") {
+      const query = searchQuery.toLowerCase();
+      
+      const filtered = SHOPS.filter(shop => 
+        shop.name.toLowerCase().includes(query) || 
+        shop.location.toLowerCase().includes(query)
+      );
+
+      return filtered.map(shop => {
+        let distStr = "";
+        if (userLoc) {
+             const sLat = shop.lat || shop.coordinate?.lat || 0;
+             const sLng = shop.lng || shop.coordinate?.lng || 0;
+             const dist = calculateDistance(userLoc.lat, userLoc.lng, sLat, sLng);
+             distStr = `${dist.toFixed(1)} km`;
+        }
+        return { ...shop, distance: distStr };
+      });
+    }
+  if (!userLoc) return SHOPS.slice(0, 4); 
+
+    const sorted = SHOPS.map((shop) => {
+        const sLat = shop.lat || shop.coordinate?.lat || 0;
+        const sLng = shop.lng || shop.coordinate?.lng || 0;
+        const dist = calculateDistance(userLoc.lat, userLoc.lng, sLat, sLng);
+        return { ...shop, realDistanceVal: dist, distance: `${dist.toFixed(1)} km` };
+    }).sort((a, b) => a.realDistanceVal - b.realDistanceVal);
+
+    const nearby = sorted.filter(s => s.realDistanceVal <= 5); 
+    return nearby.length > 0 ? nearby.slice(0, 4) : []; 
+    
+  }, [userLoc, searchQuery]); 
+
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value);
+    setIsSearching(e.target.value !== "");
+  };
+  
+
 
   return (
     <div className="bg-cream-bg min-h-screen flex-col flex overflow-x-hidden">
@@ -552,46 +911,103 @@ export default function DashboardPage() {
 
       <section className="bg-white/70 py-12 md:py-16 md:rounded-t-[6rem] -mx-0">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="flex justify-between items-end mb-8 md:pr-6">
-            <div className="w-full">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-8 md:pr-6 gap-4">
+            
+            <div className="w-full md:w-auto">
               <div className="flex items-center gap-2 text-sage-green mb-2">
                 <MapPin size={16} />
                 <span className="text-[10px] md:text-xs font-bold uppercase tracking-widest">
-                  Near You
+                  {isSearching ? "Search Results" : "Near You"}
                 </span>
               </div>
-              <h2 className="text-2xl md:text-3xl font-serif font-bold text-dark-green mb-6">
-                Florist Terdekat
+              <h2 className="text-2xl md:text-3xl font-serif font-bold text-dark-green">
+                {isSearching 
+                    ? `Hasil: "${searchQuery}"` 
+                    : (displayedShops.length > 0 ? "Florist Terdekat" : "Jelajahi Florist")}
               </h2>
+            </div>
 
-              <NeighborhoodMap shops={nearestShops} />
+            <div className="w-full md:w-96 relative">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    <Search size={18} />
+                </div>
+                <input 
+                    type="text"
+                    placeholder="Cari lokasi (e.g. Dago, Tebet)..."
+                    value={searchQuery}
+                    onChange={handleSearch}
+                    className="w-full pl-12 pr-4 py-3 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-sage-green/50 focus:border-sage-green bg-white shadow-sm text-sm"
+                />
+                {searchQuery && (
+                    <button 
+                        onClick={() => { setSearchQuery(""); setIsSearching(false); }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-100 p-1 rounded-full text-gray-500 hover:bg-gray-200"
+                    >
+                        <X size={14} />
+                    </button>
+                )}
             </div>
           </div>
 
-          <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-hide -mx-6 px-6 md:mx-0 md:px-0">
-            {nearestShops.map((shop) => (
-              <Link
-                href={`/shop/${shop.id}`}
-                key={shop.id}
-                className="flex-shrink-0 w-64 md:w-72 group cursor-pointer"
-              >
-                <div className="h-40 md:h-48 rounded-xl overflow-hidden relative mb-4">
-                  <img
-                    src={shop.image}
-                    className="w-full h-full object-cover group-hover:opacity-60 transition-opacity "
-                  />
-                  <div className="absolute top-3 left-3 bg-white/90 backdrop-blur text-[10px] font-bold px-2 py-1 rounded-md shadow-sm">
-                    {shop.distance}
-                  </div>
-                </div>
-                <h3 className="text-lg md:text-xl font-serif font-bold text-dark-green leading-tight group-hover:text-sage-green">
-                  {shop.name}
-                </h3>
-                <div className="flex items-center gap-1 text-orange-400 text-xs md:text-sm mt-1">
-                  <Star size={12} fill="currentColor" /> {shop.rating}
-                </div>
-              </Link>
-            ))}
+
+          <NeighborhoodMap shops={displayedShops.length > 0 ? displayedShops : SHOPS} isSearching={isSearching} />
+
+          <div className="-mx-6 px-6 md:mx-0 md:px-0">
+             
+             {isLocLoading && !isSearching ? (
+                 <div className="w-full text-center py-10 flex flex-col items-center gap-2 text-gray-400">
+                    <Loader2 className="animate-spin text-sage-green" /> Mengambil lokasi...
+                 </div>
+             ) : (
+                <>
+                    {displayedShops.length === 0 ? (
+                        <div className="bg-white border border-gray-100 rounded-2xl p-8 text-center shadow-sm">
+                            <div className="w-16 h-16 bg-cream-bg rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">
+                                🍃
+                            </div>
+                            <h3 className="font-serif font-bold text-xl text-dark-green mb-2">
+                                {isSearching ? "Florist tidak ditemukan" : "Belum ada Florist di Sekitarmu"}
+                            </h3>
+                            <p className="text-gray-500 text-sm mb-6 max-w-md mx-auto">
+                                {isSearching 
+                                    ? `Kami tidak menemukan florist di area "${searchQuery}". Coba kata kunci lain.`
+                                    : "Kamu berada di luar jangkauan mitra kami. Coba cari manual menggunakan kolom pencarian di atas."}
+                            </p>
+                            
+                            {!isSearching && (
+                                <Button 
+                                    onClick={() => document.querySelector('input[type="text"]').focus()}
+                                    className="bg-dark-green text-white hover:bg-sage-green rounded-full px-6"
+                                >
+                                    Cari Manual
+                                </Button>
+                            )}
+                        </div>
+                    ) : (
+                        <div className="flex gap-4 md:gap-6 overflow-x-auto pb-4 scrollbar-hide">
+                            {displayedShops.map((shop) => (
+                            <Link href={`/shop/${shop.id}`} key={shop.id} className="flex-shrink-0 w-64 md:w-72 group cursor-pointer">
+                                <div className="h-40 md:h-48 rounded-xl overflow-hidden relative mb-4">
+                                    <img src={shop.image} className="w-full h-full object-cover group-hover:opacity-60 transition-opacity" />
+                                    {shop.distance && (
+                                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur text-[10px] font-bold px-2 py-1 rounded-md shadow-sm text-dark-green">
+                                            📍 {shop.distance}
+                                        </div>
+                                    )}
+                                </div>
+                                <h3 className="text-lg md:text-xl font-serif font-bold text-dark-green leading-tight group-hover:text-sage-green">
+                                    {shop.name}
+                                </h3>
+                                <div className="flex items-center gap-1 text-orange-400 text-xs md:text-sm mt-1">
+                                    <Star size={12} fill="currentColor" /> {shop.rating}
+                                    <span className="text-gray-400 ml-2">• {shop.location}</span>
+                                </div>
+                            </Link>
+                            ))}
+                        </div>
+                    )}
+                </>
+             )}
           </div>
         </div>
       </section>

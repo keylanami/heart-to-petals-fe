@@ -7,10 +7,8 @@ export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
   const [isInitialized, setIsInitialized] = useState(false); 
 
-  // 1. Load Cart & Setup Listeners
   useEffect(() => {
     if (typeof window !== "undefined") {
-      // Load awal
       const savedCart = localStorage.getItem("myCart");
       if (savedCart) {
         try { setCart(JSON.parse(savedCart)); } 
@@ -18,7 +16,6 @@ export function CartProvider({ children }) {
       }
       setIsInitialized(true); 
 
-      // LISTENER KHUSUS: Untuk reset cart saat Logout
       const handleResetCart = () => {
           setCart([]);
           localStorage.removeItem("myCart");
@@ -32,16 +29,13 @@ export function CartProvider({ children }) {
     }
   }, []);
 
-  // 2. Sync ke LocalStorage setiap ada perubahan state cart
   useEffect(() => {
     if (isInitialized && typeof window !== "undefined") {
       localStorage.setItem("myCart", JSON.stringify(cart));
-      // Trigger event storage agar tab lain (jika ada) sinkron
       window.dispatchEvent(new Event("storage"));
     }
   }, [cart, isInitialized]);
 
-  // --- ACTIONS ---
 
   const addToCart = (product, quantity = 1) => {
     setCart((prev) => {
@@ -50,7 +44,7 @@ export function CartProvider({ children }) {
         const newCart = [...prev];
         newCart[existingItemIndex].qty += quantity;
         if (newCart[existingItemIndex].qty <= 0) {
-            newCart.splice(existingItemIndex, 1); // Hapus jika qty 0
+            newCart.splice(existingItemIndex, 1); 
         }
         return newCart;
       } else {
@@ -64,7 +58,6 @@ export function CartProvider({ children }) {
     setCart((prev) => prev.filter((item) => item.id !== productId));
   };
 
-  // Fungsi krusial untuk Checkout
   const removeItems = (idsToRemove) => {
     setCart((prev) => prev.filter((item) => !idsToRemove.includes(item.id)));
   };

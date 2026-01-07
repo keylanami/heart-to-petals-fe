@@ -7,7 +7,7 @@
 // 106: Petal & Paper
 
 export const MOCK_PACKAGINGS = [
-  {
+  { 
     id: "p-1",
     shop_id: 101,
     type: "wrapping",

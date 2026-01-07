@@ -52,7 +52,7 @@ export default function DraftListPage() {
     const cartItem = {
       id: `custom-${draft.id}`,
       title: draft.name || "Custom Bouquet",
-      price: draft.totalPrice, // Harga FULL (nanti dipotong 40% di logic checkout page, bukan disini)
+      price: draft.totalPrice, 
       image: draft.previewImage || draft.designImage,
       qty: 1,
       category: "Custom Order",
