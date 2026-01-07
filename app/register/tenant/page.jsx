@@ -837,9 +837,9 @@ export default function RegisterTenantPage() {
                           })
                         }
                       >
-                        <option value="romance">Romance</option>
-                        <option value="joy">Gratitude</option>
-                        <option value="joy">Regret</option>
+                        <option value="Romance">Romance</option>
+                        <option value="Gratitude">Gratitude</option>
+                        <option value="Regret">Regret</option>
                         <option value="grief">Grief</option>
                       </select>
                     </div>

@@ -14,15 +14,27 @@ import {
   User,
   ArrowLeft,
   Truck,
-  Trash2
+  Trash2,
+  Edit,
+  Flower2,
+  Eye,
+  Image as ImageIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/app/context/ToastContext";
 import { useOrder } from "@/app/context/OrderContext";
 import { useInventory } from "@/app/context/InventoryContext";
 import { useAuth } from "@/app/context/AuthContext";
-import { allItems } from "@/app/utils/shop"; 
-import { FLOWER_LIBRARY } from "@/app/utils/flower"; 
+import { HexColorPicker } from "react-colorful";
+
+const INPUT_STYLE =
+  "w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all placeholder:text-gray-400";
+const LABEL_STYLE =
+  "text-[10px] font-bold text-gray-500 ml-1 mb-1 block uppercase tracking-wider";
+const BTN_PRIMARY =
+  "bg-dark-green text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-sage-green transition shadow-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
+const BTN_SECONDARY =
+  "text-gray-400 font-bold text-sm hover:text-dark-green transition";
 
 export default function FloristAdminPage() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -31,16 +43,47 @@ export default function FloristAdminPage() {
 
   const { user } = useAuth();
   const { orders, updateOrderStatus } = useOrder();
-  const { inventory, addItem, updateStock } = useInventory();
+  const { inventory, addItem, updateItem, deleteItem, updateStock } = useInventory();
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [modalType, setModalType] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [newProduct, setNewProduct] = useState({
-    title: "",
-    type: "flower",
+  const [tempFlower, setTempFlower] = useState({
+    name: "",
     price: "",
     stock: "",
+    category: "romance",
+    image: null,
+    preview: "",
   });
-  
+
+  const [tempPack, setTempPack] = useState({
+    type: "wrapping",
+    price: "",
+    variants: [],
+  });
+  const [variantInput, setVariantInput] = useState({
+    name: "",
+    hex: "#A3B18A",
+    stock: "",
+  });
+
+  const [tempCatalog, setTempCatalog] = useState({
+    title: "",
+    price: "",
+    category: "Warm",
+    tag: "Romance",
+    theme: "light",
+    desc: "",
+    story: "",
+    care: "",
+    flowers: "",
+    image: null,
+    preview: "",
+  });
+
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -56,89 +99,274 @@ export default function FloristAdminPage() {
   const SHOP_ID = user?.shop?.id;
 
   const getItemShopId = (item) => {
-      return item.shopId || item.shop_id || item.shop?.id;
+    if (!item) return null;
+    return item.shopId || item.shop_id || item.shop?.id;
   };
 
   const myOrders = SHOP_ID
     ? orders.filter(
         (order) =>
           order.items &&
-          order.items.some((item) => String(getItemShopId(item)) === String(SHOP_ID))
+          order.items.some(
+            (item) => String(getItemShopId(item)) === String(SHOP_ID)
+          )
       )
     : [];
 
+  // FIXED: Hanya ambil inventory dari context (dinamis dari localStorage)
   const getMyInventory = () => {
     if (!SHOP_ID) return [];
-
-    const dynamicItems = inventory.filter((item) => {
-        const id = getItemShopId(item);
-        return String(id) === String(SHOP_ID);
+    
+    return inventory.filter((item) => {
+      const id = getItemShopId(item);
+      return String(id) === String(SHOP_ID);
     });
-
-    const staticCatalog = allItems
-      .filter((item) => String(item.shop?.id) === String(SHOP_ID))
-      .map((item) => ({
-        ...item,
-        shopId: item.shop.id,
-        stock: item.stock || 5, 
-        type: 'product' 
-      }));
-
-    const staticMaterials = FLOWER_LIBRARY
-      .filter((item) => String(item.shop_id) === String(SHOP_ID))
-      .map((item) => ({
-        ...item,
-        id: item.id,
-        title: item.name, 
-        shopId: item.shop_id,
-        type: 'flower', 
-        stock: 50, 
-      }));
-
-    return [...dynamicItems, ...staticCatalog, ...staticMaterials];
   };
 
   const myInventory = getMyInventory();
 
   const handleAddProduct = (e) => {
     e.preventDefault();
-    if (!SHOP_ID) return;
+    if (!SHOP_ID || !user?.shop) return;
 
     addItem({
       ...newProduct,
       id: `manual-${Date.now()}`,
-      shopId: SHOP_ID, 
-      shop_id: SHOP_ID, 
-      shop: { 
-          id: SHOP_ID, 
-          name: user.shop.name, 
-          location: user.shop.location 
+      shopId: SHOP_ID,
+      shop_id: SHOP_ID,
+      shop: {
+        id: SHOP_ID,
+        name: user.shop.name,
+        location: user.shop.location,
       },
       price: parseInt(newProduct.price),
       stock: parseInt(newProduct.stock),
       category: "Manual Input",
-      image: "https://images.unsplash.com/photo-1596073419667-9d77d59f033f?auto=format&fit=crop&q=80&w=300",
+      image:
+        "https://images.unsplash.com/photo-1596073419667-9d77d59f033f?auto=format&fit=crop&q=80&w=300",
     });
 
-    setIsAddModalOpen(false);
+    setModalType(null);
     setNewProduct({ title: "", type: "flower", price: "", stock: "" });
     showToast("Item berhasil ditambahkan!", "success");
   };
 
-
   const handleApproveOrder = (orderId) => {
-    updateOrderStatus(orderId, "processing"); 
+    updateOrderStatus(orderId, "processing");
     showToast("Pesanan diterima & mulai diproses.", "success");
   };
 
   const handleSendOrder = (orderId) => {
-    updateOrderStatus(orderId, "on_delivery"); 
+    updateOrderStatus(orderId, "on_delivery");
     showToast("Status diupdate: Sedang Dikirim ke kurir.", "success");
   };
 
   const handleRejectOrder = (orderId) => {
     updateOrderStatus(orderId, "cancelled");
     showToast("Pesanan ditolak.", "error");
+  };
+
+  // --- LOGIC MODALS & FORMS ---
+  const resetForms = () => {
+    setTempFlower({
+      name: "",
+      price: "",
+      stock: "",
+      category: "romance",
+      image: null,
+      preview: "",
+    });
+    setTempPack({ type: "wrapping", price: "", variants: [] });
+    setTempCatalog({
+      title: "",
+      price: "",
+      category: "Warm",
+      tag: "Romance",
+      theme: "light",
+      desc: "",
+      story: "",
+      care: "",
+      flowers: "",
+      image: null,
+      preview: "",
+    });
+    setVariantInput({ name: "", hex: "#A3B18A", stock: "" });
+    setIsEditing(false);
+    setEditingId(null);
+  };
+
+  const openAddModal = (type) => {
+    resetForms();
+    setModalType(type);
+  };
+
+  const openEditModal = (item) => {
+    resetForms();
+    setIsEditing(true);
+    setEditingId(item.id);
+
+    if (item.type === "flower") {
+      setModalType("flower");
+      setTempFlower({
+        name: item.title || item.name,
+        price: item.price,
+        stock: item.stock,
+        category: item.category || "romance",
+        preview: item.image,
+        image: null,
+      });
+    } else if (item.type === "packaging") {
+      setModalType("packaging");
+      setTempPack({
+        type: item.packagingType || item.name || "wrapping",
+        price: item.price,
+        variants: item.variants || [],
+      });
+    } else {
+      setModalType("catalog");
+      setTempCatalog({
+        title: item.title,
+        price: item.price,
+        category: item.category || "Warm",
+        tag: item.tag || "Romance",
+        desc: item.desc || "",
+        story: item.story || "",
+        care: item.care || "",
+        flowers: Array.isArray(item.flowers)
+          ? item.flowers.join(", ")
+          : item.flowers || "",
+        preview: item.image,
+        image: null,
+      });
+    }
+  };
+
+  const handleFlowerImage = (e) => {
+    const file = e.target.files[0];
+    if (file)
+      setTempFlower({
+        ...tempFlower,
+        image: file,
+        preview: URL.createObjectURL(file),
+      });
+  };
+
+  const saveFlower = (e) => {
+    e.preventDefault();
+    if (!user?.shop) return;
+
+    const payload = {
+      ...tempFlower,
+      type: "flower",
+      stock: parseInt(tempFlower.stock) || 0,
+      price: parseInt(tempFlower.price) || 0,
+      image: tempFlower.preview || "/assets/flowers/placeholder.png",
+      shopId: SHOP_ID,
+      shop: user.shop,
+      title: tempFlower.name,
+      name: tempFlower.name,
+      id: isEditing ? editingId : `flower-${Date.now()}`,
+    };
+
+    if (isEditing) {
+      updateItem(editingId, payload);
+      showToast("Bunga berhasil diupdate!", "success");
+    } else {
+      addItem(payload);
+      showToast("Bunga berhasil ditambahkan!", "success");
+    }
+    setModalType(null);
+  };
+
+  const addVariantToPack = () => {
+    if (!variantInput.name || !variantInput.stock) return;
+    setTempPack({
+      ...tempPack,
+      variants: [
+        ...tempPack.variants,
+        {
+          color: variantInput.name,
+          hex: variantInput.hex,
+          stock: parseInt(variantInput.stock) || 0,
+        },
+      ],
+    });
+    setVariantInput({ name: "", hex: variantInput.hex, stock: "" });
+    setShowColorPicker(false);
+  };
+
+  const savePackaging = (e) => {
+    e.preventDefault();
+    if (!user?.shop) return;
+
+    const totalStock = tempPack.variants.reduce(
+      (acc, v) => acc + parseInt(v.stock || 0),
+      0
+    );
+    const payload = {
+      ...tempPack,
+      name: tempPack.type,
+      type: "packaging",
+      price: parseInt(tempPack.price) || 0,
+      stock: totalStock,
+      shopId: SHOP_ID,
+      shop: user.shop,
+      title: tempPack.type,
+      id: isEditing ? editingId : `pack-${Date.now()}`,
+    };
+
+    if (isEditing) {
+      updateItem(editingId, payload);
+      showToast("Packaging berhasil diupdate!", "success");
+    } else {
+      addItem(payload);
+      showToast("Packaging berhasil ditambahkan!", "success");
+    }
+    setModalType(null);
+  };
+
+  const handleCatalogImage = (e) => {
+    const file = e.target.files[0];
+    if (file)
+      setTempCatalog({
+        ...tempCatalog,
+        image: file,
+        preview: URL.createObjectURL(file),
+      });
+  };
+
+  const saveCatalog = (e) => {
+    e.preventDefault();
+    if (!user?.shop) return;
+
+    const payload = {
+      ...tempCatalog,
+      type: "product",
+      flowers: tempCatalog.flowers.split(",").map(f => f.trim()),
+      stock: 5,
+      price: parseInt(tempCatalog.price) || 0,
+      image: tempCatalog.preview || "/assets/placeholder.jpg",
+      shopId: SHOP_ID,
+      shop: user.shop,
+      name: tempCatalog.title,
+      id: isEditing ? editingId : `cat-${Date.now()}`,
+    };
+
+    if (isEditing) {
+      updateItem(editingId, payload);
+      showToast("Katalog berhasil diupdate!", "success");
+    } else {
+      addItem(payload);
+      showToast("Katalog berhasil ditambahkan!", "success");
+    }
+    setModalType(null);
+  };
+
+  const handleDeleteItem = (itemId) => {
+    if (window.confirm("Apakah Anda yakin ingin menghapus item ini?")) {
+      deleteItem(itemId);
+      showToast("Item berhasil dihapus!", "success");
+    }
   };
 
   if (!mounted) return null;
@@ -151,10 +379,9 @@ export default function FloristAdminPage() {
     );
   }
 
-
   const OverviewView = () => {
     const totalRevenue = myOrders
-      .filter((o) => o.status === "completed" || o.status === "on_delivery") 
+      .filter((o) => o.status === "completed" || o.status === "on_delivery")
       .reduce((acc, order) => {
         const shopSubtotal = order.items
           .filter((i) => String(getItemShopId(i)) === String(SHOP_ID))
@@ -302,11 +529,17 @@ export default function FloristAdminPage() {
                       ORD #{order.id}
                     </span>
                     <span className="text-xs text-gray-400">{order.date}</span>
-                    
-                    <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
-                        order.status === 'processing' ? 'bg-blue-100 text-blue-600' : 'bg-yellow-100 text-yellow-600'
-                    }`}>
-                        {order.status === 'processing' ? 'Siap Diproses' : 'Menunggu Approval'}
+
+                    <span
+                      className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded ${
+                        order.status === "processing"
+                          ? "bg-blue-100 text-blue-600"
+                          : "bg-yellow-100 text-yellow-600"
+                      }`}
+                    >
+                      {order.status === "processing"
+                        ? "Siap Diproses"
+                        : "Menunggu Approval"}
                     </span>
                   </div>
                   <h3 className="text-lg font-bold text-dark-green">
@@ -316,7 +549,9 @@ export default function FloristAdminPage() {
                     <p className="font-bold mb-1">Items:</p>
                     <ul className="list-disc list-inside">
                       {order.items
-                        .filter((i) => String(getItemShopId(i)) === String(SHOP_ID))
+                        .filter(
+                          (i) => String(getItemShopId(i)) === String(SHOP_ID)
+                        )
                         .map((item, idx) => (
                           <li key={idx}>
                             {item.title || item.name} (x{item.qty || 1})
@@ -328,20 +563,20 @@ export default function FloristAdminPage() {
 
                 <div className="flex flex-row md:flex-col justify-center gap-3 min-w-[140px]">
                   {order.status === "waiting_approval" && (
-                      <button
-                        onClick={() => handleApproveOrder(order.id)}
-                        className="flex-1 bg-dark-green text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-sage-green transition flex items-center justify-center gap-2"
-                      >
-                        <Check size={16} /> Terima
-                      </button>
+                    <button
+                      onClick={() => handleApproveOrder(order.id)}
+                      className="flex-1 bg-dark-green text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-sage-green transition flex items-center justify-center gap-2"
+                    >
+                      <Check size={16} /> Terima
+                    </button>
                   )}
                   {order.status === "processing" && (
-                      <button
-                        onClick={() => handleSendOrder(order.id)}
-                        className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-500 transition flex items-center justify-center gap-2"
-                      >
-                        <Truck size={16} /> Kirim
-                      </button>
+                    <button
+                      onClick={() => handleSendOrder(order.id)}
+                      className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-blue-500 transition flex items-center justify-center gap-2"
+                    >
+                      <Truck size={16} /> Kirim
+                    </button>
                   )}
 
                   <button
@@ -361,81 +596,185 @@ export default function FloristAdminPage() {
 
   const InventoryView = () => (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <h2 className="text-2xl font-bold text-dark-green">
           Stok Toko: {user.shop.name}
         </h2>
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-dark-green text-white px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 hover:bg-sage-green transition shadow-lg"
-        >
-          <Plus size={18} /> Tambah Item
-        </button>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => openAddModal("flower")}
+            className="bg-white border border-sage-green text-dark-green px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-sage-green hover:text-white transition"
+          >
+            <Flower2 size={16} /> + Bunga
+          </button>
+          <button
+            onClick={() => openAddModal("packaging")}
+            className="bg-white border border-sage-green text-dark-green px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-sage-green hover:text-white transition"
+          >
+            <Package size={16} /> + Packaging
+          </button>
+          <button
+            onClick={() => openAddModal("catalog")}
+            className="bg-dark-green text-white px-4 py-2 rounded-lg font-bold text-xs flex items-center gap-2 hover:bg-sage-green transition shadow-lg"
+          >
+            <Plus size={16} /> + Katalog
+          </button>
+        </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
-            <tr>
-              <th className="px-6 py-4">Nama Item</th>
-              <th className="px-6 py-4">Tipe</th>
-              <th className="px-6 py-4">Stok</th>
-              <th className="px-6 py-4 text-center">Update</th>
-            </tr>
-          </thead>
-          <tbody>
-            {myInventory.length === 0 ? (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="text-xs text-gray-500 uppercase bg-gray-50/80 border-b border-gray-100">
               <tr>
-                <td colSpan="4" className="text-center py-8 text-gray-400">
-                  Inventory kosong. Tambahkan item baru.
-                </td>
+                <th className="px-6 py-4 font-semibold tracking-wider">Produk</th>
+                <th className="px-6 py-4 font-semibold tracking-wider">Kategori</th>
+                <th className="px-6 py-4 font-semibold tracking-wider">Harga</th>
+                <th className="px-6 py-4 font-semibold tracking-wider">Stok</th>
+                <th className="px-6 py-4 text-center font-semibold tracking-wider">Aksi</th>
               </tr>
-            ) : (
-              myInventory.map((item, idx) => (
-                <tr
-                  key={item.id || idx} // Fallback key
-                  className="border-b border-gray-100 hover:bg-gray-50"
-                >
-                  <td className="px-6 py-4 font-bold text-dark-green">
-                    {item.title || item.name}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs capitalize">
-                      {item.type || "Product"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`font-bold ${
-                        !item.stock || item.stock < 5
-                          ? "text-red-500"
-                          : "text-dark-green"
-                      }`}
-                    >
-                      {item.stock || 0}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex justify-center gap-3">
-                      <button
-                        onClick={() => updateStock(item.id, -1)}
-                        className="w-8 h-8 rounded-xl bg-gray-100 hover:bg-gray-200 font-bold flex items-center justify-center"
-                      >
-                        -
-                      </button>
-                      <button
-                        onClick={() => updateStock(item.id, 1)}
-                        className="w-8 h-8 rounded-xl bg-dark-green text-white hover:bg-sage-green font-bold flex items-center justify-center"
-                      >
-                        +
-                      </button>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {myInventory.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center py-12">
+                    <div className="flex flex-col items-center justify-center text-gray-400">
+                      <Package size={48} className="mb-3 opacity-20" />
+                      <p className="font-medium">Inventory kosong</p>
+                      <p className="text-xs mt-1">Mulai tambahkan item baru ke toko.</p>
                     </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                myInventory.map((item, idx) => (
+                  <tr
+                    key={item.id || idx}
+                    className="hover:bg-gray-50/80 transition-colors duration-200 group"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gray-100 border border-gray-200 overflow-hidden shrink-0 shadow-sm relative group-hover:shadow-md transition-all">
+                          {item.image ? (
+                            <img
+                              src={item.image}
+                              alt={item.title}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                              <ImageIcon size={20} />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-bold text-dark-green text-sm line-clamp-1">
+                            {item.title || item.name}
+                          </p>
+                          <p className="text-[10px] text-gray-400 mt-0.5 font-mono">
+                            ID: {item.id?.toString().slice(-6)}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide border ${
+                          item.type === "flower"
+                            ? "bg-pink-50 text-pink-600 border-pink-100"
+                            : item.type === "packaging"
+                            ? "bg-blue-50 text-blue-600 border-blue-100"
+                            : "bg-emerald-50 text-emerald-600 border-emerald-100"
+                        }`}
+                      >
+                        {item.type === "flower" && <Flower2 size={10} className="mr-1.5" />}
+                        {item.type === "packaging" && <Package size={10} className="mr-1.5" />}
+                        {item.type === "product" && <ShoppingBag size={10} className="mr-1.5" />}
+                        {item.type || "Item"}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <span className="font-bold text-gray-700 font-mono text-sm">
+                        {new Intl.NumberFormat("id-ID", {
+                          style: "currency",
+                          currency: "IDR",
+                          maximumSignificantDigits: 9,
+                        }).format(item.price || 0)}
+                      </span>
+                    </td>
+
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            (item.stock || 0) < 10
+                              ? "bg-red-500 animate-pulse"
+                              : "bg-emerald-500"
+                          }`}
+                        ></div>
+                        <span
+                          className={`font-bold text-sm ${
+                            (item.stock || 0) < 10
+                              ? "text-red-600"
+                              : "text-gray-600"
+                          }`}
+                        >
+                          {item.stock || 0}
+                        </span>
+                      </div>
+                      {(item.stock || 0) < 10 && (
+                        <p className="text-[10px] text-red-400 font-medium mt-0.5">
+                          Stok Menipis
+                        </p>
+                      )}
+                    </td>
+
+                    {/* KOLOM AKSI */}
+                    <td className="px-6 py-4">
+                      <div className="flex items-center justify-center gap-2">
+                        {/* Update Stok Cepat */}
+                        <div className="flex items-center bg-white border border-gray-200 rounded-lg p-0.5 shadow-sm mr-2">
+                          <button
+                            onClick={() => updateStock(item.id, -1)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 hover:text-red-500 transition disabled:opacity-50"
+                            disabled={(item.stock || 0) <= 0}
+                          >
+                            -
+                          </button>
+                          <div className="w-px h-4 bg-gray-200 mx-0.5"></div>
+                          <button
+                            onClick={() => updateStock(item.id, 1)}
+                            className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-gray-100 text-gray-500 hover:text-green-600 transition"
+                          >
+                            +
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => openEditModal(item)}
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition border border-transparent hover:border-blue-100"
+                          title="Edit Detail"
+                        >
+                          <Edit size={16} />
+                        </button>
+
+                        <button
+                          onClick={() => handleDelete(item.id)} 
+                          className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition border border-transparent hover:border-red-100"
+                          title="Hapus Item"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -449,9 +788,9 @@ export default function FloristAdminPage() {
           </h1>
           <p
             className="text-xs text-gray-400 mt-1 truncate"
-            title={user.shop.id}
+            title={user.shop.name}
           >
-            ID: {user.shop.id}
+            {user.shop.name}
           </p>
         </div>
 
@@ -534,105 +873,412 @@ export default function FloristAdminPage() {
       </main>
 
       <AnimatePresence>
-        {isAddModalOpen && (
-          <div className="fixed inset-0 bg-[#1A2F24]/40 z-50 flex items-center justify-center backdrop-blur-sm p-4">
+        {modalType && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white/90 backdrop-blur-xl p-8 rounded-[2rem] w-full max-w-md shadow-2xl border border-white/50 relative overflow-hidden"
+              className="bg-white rounded-3xl w-full max-w-lg p-6 shadow-2xl overflow-y-auto max-h-[90vh] custom-scrollbar"
             >
-              <div className="absolute top-0 right-0 w-32 h-32 bg-sage-green/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
-
-              <div className="relative z-10">
-                <h3 className="font-serif font-bold text-2xl text-dark-green mb-1">
-                  Tambah Stok
+              <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 className="font-bold text-lg text-dark-green capitalize">
+                  {isEditing ? "Edit" : "Tambah"} {modalType}
                 </h3>
-                <p className="text-sm text-gray-500 mb-6">
-                  Input item untuk {user.shop.name}
-                </p>
+                <button onClick={() => setModalType(null)}>
+                  <X className="text-gray-400" />
+                </button>
+              </div>
 
-                <form onSubmit={handleAddProduct} className="space-y-4">
+              {modalType === "flower" && (
+                <form onSubmit={saveFlower} className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative overflow-hidden group cursor-pointer">
+                      <input
+                        type="file"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={handleFlowerImage}
+                        accept="image/*"
+                      />
+                      {tempFlower.preview ? (
+                        <img
+                          src={tempFlower.preview}
+                          alt="Preview bunga"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <label className={LABEL_STYLE}>Nama Bunga</label>
+                        <input
+                          required
+                          className={INPUT_STYLE}
+                          value={tempFlower.name}
+                          onChange={(e) =>
+                            setTempFlower({
+                              ...tempFlower,
+                              name: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <div className="flex-1">
+                          <label className={LABEL_STYLE}>Harga</label>
+                          <input
+                            required
+                            type="number"
+                            className={INPUT_STYLE}
+                            value={tempFlower.price}
+                            onChange={(e) =>
+                              setTempFlower({
+                                ...tempFlower,
+                                price: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="flex-1">
+                          <label className={LABEL_STYLE}>Stok</label>
+                          <input
+                            required
+                            type="number"
+                            className={INPUT_STYLE}
+                            value={tempFlower.stock}
+                            onChange={(e) =>
+                              setTempFlower({
+                                ...tempFlower,
+                                stock: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={LABEL_STYLE}>Kategori</label>
+                      <select
+                        className={INPUT_STYLE}
+                        value={tempFlower.category}
+                        onChange={(e) =>
+                          setTempFlower({
+                            ...tempFlower,
+                            category: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="romance">Romance</option>
+                        <option value="gratitude">Gratitude</option>
+                        <option value="grief">Grief</option>
+                      </select>
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    className={`w-full mt-4 ${BTN_PRIMARY}`}
+                  >
+                    {isEditing ? "Simpan Perubahan" : "Simpan Bunga"}
+                  </button>
+                </form>
+              )}
+
+              {modalType === "packaging" && (
+                <form onSubmit={savePackaging} className="space-y-5">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={LABEL_STYLE}>Tipe Packaging</label>
+                      <select
+                        className={INPUT_STYLE}
+                        value={tempPack.type}
+                        onChange={(e) =>
+                          setTempPack({ ...tempPack, type: e.target.value })
+                        }
+                      >
+                        <option value="wrapping">Wrapping Paper</option>
+                        <option value="box">Flower Box</option>
+                        <option value="ribbon">Ribbon</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={LABEL_STYLE}>Harga Tambahan</label>
+                      <input
+                        required
+                        type="number"
+                        className={INPUT_STYLE}
+                        value={tempPack.price}
+                        onChange={(e) =>
+                          setTempPack({ ...tempPack, price: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200">
+                    <h4 className="font-bold text-dark-green text-sm mb-4 flex items-center gap-2">
+                      <Palette size={18} /> Varian Warna
+                    </h4>
+                    <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
+                      <div>
+                        <label className={LABEL_STYLE}>Pilih Warna</label>
+                        <div className="flex gap-3 items-center relative z-20">
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setShowColorPicker(!showColorPicker)
+                              }
+                              className="w-14 h-14 rounded-xl border-4 border-white shadow flex items-center justify-center"
+                              style={{ backgroundColor: variantInput.hex }}
+                            >
+                              <Palette
+                                size={20}
+                                className="text-white/60 drop-shadow-md"
+                              />
+                            </button>
+                            {showColorPicker && (
+                              <div className="absolute top-16 left-0 z-50 p-3 bg-white shadow-2xl rounded-2xl border border-gray-100">
+                                <div
+                                  className="fixed inset-0 z-40"
+                                  onClick={() => setShowColorPicker(false)}
+                                />
+                                <div className="relative z-50">
+                                  <HexColorPicker
+                                    color={variantInput.hex}
+                                    onChange={(color) =>
+                                      setVariantInput({
+                                        ...variantInput,
+                                        hex: color,
+                                      })
+                                    }
+                                  />
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <label className={LABEL_STYLE}>Kode Hex</label>
+                            <input
+                              className={INPUT_STYLE}
+                              value={variantInput.hex}
+                              onChange={(e) =>
+                                setVariantInput({
+                                  ...variantInput,
+                                  hex: e.target.value,
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div className="col-span-2">
+                          <label className={LABEL_STYLE}>Nama Warna</label>
+                          <input
+                            className={INPUT_STYLE}
+                            value={variantInput.name}
+                            onChange={(e) =>
+                              setVariantInput({
+                                ...variantInput,
+                                name: e.target.value,
+                              })
+                            }
+                            placeholder="Cth: Merah Marun"
+                          />
+                        </div>
+                        <div>
+                          <label className={LABEL_STYLE}>Stok</label>
+                          <input
+                            type="number"
+                            className={INPUT_STYLE}
+                            value={variantInput.stock}
+                            onChange={(e) =>
+                              setVariantInput({
+                                ...variantInput,
+                                stock: e.target.value,
+                              })
+                            }
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addVariantToPack}
+                        disabled={!variantInput.name || !variantInput.stock}
+                        className="w-full py-2 border-2 border-dashed border-dark-green text-dark-green rounded-xl font-bold text-xs hover:bg-dark-green hover:text-white transition"
+                      >
+                        + Tambah Varian
+                      </button>
+                    </div>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {tempPack.variants.map((v, idx) => (
+                        <div
+                          key={idx}
+                          className="pl-1 pr-2 py-1 bg-white border border-gray-200 rounded-full flex items-center gap-2 shadow-sm"
+                        >
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: v.hex }}
+                          ></div>
+                          <span className="text-xs font-bold text-gray-700">
+                            {v.color} ({v.stock})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const n = [...tempPack.variants];
+                              n.splice(idx, 1);
+                              setTempPack({ ...tempPack, variants: n });
+                            }}
+                          >
+                            <X size={12} className="text-red-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={tempPack.variants.length === 0}
+                    className={`w-full py-3 ${BTN_PRIMARY}`}
+                  >
+                    {isEditing ? "Simpan Perubahan" : "Simpan Packaging"}
+                  </button>
+                </form>
+              )}
+
+              {/* === FORM KATALOG === */}
+              {modalType === "catalog" && (
+                <form onSubmit={saveCatalog} className="space-y-4">
+                  <div className="flex gap-4">
+                    <div className="w-24 h-24 bg-gray-100 rounded-xl flex items-center justify-center border-2 border-dashed border-gray-300 relative overflow-hidden group cursor-pointer">
+                      <input
+                        type="file"
+                        className="absolute inset-0 opacity-0 cursor-pointer"
+                        onChange={handleCatalogImage}
+                        accept="image/*"
+                      />
+                      {tempCatalog.preview ? (
+                        <img
+                          src={tempCatalog.preview}
+                          alt="Preview katalog"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <ImageIcon className="text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <div>
+                        <label className={LABEL_STYLE}>Nama Bouquet</label>
+                        <input
+                          required
+                          className={INPUT_STYLE}
+                          value={tempCatalog.title}
+                          onChange={(e) =>
+                            setTempCatalog({
+                              ...tempCatalog,
+                              title: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                      <div>
+                        <label className={LABEL_STYLE}>Harga</label>
+                        <input
+                          required
+                          type="number"
+                          className={INPUT_STYLE}
+                          value={tempCatalog.price}
+                          onChange={(e) =>
+                            setTempCatalog({
+                              ...tempCatalog,
+                              price: e.target.value,
+                            })
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className={LABEL_STYLE}>Kategori</label>
+                      <select
+                        className={INPUT_STYLE}
+                        value={tempCatalog.category}
+                        onChange={(e) =>
+                          setTempCatalog({
+                            ...tempCatalog,
+                            category: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="Warm">Warm</option>
+                        <option value="Gloomy">Gloomy</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className={LABEL_STYLE}>Tag</label>
+                      <select
+                        className={INPUT_STYLE}
+                        value={tempCatalog.tag}
+                        onChange={(e) =>
+                          setTempCatalog({
+                            ...tempCatalog,
+                            tag: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="Romance">Romance</option>
+                        <option value="Gratitude">Gratitude</option>
+                        <option value="Grief">Grief</option>
+                        <option value="Regret">Regret</option>
+                      </select>
+                    </div>
+                  </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
-                      Nama Item
-                    </label>
-                    <input
+                    <label className={LABEL_STYLE}>Deskripsi</label>
+                    <textarea
                       required
-                      placeholder="Contoh: Mawar Merah"
-                      className="w-full bg-white border border-gray-200 p-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm"
-                      value={newProduct.title}
+                      rows={2}
+                      className={INPUT_STYLE}
+                      value={tempCatalog.desc}
                       onChange={(e) =>
-                        setNewProduct({ ...newProduct, title: e.target.value })
+                        setTempCatalog({ ...tempCatalog, desc: e.target.value })
                       }
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
-                      Kategori
-                    </label>
-                    <select
-                      className="w-full bg-white border border-gray-200 p-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm text-gray-700"
-                      value={newProduct.type}
+                    <label className={LABEL_STYLE}>Komposisi Bunga</label>
+                    <input
+                      required
+                      placeholder="Mawar merah, Baby breath..."
+                      className={INPUT_STYLE}
+                      value={tempCatalog.flowers}
                       onChange={(e) =>
-                        setNewProduct({ ...newProduct, type: e.target.value })
+                        setTempCatalog({
+                          ...tempCatalog,
+                          flowers: e.target.value,
+                        })
                       }
-                    >
-                      <option value="flower">Bunga (Flower)</option>
-                      <option value="filler">Filler/Daun</option>
-                      <option value="product">Bouquet Jadi</option>
-                    </select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
-                        Harga (Rp)
-                      </label>
-                      <input
-                        required
-                        type="number"
-                        placeholder="0"
-                        className="w-full bg-white border border-gray-200 p-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm"
-                        value={newProduct.price}
-                        onChange={(e) =>
-                          setNewProduct({ ...newProduct, price: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-gray-500 uppercase tracking-wider ml-1">
-                        Stok Awal
-                      </label>
-                      <input
-                        required
-                        type="number"
-                        placeholder="0"
-                        className="w-full bg-white border border-gray-200 p-3.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all shadow-sm"
-                        value={newProduct.stock}
-                        onChange={(e) =>
-                          setNewProduct({ ...newProduct, stock: e.target.value })
-                        }
-                      />
-                    </div>
+                    />
                   </div>
 
-                  <div className="flex gap-3 pt-6">
-                    <button
-                      type="button"
-                      onClick={() => setIsAddModalOpen(false)}
-                      className="flex-1 py-3.5 bg-white border border-gray-200 text-gray-500 rounded-xl font-bold hover:bg-gray-50 transition shadow-sm"
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-3.5 bg-dark-green text-white rounded-xl font-bold hover:bg-sage-green shadow-lg transition transform active:scale-95"
-                    >
-                      Simpan
-                    </button>
-                  </div>
+                  <button
+                    type="submit"
+                    className={`w-full mt-4 ${BTN_PRIMARY}`}
+                  >
+                    {isEditing ? "Simpan Perubahan" : "Simpan Produk"}
+                  </button>
                 </form>
-              </div>
+              )}
             </motion.div>
           </div>
         )}
