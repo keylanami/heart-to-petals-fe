@@ -25,7 +25,7 @@ Framer Motion
 Smooth transitions, shared layout animations (layoutId), and polished micro-interactions.
 
 Maps & Location — The Terrain
-React Map GL (Mapbox GL JS)
+MapCN
 Enables real-time geographic visualization of florist locations.
 
 State Management — The Nutrients
