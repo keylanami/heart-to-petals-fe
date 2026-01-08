@@ -11,7 +11,10 @@ import {
   Star,
   ArrowLeft,
   Store,
-  Slash
+  Slash,
+  Navigation,
+  Phone,
+  ExternalLink
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -20,6 +23,7 @@ import { allItems, SHOPS } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 import { useToast } from "@/app/context/ToastContext";
 import { useAuth } from "@/app/context/AuthContext";
+import { Map, MapMarker, MarkerContent } from "@/components/ui/map"; 
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -230,6 +234,11 @@ export default function ShopEtalasePage() {
   const { user } = useAuth();
   const { showToast } = useToast();
 
+  // --- MAP & CONTACT LOGIC ---
+  const shopCoordinate = currentShop?.coordinate || { lat: -6.914744, lng: 107.60981 };
+  const shopPhone = currentShop?.phone || "+62 821-2345-6789"; 
+  // ---------------------------
+
   const handleStartCustom = (e) => {
     e?.preventDefault(); 
     
@@ -262,25 +271,12 @@ export default function ShopEtalasePage() {
           (item) => item.type === "promo" || item.category === activeMood
         );
 
-  // --- LOGIKA SORTING YANG BENAR ---
   const sortedItems = [...filteredItems].sort((a, b) => {
-      // Logic: 
-      // - Promo dianggap "Available" (Stock > 0)
-      // - Barang dengan Stock > 0 di atas
-      // - Barang Stock <= 0 (Habis) di bawah
-      
-      // Definisikan 'Availability'
       const isA_Available = a.type === 'promo' || (a.stock || 0) > 0;
       const isB_Available = b.type === 'promo' || (b.stock || 0) > 0;
 
-      // Jika A Available & B Tidak -> A di atas (-1)
       if (isA_Available && !isB_Available) return -1;
-      
-      // Jika A Tidak & B Available -> B di atas (1)
       if (!isA_Available && isB_Available) return 1;
-
-      // Jika sama-sama Available atau sama-sama Habis -> Pertahankan urutan asli (0)
-      // (Promo akan tetap di posisi aslinya di array, biasanya terselip di tengah)
       return 0;
   });
 
@@ -314,76 +310,149 @@ export default function ShopEtalasePage() {
         </div>
       </div>
 
-      <div className="relative pt-36 pb-12 px-6 text-center z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="w-24 h-24 mx-auto bg-gray-200 rounded-full overflow-hidden mb-6 border-4 border-white shadow-xl">
-            <img
-              src={currentShop.image}
-              alt={currentShop.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-serif text-dark-green mb-3">
-            {currentShop.name}
-          </h1>
-          <div className="flex items-center justify-center gap-4 text-gray-500 text-sm mb-8">
-            <span className="flex items-center gap-1">
-              <MapPin size={14} /> {currentShop.location}
-            </span>
-            <span className="flex items-center gap-1 text-orange-500 font-bold bg-orange-50 px-2 py-0.5 rounded">
-              <Star size={12} fill="currentColor" /> {currentShop.rating}
-            </span>
-          </div>
+      <div className="relative pt-36 pb-12 px-6 z-10">
+        
+        <div className="max-w-5xl mx-auto mt-10 mb-10">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 border border-white/60 shadow-lg flex flex-col md:flex-row gap-8 md:gap-12 items-center md:items-start"
+            >
+                <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-center h-full pt-2">
+                    <div className="flex flex-col md:flex-row items-center gap-6 mb-4">
+                        <div className="w-24 h-24 bg-white rounded-full overflow-hidden border-4 border-white shadow-md shrink-0">
+                            <img
+                                src={currentShop.image}
+                                alt={currentShop.name}
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl md:text-5xl font-serif font-bold text-dark-green leading-tight">
+                                {currentShop.name}
+                            </h1>
+                            <div className="flex flex-wrap gap-2 mt-2 justify-center md:justify-start">
+                                <span className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-md border border-orange-100">
+                                    <Star size={12} fill="currentColor" /> {currentShop.rating}
+                                </span>
+                                <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-md border border-gray-100">
+                                    <MapPin size={12} /> {currentShop.location}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
 
-          {currentShop.can_customize && (
-            <div className="mb-10">
-              <Link
-                onClick={handleStartCustom}
-                href={`/custom/${currentShop.id}`}
-                className="inline-flex items-center gap-2 bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition shadow-lg"
-              >
-                <Palette size={18} /> Racik Buket Sendiri
-              </Link>
-            </div>
-          )}
-        </motion.div>
+                    <div className="w-full h-px bg-dark-green/5 mb-5 w-3/4 mx-auto md:mx-0"></div>
 
-        <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative mt-4">
-          {["All", "Warm", "Gloomy"].map((mood) => {
-            const isActive = activeMood === mood;
-            return (
-              <button
-                key={mood}
-                onClick={() => setActiveMood(mood)}
-                className={`relative px-8 py-2.5 rounded-full text-sm font-bold transition-colors duration-300 z-10 ${
-                  isActive
-                    ? "text-white"
-                    : "text-gray-500 hover:text-dark-green"
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-dark-green rounded-full shadow-md"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  {mood === "Warm" && (
-                    <Sparkles
-                      size={12}
-                      className={isActive ? "text-yellow-300" : ""}
+                    <div className="space-y-4 w-full md:w-auto">
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-600">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                <Phone size={14} />
+                            </div>
+                            <span className="font-mono font-medium">{shopPhone}</span>
+                        </div>
+
+                        {currentShop.can_customize && (
+                            <Link
+                                onClick={handleStartCustom}
+                                href={`/custom/${currentShop.id}`}
+                                className="group w-full md:w-auto inline-flex items-center justify-center gap-3 bg-dark-green text-white px-8 py-3.5 rounded-full font-bold hover:bg-sage-green transition-all shadow-md hover:shadow-lg"
+                            >
+                                <Palette size={18} className="group-hover:rotate-12 transition-transform"/>
+                                <span>Racik Buket Sendiri</span>
+                            </Link>
+                        )}
+                    </div>
+                </div>
+
+                <div className="w-full md:w-[320px] lg:w-[380px] shrink-0">
+                    <div className="h-[220px] w-full rounded-3xl overflow-hidden border-2 border-white/20 shadow-inner relative group z-0">
+                         <Map 
+                            key={`${shopCoordinate.lat}-${shopCoordinate.lng}`}
+                            initialViewState={{
+                                longitude: shopCoordinate.lng,
+                                latitude: shopCoordinate.lat,
+                                zoom: 14
+                            }}
+                            center={[shopCoordinate.lng, shopCoordinate.lat]}
+                            zoom={14}
+                        >
+                            <MapMarker longitude={shopCoordinate.lng} latitude={shopCoordinate.lat}>
+                              <MarkerContent>
+                                <div className="relative hover:-translate-y-2 transition-transform duration-300 group/pin cursor-pointer">
+                                  <MapPin
+                                    size={32}
+                                    className="text-red-500 fill-red-500 drop-shadow-lg"
+                                  />
+                                  <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-sm"></div>
+                                </div>
+                              </MarkerContent>
+                            </MapMarker>
+                        </Map>
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-dark-green/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4 pointer-events-none">
+                            <span className="text-white font-bold text-sm flex items-center gap-2 translate-y-2 group-hover:translate-y-0 transition-transform">
+                                <ExternalLink size={14} /> Buka Peta Besar
+                            </span>
+                        </div>
+
+                        <a 
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${shopCoordinate.lat},${shopCoordinate.lng}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="absolute inset-0 bg-transparent cursor-pointer z-10"
+                            title="Lihat Rute di Google Maps"
+                        />
+                    </div>
+                    
+                    <div className="flex justify-end mt-[-20px] mr-4 relative z-20 pointer-events-none">
+                         <button 
+                            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${shopCoordinate.lat},${shopCoordinate.lng}`, "_blank")}
+                            className="pointer-events-auto bg-white text-dark-green px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-gray-50 transition-all border border-gray-100"
+                         >
+                             <Navigation size={14} className="text-sage-green"/> Ambil Rute
+                         </button>
+                    </div>
+                </div>
+
+            </motion.div>
+        </div>
+
+        <div className="text-center mb-8">
+            <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative mt-4">
+            {["All", "Warm", "Gloomy"].map((mood) => {
+                const isActive = activeMood === mood;
+                return (
+                <button
+                    key={mood}
+                    onClick={() => setActiveMood(mood)}
+                    className={`relative px-8 py-2.5 rounded-full text-sm font-bold transition-colors duration-300 z-10 ${
+                    isActive
+                        ? "text-white"
+                        : "text-gray-500 hover:text-dark-green"
+                    }`}
+                >
+                    {isActive && (
+                    <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 bg-dark-green rounded-full shadow-md"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
-                  )}
-                  {mood}
-                </span>
-              </button>
-            );
-          })}
+                    )}
+                    <span className="relative z-10 flex items-center gap-2">
+                    {mood === "Warm" && (
+                        <Sparkles
+                        size={12}
+                        className={isActive ? "text-yellow-300" : ""}
+                        />
+                    )}
+                    {mood}
+                    </span>
+                </button>
+                );
+            })}
+            </div>
         </div>
       </div>
 

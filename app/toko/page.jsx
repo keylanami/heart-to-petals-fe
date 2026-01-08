@@ -602,7 +602,7 @@ export default function TenantListPage() {
                 <span className="w-6 h-6 rounded-full bg-dark-green text-white flex items-center justify-center text-xs">
                   1
                 </span>{" "}
-                Top Visited{" "}
+                Scattered{" "}
                 <span className="italic font-light text-sage-green">
                   Florists
                 </span>

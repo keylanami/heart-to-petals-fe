@@ -269,6 +269,9 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
     );
   }, []);
 
+
+
+
   useEffect(() => {
     if (isSearching && shops && shops.length > 0 && mapRef.current) {
       const firstShop = shops[0];
@@ -362,6 +365,8 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
     );
   };
 
+
+
   if (locationDenied) {
     return (
       <div className="w-full h-[400px] md:h-[500px] rounded-[2rem] md:rounded-[2.5rem] bg-gradient-to-br from-gray-50 to-white border-2 border-dashed border-gray-300 mb-8 flex flex-col items-center justify-center p-8 text-center">
@@ -427,7 +432,6 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
           userLocation.lat,]}
         zoom={13}
       >
-        {/* User marker */}
         <MapMarker longitude={userLocation.lng} latitude={userLocation.lat}>
           <MarkerContent>
             <div className="relative flex items-center justify-center size-8">
@@ -440,7 +444,6 @@ const NeighborhoodMap = ({ shops, isSearching = false }) => {
           <MarkerTooltip>Lokasi Kamu</MarkerTooltip>
         </MapMarker>
 
-        {/* Shop markers */}
         {visibleShops.map((shop) => (
           <MapMarker key={shop.id} longitude={shop.finalLng} latitude={shop.finalLat}>
             <MarkerContent>

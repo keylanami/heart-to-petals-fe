@@ -15,7 +15,10 @@ import {
   AlertCircle,
   Lock,
   CheckCircle,
-  ShieldAlert // Icon baru buat admin
+  ShieldAlert,
+  MapPin, 
+  Clock, 
+  Navigation,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -24,6 +27,7 @@ import { allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 import { useToast } from "@/app/context/ToastContext";
 import { useAuth } from "@/app/context/AuthContext";
+import { Map, MapMarker, MarkerContent } from "@/components/ui/map";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -34,24 +38,35 @@ export default function ProductDetailPage() {
 
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState("story");
-
   const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState({ rating: 0, text: "" });
   const [hoverRating, setHoverRating] = useState(0);
-
   const [reviewStatus, setReviewStatus] = useState({
     canReview: false,
-    message: "" // "login_required", "role_restricted", "purchase_required", "already_reviewed", "ok"
+    message: "",
   });
 
   const product = allItems.find((p) => String(p.id) === String(id));
   
+  const shopData = product?.shop || {};
+  const defaultCoord = { lat: -6.914744, lng: 107.60981 };
+  const shopCoordinate = shopData.coordinate || defaultCoord;
+  const [isMapReady, setIsMapReady] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMapReady(true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+
   const relatedProducts = product
     ? allItems
         .filter(
           (p) => p.category === product.category && String(p.id) !== String(id)
         )
-        .slice(0, 3) 
+        .slice(0, 3)
     : [];
 
   if (product && relatedProducts.length < 3) {
@@ -69,7 +84,6 @@ export default function ProductDetailPage() {
     if (product) {
       const storageKey = `reviews_${product.id}`;
       const savedReviews = localStorage.getItem(storageKey);
-
       if (savedReviews) {
         setReviews(JSON.parse(savedReviews));
       } else {
@@ -96,51 +110,38 @@ export default function ProductDetailPage() {
   }, [product]);
 
   useEffect(() => {
-    // 1. Cek Login
     if (!user) {
-        setReviewStatus({ canReview: false, message: "login_required" });
-        return;
+      setReviewStatus({ canReview: false, message: "login_required" });
+      return;
     }
-
-    // 2. Cek Role (Admin/Tenant GABOLEH Review)
     if (['tenant', 'superadmin'].includes(user.role)) {
-        setReviewStatus({ canReview: false, message: "role_restricted" });
-        return;
+      setReviewStatus({ canReview: false, message: "role_restricted" });
+      return;
     }
-
-    // 3. Cek Sudah Review Belum (Limit 1x)
     const alreadyReviewed = reviews.some(r => r.userEmail === user.email || r.userId === user.id);
     if (alreadyReviewed) {
-        setReviewStatus({ canReview: false, message: "already_reviewed" });
-        return;
+      setReviewStatus({ canReview: false, message: "already_reviewed" });
+      return;
     }
-
-    // 4. Cek Purchase History (Hanya yang sudah beli)
-    // TODO: Di real app, panggil API ke backend checkPurchaseApi(user.id, product.id)
     const hasPurchased = true; 
-    
     if (!hasPurchased) {
-        setReviewStatus({ canReview: false, message: "purchase_required" });
+      setReviewStatus({ canReview: false, message: "purchase_required" });
     } else {
-        setReviewStatus({ canReview: true, message: "ok" });
+      setReviewStatus({ canReview: true, message: "ok" });
     }
-
   }, [user, reviews, product]);
 
   const handleSubmitReview = (e) => {
     e.preventDefault();
     if (!user) return;
-
     if (['admin', 'superadmin', 'tenant'].includes(user.role)) {
-        showToast("Admin tidak dapat mengirim ulasan.", "error");
-        return;
+      showToast("Admin tidak dapat mengirim ulasan.", "error");
+      return;
     }
-
     if (newReview.rating === 0) {
-        showToast("Mohon beri bintang terlebih dahulu ⭐", "error");
-        return;
+      showToast("Mohon beri bintang terlebih dahulu ⭐", "error");
+      return;
     }
-
     const reviewItem = {
       id: Date.now(),
       name: user.name || user.email,
@@ -154,13 +155,9 @@ export default function ProductDetailPage() {
         year: "numeric",
       }),
     };
-
     const updatedReviews = [reviewItem, ...reviews];
     setReviews(updatedReviews);
-    localStorage.setItem(
-      `reviews_${product.id}`,
-      JSON.stringify(updatedReviews)
-    );
+    localStorage.setItem(`reviews_${product.id}`, JSON.stringify(updatedReviews));
     setNewReview({ rating: 0, text: "" });
     showToast("Terima kasih atas ulasanmu!", "success");
   };
@@ -187,16 +184,16 @@ export default function ProductDetailPage() {
   }).format(val);
 
   const checkAuth = () => {
-      if (!user) {
-        showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
-        router.push("/login");
-        return false;
-      }
-      if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
-        showToast("Gunakan akun user untuk belanja!", "error");
-        return false;
-      }
-      return true;
+    if (!user) {
+      showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+      router.push("/login");
+      return false;
+    }
+    if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return false;
+    }
+    return true;
   };
 
   const handleAddToCart = () => {
@@ -266,11 +263,67 @@ export default function ProductDetailPage() {
             </div>
 
             <div className="flex flex-col h-full">
-              <div className="mb-6">
-                <Link href={`/shop/${product.shop?.id}`} className="inline-flex items-center gap-2 mb-2 text-gray-500 hover:text-dark-green transition-colors">
-                    <Store size={14} />
-                    <span className="text-xs font-bold uppercase tracking-wider">{product.shop?.name || "Florist Partner"}</span>
-                </Link>
+              
+             <div className="mb-6">
+                 <div className="flex flex-col gap-4 mb-4">
+                     <div className="flex items-start justify-between">
+                         <Link href={`/shop/${shopData.id}`} className="group/shop flex items-center gap-3">
+                             <div className="w-10 h-10 rounded-full bg-sage-green/10 flex items-center justify-center text-sage-green border border-sage-green/20 group-hover/shop:bg-sage-green group-hover/shop:text-white transition-all">
+                                 <Store size={18} />
+                             </div>
+                             <div>
+                                 <h4 className="font-bold text-dark-green text-sm group-hover/shop:text-sage-green transition-colors">{shopData.name || "Florist Partner"}</h4>
+                                 <p className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+                                     <MapPin size={10} /> {shopData.location || "Lokasi Toko"}
+                                 </p>
+                             </div>
+                         </Link>
+                         <button 
+                             onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${shopCoordinate.lat},${shopCoordinate.lng}`, "_blank")}
+                             className="text-[10px] font-bold text-gray-400 hover:text-dark-green flex items-center gap-1 border border-gray-200 rounded-full px-3 py-1 hover:border-dark-green transition-all"
+                         >
+                             <Navigation size={10} /> Rute
+                         </button>
+                     </div>
+
+                     <div className="w-full h-24 rounded-xl overflow-hidden border border-gray-100 relative shadow-inner">
+                        {isMapReady ? (
+                          <Map 
+                            key={`${shopCoordinate.lat}-${shopCoordinate.lng}`}
+                            initialViewState={{
+                              longitude: shopCoordinate.lng,
+                              latitude: shopCoordinate.lat,
+                              zoom: 13
+                            }}
+                            center={[shopCoordinate.lng, shopCoordinate.lat]}
+                            zoom={13}
+                          >
+                            <MapMarker longitude={shopCoordinate.lng} latitude={shopCoordinate.lat}>
+                              <MarkerContent>
+                                <div className="relative hover:-translate-y-2 transition-transform duration-300 group/pin cursor-pointer">
+                                  <MapPin
+                                    size={32}
+                                    className="text-red-500 fill-red-500 drop-shadow-lg"
+                                  />
+                                  <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-sm"></div>
+                                </div>
+                              </MarkerContent>
+                            </MapMarker>
+                          </Map>
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 animate-pulse rounded-xl"></div>
+                        )}
+                        
+                        <a 
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${shopCoordinate.lat},${shopCoordinate.lng}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="absolute inset-0 bg-transparent hover:bg-black/5 transition-colors cursor-pointer z-10"
+                            title="Lihat di Google Maps"
+                        />
+                     </div>
+                 </div>
+
                 <h1 className="text-3xl md:text-4xl font-serif font-bold text-dark-green leading-tight mb-2">
                   {product.title}
                 </h1>
@@ -334,7 +387,6 @@ export default function ProductDetailPage() {
                     )}
                     {activeTab === "reviews" && (
                         <motion.div key="reviews" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                            
                             {reviewStatus.canReview ? (
                                 <form onSubmit={handleSubmitReview} className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
                                     <div className="flex gap-1 mb-2">
@@ -376,15 +428,15 @@ export default function ProductDetailPage() {
                                 </div>
                             )}
 
-                            <div className="space-y-3 max-h-40 overflow-y-auto">
+                            <div className="space-y-3 max-h-40 overflow-y-auto custom-scrollbar">
                                 {reviews.length === 0 ? <p className="text-gray-400 text-xs italic">Belum ada ulasan.</p> : reviews.map(r => (
                                     <div key={r.id} className="pb-2 border-b border-gray-100 last:border-0">
-                                        <div className="flex justify-between text-xs mb-1">
-                                            <span className="font-bold text-dark-green">{r.name}</span>
-                                            <span className="text-[10px] text-gray-400">{r.date}</span>
-                                        </div>
-                                        <div className="flex gap-0.5 mb-1">{renderStars(r.rating)}</div>
-                                        {r.text && <p className="text-gray-600 text-xs italic">"{r.text}"</p>}
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="font-bold text-dark-green">{r.name}</span>
+                                                <span className="text-[10px] text-gray-400">{r.date}</span>
+                                            </div>
+                                            <div className="flex gap-0.5 mb-1">{renderStars(r.rating)}</div>
+                                            {r.text && <p className="text-gray-600 text-xs italic">"{r.text}"</p>}
                                     </div>
                                 ))}
                             </div>
@@ -394,7 +446,6 @@ export default function ProductDetailPage() {
                 </div>
               </div>
 
-              
               <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 z-50 md:static md:bg-transparent md:border-0 md:p-0 md:z-0">
                 <div className="max-w-6xl mx-auto md:max-w-none flex items-center gap-3">
                     
