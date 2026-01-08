@@ -282,10 +282,12 @@ export default function AboutPage() {
                 Crafted with <span className="italic text-sage-green">Precision</span>
             </h2>
             <div className="flex flex-wrap justify-center gap-4 text-cream-bg/60 text-sm font-mono uppercase tracking-widest">
-                <span>Next.js 14</span> • 
+                <span>Next.js 16</span> • 
                 <span>Tailwind CSS</span> • 
                 <span>Framer Motion</span> • 
-                <span>Lucide Icons</span>
+                <span>Lucide Icons</span> • 
+                <span>Vercel</span> •
+                <span>MapCn</span>
             </div>
         </section>
 
