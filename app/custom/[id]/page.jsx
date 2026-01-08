@@ -27,29 +27,25 @@ export default function CustomBuilder() {
   const canvasRef = useRef(null);
   const { showToast } = useToast();
 
-  // --- STATE UTAMA ---
   const [activeShop, setActiveShop] = useState(null);
   const [selectedFlowers, setSelectedFlowers] = useState([]);
   const [activeCategory, setActiveCategory] = useState("romance");
   const [bouquetName, setBouquetName] = useState("My Untitled Bouquet");
   const [zoom, setZoom] = useState(100);
 
-  // State Packaging
   const [activePackagingItem, setActivePackagingItem] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
 
-  // State Request
   const [refImage, setRefImage] = useState(null);
   const [refImagePreview, setRefImagePreview] = useState(null);
   const [currentDraftId, setCurrentDraftId] = useState(null);
 
-  // State Interaksi Canvas
+
   const [activeId, setActiveId] = useState(null);
   const [editingId, setEditingId] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
-  // --- 1. INISIALISASI TOKO & LOAD DRAFT (FIXED) ---
   useEffect(() => {
     if (params?.id) {
       // A. Set Toko Aktif
@@ -66,7 +62,6 @@ export default function CustomBuilder() {
         router.push("/toko");
       }
 
-      // B. Cek apakah ini Mode Edit? (FIX BUG EDIT KOSONG)
       const editId = localStorage.getItem("editDraftId");
       if (editId) {
         const drafts = JSON.parse(localStorage.getItem("flowerDrafts") || "[]");

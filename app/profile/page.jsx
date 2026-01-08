@@ -27,16 +27,21 @@ import {
   Trash2,
   Check,
   LocateFixed,
-  AlertTriangle
+  AlertTriangle,
 } from "lucide-react";
-import { Map, MapMarker, MarkerContent, MarkerPopup } from "@/components/ui/map";
+import {
+  Map,
+  MapMarker,
+  MarkerContent,
+  MarkerPopup,
+} from "@/components/ui/map";
 
 export default function ProfilePage() {
   const { user, logout, updateUser } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
   const { orders } = useOrder();
-  
+
   const mapRef = useRef(null);
 
   const [activeTab, setActiveTab] = useState("personal");
@@ -52,14 +57,14 @@ export default function ProfilePage() {
     shopAddress: "",
     shopOpenTime: "09:00",
     shopCloseTime: "21:00",
-    shopCoordinate: { lat: -6.914744, lng: 107.609810 },
+    shopCoordinate: { lat: -6.914744, lng: 107.60981 },
     adminCode: "",
     department: "",
   });
 
   useEffect(() => {
     if (!user) {
-      router.push("/"); 
+      router.push("/");
     }
   }, [user, router]);
 
@@ -67,7 +72,7 @@ export default function ProfilePage() {
     if (user) {
       let openT = "09:00";
       let closeT = "21:00";
-      
+
       if (user.shop?.openTime && user.shop.openTime.includes("-")) {
         const times = user.shop.openTime.split("-");
         openT = times[0].trim();
@@ -78,14 +83,16 @@ export default function ProfilePage() {
         name: user.name || "",
         email: user.email || "",
         phone: user.phone || "",
-        
+
         shopName: user.shop?.name || "",
-        shopAddress: user.shop?.location || "", 
-        shopCoordinate: user.shop?.coordinate || { lat: -6.914744, lng: 107.609810 }, 
+        shopAddress: user.shop?.location || "",
+        shopCoordinate: user.shop?.coordinate || {
+          lat: -6.914744,
+          lng: 107.60981,
+        },
         shopOpenTime: openT,
         shopCloseTime: closeT,
 
-        
         adminCode: user.adminCode || "SA-001",
         department: user.department || "Head Office",
       });
@@ -97,30 +104,28 @@ export default function ProfilePage() {
         }
       }
     }
-  }, [user]); 
-
+  }, [user]);
 
   if (!user) {
-    return null; 
+    return null;
   }
 
-
   const handleGetLocation = (e) => {
-    e.preventDefault(); 
+    e.preventDefault();
     if (navigator.geolocation) {
       showToast("Mencari lokasi...", "info");
-      
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const newLat = position.coords.latitude;
           const newLng = position.coords.longitude;
 
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
             shopCoordinate: {
               lat: newLat,
-              lng: newLng
-            }
+              lng: newLng,
+            },
           }));
 
           if (mapRef.current) {
@@ -128,7 +133,7 @@ export default function ProfilePage() {
               center: [newLng, newLat],
               zoom: 15,
               duration: 2000,
-              essential: true
+              essential: true,
             });
           }
 
@@ -160,10 +165,9 @@ export default function ProfilePage() {
       updates.shop = {
         ...user.shop,
         name: formData.shopName,
-        location: formData.shopAddress, 
-        coordinate: formData.shopCoordinate, 
+        location: formData.shopAddress,
+        coordinate: formData.shopCoordinate,
         openTime: `${formData.shopOpenTime} - ${formData.shopCloseTime}`,
-        desc: "" 
       };
     }
 
@@ -288,34 +292,32 @@ export default function ProfilePage() {
   const filteredOrders = getFilteredOrders();
 
   const handleDeleteAccount = async () => {
-      const confirmDelete = window.confirm(
-          "PERINGATAN: Apakah Anda yakin ingin menghapus akun ini secara permanen? Data pesanan dan profil tidak dapat dipulihkan."
+    const confirmDelete = window.confirm(
+      "PERINGATAN: Apakah Anda yakin ingin menghapus akun ini secara permanen? Data pesanan dan profil tidak dapat dipulihkan."
+    );
+
+    if (confirmDelete) {
+      const doubleConfirm = window.confirm(
+        "Yakin 100%? Tindakan ini tidak dapat dibatalkan."
       );
 
-      if (confirmDelete) {
-          const doubleConfirm = window.confirm("Yakin 100%? Tindakan ini tidak dapat dibatalkan.");
-          
-          if (doubleConfirm) {
-              setIsLoading(true);
-              
-              // Simulasi proses delete di server
-              await new Promise((r) => setTimeout(r, 1500));
-              
-              // Panggil fungsi logout/hapus dari context (jika ada)
-              // Jika deleteAccount belum ada di context, kita pakai logout biasa + clear storage
-              if (typeof deleteAccount === 'function') {
-                  deleteAccount();
-              } else {
-                  logout(); 
-                  localStorage.clear(); // Hapus sisa data lokal
-              }
+      if (doubleConfirm) {
+        setIsLoading(true);
 
-              showToast("Akun berhasil dihapus. Sampai jumpa! 👋", "success");
-              router.push("/");
-          }
+        await new Promise((r) => setTimeout(r, 1500));
+
+        if (typeof deleteAccount === "function") {
+          deleteAccount();
+        } else {
+          logout();
+          localStorage.clear(); 
+        }
+
+        showToast("Akun berhasil dihapus. Sampai jumpa! 👋", "success");
+        router.push("/");
       }
+    }
   };
-
 
   return (
     <main className="bg-[#FDFBF7] min-h-screen">
@@ -493,82 +495,102 @@ export default function ProfilePage() {
                         <div className="md:col-span-2 space-y-2">
                           <div className="flex justify-between items-center">
                             <label className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                                Titik Lokasi (Geser Pin untuk menyesuaikan)
+                              Titik Lokasi (Geser Pin untuk menyesuaikan)
                             </label>
-                            <button 
-                                type="button" 
-                                onClick={handleGetLocation} 
-                                className="text-[10px] font-bold text-sage-green flex items-center gap-1 hover:text-dark-green transition bg-white border border-sage-green/30 px-2 py-1 rounded-full shadow-sm"
+                            <button
+                              type="button"
+                              onClick={handleGetLocation}
+                              className="text-[10px] font-bold text-sage-green flex items-center gap-1 hover:text-dark-green transition bg-white border border-sage-green/30 px-2 py-1 rounded-full shadow-sm"
                             >
-                                <LocateFixed size={12}/> Ambil Lokasi Saya
+                              <LocateFixed size={12} /> Ambil Lokasi Saya
                             </button>
                           </div>
-                          
+
                           <div className="h-[200px] w-full rounded-2xl overflow-hidden border border-gray-200 relative z-0">
-                             {formData.shopCoordinate && (
-                                <Map 
-                                    ref={mapRef} 
-                                    initialViewState={{
-                                        longitude: formData.shopCoordinate.lng,
-                                        latitude: formData.shopCoordinate.lat,
-                                        zoom: 14
-                                    }}
-                                    center={[formData.shopCoordinate.lng, formData.shopCoordinate.lat]} 
-                                    zoom={14}
+                            {formData.shopCoordinate && (
+                              <Map
+                                ref={mapRef}
+                                initialViewState={{
+                                  longitude: formData.shopCoordinate.lng,
+                                  latitude: formData.shopCoordinate.lat,
+                                  zoom: 14,
+                                }}
+                                center={[
+                                  formData.shopCoordinate.lng,
+                                  formData.shopCoordinate.lat,
+                                ]}
+                                zoom={14}
+                              >
+                                <MapMarker
+                                  draggable
+                                  longitude={formData.shopCoordinate.lng}
+                                  latitude={formData.shopCoordinate.lat}
+                                  onDragEnd={(lngLat) => {
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      shopCoordinate: {
+                                        lat: lngLat.lat,
+                                        lng: lngLat.lng,
+                                      },
+                                    }));
+                                  }}
                                 >
-                                    <MapMarker
-                                        draggable
-                                        longitude={formData.shopCoordinate.lng}
-                                        latitude={formData.shopCoordinate.lat}
-                                        onDragEnd={(lngLat) => {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                shopCoordinate: { lat: lngLat.lat, lng: lngLat.lng }
-                                            }));
-                                        }}
-                                    >
-                                        <MarkerContent>
-                                            <div className="cursor-move drop-shadow-lg transition-transform hover:scale-110 group">
-                                                <MapPin className="fill-dark-green stroke-white text-dark-green" size={32} />
-                                            </div>
-                                        </MarkerContent>
-                                        <MarkerPopup>
-                                            <div className="text-xs font-bold text-dark-green">
-                                                {formData.shopName || "Toko Saya"}
-                                            </div>
-                                        </MarkerPopup>
-                                    </MapMarker>
-                                </Map>
-                             )}
+                                  <MarkerContent>
+                                    <div className="cursor-move drop-shadow-lg transition-transform hover:scale-110 group">
+                                      <MapPin
+                                        className="fill-dark-green stroke-white text-dark-green"
+                                        size={32}
+                                      />
+                                    </div>
+                                  </MarkerContent>
+                                  <MarkerPopup>
+                                    <div className="text-xs font-bold text-dark-green">
+                                      {formData.shopName || "Toko Saya"}
+                                    </div>
+                                  </MarkerPopup>
+                                </MapMarker>
+                              </Map>
+                            )}
                           </div>
                           <p className="text-[10px] text-gray-400 font-mono text-right">
-                             Lat: {formData.shopCoordinate?.lat.toFixed(6)}, Lng: {formData.shopCoordinate?.lng.toFixed(6)}
+                            Lat: {formData.shopCoordinate?.lat.toFixed(6)}, Lng:{" "}
+                            {formData.shopCoordinate?.lng.toFixed(6)}
                           </p>
                         </div>
 
                         <div className="md:col-span-2 grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                                    <Clock size={12}/> Jam Buka
-                                </label>
-                                <input
-                                    type="time"
-                                    value={formData.shopOpenTime}
-                                    onChange={(e) => setFormData({...formData, shopOpenTime: e.target.value})}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
-                                    <Clock size={12}/> Jam Tutup
-                                </label>
-                                <input
-                                    type="time"
-                                    value={formData.shopCloseTime}
-                                    onChange={(e) => setFormData({...formData, shopCloseTime: e.target.value})}
-                                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
-                                />
-                            </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                              <Clock size={12} /> Jam Buka
+                            </label>
+                            <input
+                              type="time"
+                              value={formData.shopOpenTime}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  shopOpenTime: e.target.value,
+                                })
+                              }
+                              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-1">
+                              <Clock size={12} /> Jam Tutup
+                            </label>
+                            <input
+                              type="time"
+                              value={formData.shopCloseTime}
+                              onChange={(e) =>
+                                setFormData({
+                                  ...formData,
+                                  shopCloseTime: e.target.value,
+                                })
+                              }
+                              className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-sage-green"
+                            />
+                          </div>
                         </div>
                       </>
                     )}
@@ -698,7 +720,6 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              
               {activeTab === "security" && (
                 <div className="space-y-6">
                   <h2 className="text-xl font-bold text-dark-green mb-6 border-b border-gray-100 pb-4">
@@ -715,15 +736,19 @@ export default function ProfilePage() {
                           Akses Terproteksi
                         </h3>
                         <p className="text-sm text-blue-600/80 leading-relaxed">
-                          Akun Super Admin dikelola langsung oleh sistem pusat. 
-                          Anda tidak diizinkan mengubah kredensial (password) atau menghapus akun ini secara manual demi keamanan data.
+                          Akun Super Admin dikelola langsung oleh sistem pusat.
+                          Anda tidak diizinkan mengubah kredensial (password)
+                          atau menghapus akun ini secara manual demi keamanan
+                          data.
                         </p>
                       </div>
                     </div>
                   ) : (
                     <>
                       <div className="space-y-4">
-                        <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wider">Update Password</h3>
+                        <h3 className="font-bold text-gray-700 text-sm uppercase tracking-wider">
+                          Update Password
+                        </h3>
                         <div className="grid grid-cols-1 gap-4 max-w-md">
                           <input
                             type="password"
@@ -751,9 +776,10 @@ export default function ProfilePage() {
                               Zona Berbahaya
                             </h3>
                             <p className="text-sm text-red-600/80 mb-4 leading-relaxed">
-                              Menghapus akun akan menghilangkan semua data riwayat pesanan,
-                              alamat tersimpan, dan poin loyalitas secara permanen. Tindakan
-                              ini tidak dapat dibatalkan.
+                              Menghapus akun akan menghilangkan semua data
+                              riwayat pesanan, alamat tersimpan, dan poin
+                              loyalitas secara permanen. Tindakan ini tidak
+                              dapat dibatalkan.
                             </p>
                             <button
                               onClick={handleDeleteAccount}

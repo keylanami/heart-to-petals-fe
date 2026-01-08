@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/context/AuthContext";
 import { useInventory } from "@/app/context/InventoryContext";
@@ -19,10 +19,18 @@ import {
   Image as ImageIcon,
   Check,
   Palette,
+  LocateFixed,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { HexColorPicker } from "react-colorful";
+import {
+  Map,
+  MapMarker,
+  MarkerContent,
+  MarkerPopup,
+} from "@/components/ui/map";
+import { useToast } from "@/app/context/ToastContext";
 
 const INPUT_STYLE =
   "w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-sage-green focus:border-transparent transition-all placeholder:text-gray-400";
@@ -38,9 +46,10 @@ export default function RegisterTenantPage() {
   const { addItem } = useInventory();
   const { register } = useAuth();
   const { registerShop } = useShop();
-
+  const mapRef = useRef(null);
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+  const { showToast } = useToast();
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -49,10 +58,9 @@ export default function RegisterTenantPage() {
   const [shop, setShop] = useState({
     name: "",
     address: "",
-    coordinate: null,
+    coordinate: { lat: -6.914744, lng: 107.60981 },
     openTime: "09:00",
     closeTime: "21:00",
-    desc: "",
     can_customize: false,
   });
 
@@ -95,6 +103,46 @@ export default function RegisterTenantPage() {
     image: null,
     preview: "",
   });
+
+  const handleGetLocation = (e) => {
+    e.preventDefault();
+    if (navigator.geolocation) {
+      showToast("Mencari lokasi...", "info");
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const newLat = position.coords.latitude;
+          const newLng = position.coords.longitude;
+
+          setShop((prev) => ({
+            ...prev,
+            coordinate: {
+              lat: newLat,
+              lng: newLng,
+            },
+          }));
+
+          if (mapRef.current) {
+            mapRef.current.flyTo({
+              center: [newLng, newLat],
+              zoom: 15,
+              duration: 2000,
+              essential: true,
+            });
+          }
+
+          showToast("Lokasi ditemukan!", "success");
+        },
+        (error) => {
+          console.error(error);
+          showToast("Gagal mengambil lokasi. Pastikan GPS aktif.", "error");
+        },
+        { enableHighAccuracy: true }
+      );
+    } else {
+      showToast("Browser tidak support geolocation.", "error");
+    }
+  };
 
   const handleFlowerImage = (e) => {
     const file = e.target.files[0];
@@ -220,17 +268,6 @@ export default function RegisterTenantPage() {
     });
   };
 
-  const handleMapClick = () => {
-    const mockAddress =
-      "Jl. Dago Asri No. 102, Coblong, Bandung, Jawa Barat 40135";
-    setShop({
-      ...shop,
-      address: mockAddress,
-      coordinate: { lat: -6.8, lng: 107.6 },
-    });
-    alert("Lokasi dipilih: " + mockAddress);
-  };
-
   const handleFinalSubmit = async () => {
     setLoading(true);
     await new Promise((r) => setTimeout(r, 1500));
@@ -243,7 +280,6 @@ export default function RegisterTenantPage() {
       fullAddress: shop.address,
       openTime: `${shop.openTime} - ${shop.closeTime}`,
       can_customize: shop.can_customize,
-      desc: shop.desc,
       id: newShopId,
       status: "pending",
       image: "/assets/flowershop/placeholder_store.png",
@@ -273,7 +309,6 @@ export default function RegisterTenantPage() {
   return (
     <div className="min-h-screen bg-cream-bg font-sans flex items-center justify-center p-6">
       <div className="w-full max-w-4xl bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-gray-100 flex flex-col md:flex-row min-h-[600px]">
-        {/* SIDEBAR NAVIGATION */}
         <div className="bg-dark-green p-8 text-white w-full md:w-1/3 flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-sage-green/20 rounded-full -mr-16 -mt-16 blur-3xl pointer-events-none"></div>
           <div>
@@ -398,38 +433,85 @@ export default function RegisterTenantPage() {
                     onChange={(e) => setShop({ ...shop, name: e.target.value })}
                   />
                 </div>
+
                 <div>
-                  <label className={LABEL_STYLE}>Lokasi & Alamat</label>
-                  <div
-                    className="h-32 bg-gray-100 rounded-xl mb-2 flex items-center justify-center cursor-pointer border-2 border-dashed border-gray-300 hover:border-sage-green group relative overflow-hidden"
-                    onClick={handleMapClick}
-                  >
-                    {shop.coordinate ? (
-                      <div className="flex flex-col items-center text-sage-green">
-                        <Check size={24} />
-                        <span className="text-xs font-bold mt-1">
-                          Lokasi Terpilih
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center text-gray-400 group-hover:text-sage-green transition">
-                        <MapPin size={24} />
-                        <span className="text-xs font-bold mt-1">
-                          Pilih di Peta
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <textarea
-                    rows={2}
-                    placeholder="Alamat Lengkap"
+                  <label className={LABEL_STYLE}>Alamat Lengkap (Teks)</label>
+                  <input
+                    type="text"
                     className={INPUT_STYLE}
+                    placeholder="Contoh: Jl. Mawar No. 123, Bandung"
                     value={shop.address}
                     onChange={(e) =>
                       setShop({ ...shop, address: e.target.value })
                     }
                   />
                 </div>
+
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <label className={LABEL_STYLE}>
+                      Titik Lokasi (Geser Pin)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={handleGetLocation}
+                      className="text-[10px] font-bold text-sage-green flex items-center gap-1 hover:text-dark-green transition bg-white border border-sage-green/30 px-2 py-1 rounded-full shadow-sm"
+                    >
+                      <LocateFixed size={12} /> Ambil Lokasi Saya
+                    </button>
+                  </div>
+
+                  <div className="h-[200px] w-full rounded-xl overflow-hidden border border-gray-200 relative z-0 shadow-inner">
+                    <Map
+                      ref={mapRef}
+                      initialViewState={{
+                        longitude: shop.coordinate?.lng || 107.60981,
+                        latitude: shop.coordinate?.lat || -6.914744,
+                        zoom: 14,
+                      }}
+                      center={
+                        shop.coordinate
+                          ? [shop.coordinate.lng, shop.coordinate.lat]
+                          : [107.60981, -6.914744]
+                      }
+                      zoom={14}
+                    >
+                      <MapMarker
+                        draggable
+                        longitude={shop.coordinate?.lng || 107.60981}
+                        latitude={shop.coordinate?.lat || -6.914744}
+                        onDragEnd={(lngLat) => {
+                          setShop((prev) => ({
+                            ...prev,
+                            coordinate: {
+                              lat: lngLat.lat,
+                              lng: lngLat.lng,
+                            },
+                          }));
+                        }}
+                      >
+                        <MarkerContent>
+                          <div className="cursor-move drop-shadow-lg transition-transform hover:scale-110 group">
+                            <MapPin
+                              className="fill-dark-green stroke-white text-dark-green"
+                              size={32}
+                            />
+                          </div>
+                        </MarkerContent>
+                        <MarkerPopup>
+                          <div className="text-xs font-bold text-dark-green">
+                            {shop.name || "Toko Baru"}
+                          </div>
+                        </MarkerPopup>
+                      </MapMarker>
+                    </Map>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-mono text-right mt-1">
+                    Lat: {shop.coordinate?.lat.toFixed(6) || "-"}, Lng:{" "}
+                    {shop.coordinate?.lng.toFixed(6) || "-"}
+                  </p>
+                </div>
+
                 <div>
                   <label className={LABEL_STYLE}>Jam Operasional</label>
                   <div className="flex items-center gap-2">
@@ -463,15 +545,6 @@ export default function RegisterTenantPage() {
                       />
                     </div>
                   </div>
-                </div>
-                <div>
-                  <label className={LABEL_STYLE}>Deskripsi Singkat</label>
-                  <textarea
-                    rows={3}
-                    className={INPUT_STYLE}
-                    value={shop.desc}
-                    onChange={(e) => setShop({ ...shop, desc: e.target.value })}
-                  />
                 </div>
               </div>
               <div className="flex justify-between pt-4">
@@ -754,7 +827,6 @@ export default function RegisterTenantPage() {
                 </button>
               </div>
 
-              {/* MODAL BUNGA */}
               {modalType === "flower" && (
                 <form onSubmit={saveFlower} className="space-y-4">
                   <div className="flex gap-4">
@@ -855,7 +927,6 @@ export default function RegisterTenantPage() {
 
               {modalType === "packaging" && (
                 <form onSubmit={savePackaging} className="space-y-5">
-                  {/* --- Bagian Atas: Info Dasar --- */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className={LABEL_STYLE}>Tipe Packaging</label>
@@ -890,15 +961,12 @@ export default function RegisterTenantPage() {
                     </div>
                   </div>
 
-                  {/* --- Bagian Tengah: Builder Varian Warna (EYE DROP AREA IMPROVED) --- */}
                   <div className="bg-gray-50 p-5 rounded-2xl border border-gray-200 shadow-inner">
                     <h4 className="font-bold text-dark-green text-sm mb-4 flex items-center gap-2">
                       <Palette size={18} /> Buat Varian Warna
                     </h4>
 
-                    {/* Container Input Varian */}
                     <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
-                      {/* ROW 1: Color Picker & Hex Code */}
                       <div>
                         <label className={LABEL_STYLE}>Pilih Warna & Hex</label>
                         <div className="flex gap-3 items-center relative z-20">
@@ -906,7 +974,9 @@ export default function RegisterTenantPage() {
                           <div className="relative">
                             <button
                               type="button"
-                              onClick={() => setShowColorPicker(!showColorPicker)}
+                              onClick={() =>
+                                setShowColorPicker(!showColorPicker)
+                              }
                               className="w-14 h-14 rounded-xl border-4 border-white shadow transition hover:scale-105 flex items-center justify-center"
                               style={{ backgroundColor: variantInput.hex }}
                             >
@@ -918,7 +988,6 @@ export default function RegisterTenantPage() {
                               )}
                             </button>
 
-                            {/* The Floating Color Picker Popover */}
                             <AnimatePresence>
                               {showColorPicker && (
                                 <motion.div
@@ -947,7 +1016,6 @@ export default function RegisterTenantPage() {
                             </AnimatePresence>
                           </div>
 
-                          {/* Hex Input Field */}
                           <div className="relative flex-1">
                             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-mono font-bold">
                               #
@@ -957,7 +1025,6 @@ export default function RegisterTenantPage() {
                               className={`${INPUT_STYLE} pl-7 font-mono uppercase tracking-widest text-lg h-14`}
                               value={variantInput.hex.replace("#", "")}
                               onChange={(e) => {
-                                // Regex untuk memastikan hanya karakter hex valid
                                 const val = e.target.value
                                   .replace(/[^0-9A-Fa-f]/g, "")
                                   .slice(0, 6);
@@ -971,7 +1038,6 @@ export default function RegisterTenantPage() {
                         </div>
                       </div>
 
-                      {/* ROW 2: Nama Varian & Stok */}
                       <div className="grid grid-cols-3 gap-3">
                         <div className="col-span-2">
                           <label className={LABEL_STYLE}>
@@ -1006,7 +1072,6 @@ export default function RegisterTenantPage() {
                         </div>
                       </div>
 
-                      {/* ROW 3: Action Button */}
                       <button
                         type="button"
                         onClick={addVariantToPack}
@@ -1017,7 +1082,6 @@ export default function RegisterTenantPage() {
                       </button>
                     </div>
 
-                    {/* --- Bagian Bawah: Daftar Varian --- */}
                     <div className="mt-5">
                       <label className={LABEL_STYLE}>
                         Daftar Varian Siap Simpan ({tempPack.variants.length})
@@ -1030,7 +1094,6 @@ export default function RegisterTenantPage() {
                             key={idx}
                             className="pl-1 pr-2 py-1 bg-gray-50 border border-gray-200 rounded-full flex items-center gap-2 shadow-sm"
                           >
-                            {/* Dot Warna Kecil */}
                             <div
                               className="w-6 h-6 rounded-full border-2 border-white shadow-sm"
                               style={{ backgroundColor: v.hex }}
@@ -1071,7 +1134,6 @@ export default function RegisterTenantPage() {
                     </div>
                   </div>
 
-                  
                   <button
                     type="submit"
                     disabled={tempPack.variants.length === 0}
