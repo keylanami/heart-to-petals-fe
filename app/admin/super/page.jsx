@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import {
   LayoutGrid,
-  Map,
   Store,
   Check,
   X,
@@ -14,6 +13,12 @@ import {
   AlertCircle,
   User,
   ArrowLeft,
+  ExternalLink,
+  Star,
+  Clock,
+  Navigation,
+  Package, 
+  MapIcon
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useToast } from "@/app/context/ToastContext";
@@ -21,6 +26,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
 import { useInventory } from "@/app/context/InventoryContext";
+import { Map, MapMarker, MarkerContent, MarkerPopup } from "@/components/ui/map";
 
 export default function SuperAdminPage() {
   const [activeTab, setActiveTab] = useState("requests");
@@ -32,6 +38,7 @@ export default function SuperAdminPage() {
   const [tenants, setTenants] = useState([]);
   const [pendingTenants, setPendingTenants] = useState([]);
 
+  // --- LOGIC LOAD DATA (SAMA SEPERTI SEBELUMNYA) ---
   const loadData = () => {
     if (typeof window === "undefined") return;
 
@@ -45,14 +52,14 @@ export default function SuperAdminPage() {
       .filter((u) => u.role === "tenant" && u.status === "active")
       .map((u, i) => {
         const shopId = u.shop?.id;
-
         const tenantItems = inventory.filter((item) => item.shopId === shopId);
+
+        const lat = u.shop?.coordinate?.lat || u.shop?.lat || -6.914744 + (Math.random() * 0.05 - 0.025);
+        const lng = u.shop?.coordinate?.lng || u.shop?.lng || 107.609810 + (Math.random() * 0.05 - 0.025);
 
         return {
           ...u,
-          x: u.shop?.x || 20 + ((i * 15) % 80),
-          y: u.shop?.y || 30 + ((i * 20) % 60),
-
+          coordinate: { lat, lng }, 
           inventorySummary: {
             total: tenantItems.length,
             flower: tenantItems.filter((i) => i.type === "flower").length,
@@ -105,6 +112,8 @@ export default function SuperAdminPage() {
     showToast("Pendaftaran tenant ditolak.", "error");
   };
 
+  // --- VIEW COMPONENTS ---
+
   const RequestsView = () => (
     <div className="space-y-6">
       <h2 className="text-2xl font-serif font-bold text-dark-green flex items-center gap-2">
@@ -124,7 +133,7 @@ export default function SuperAdminPage() {
         <div className="grid grid-cols-1 gap-4">
           {pendingTenants.map((t) => (
             <motion.div
-              key={t.id}
+              key={t.id || t.email}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white p-6 rounded-2xl shadow-sm border-l-4 border-yellow-400 flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
@@ -191,14 +200,14 @@ export default function SuperAdminPage() {
           <tbody>
             {tenants.length === 0 ? (
               <tr>
-                <td colSpan="5" className="text-center py-8 text-gray-400">
+                <td colSpan="6" className="text-center py-8 text-gray-400">
                   Belum ada tenant aktif.
                 </td>
               </tr>
             ) : (
               tenants.map((shop) => (
                 <tr
-                  key={shop.id}
+                  key={shop.id || shop.email}
                   className="border-b border-gray-200 hover:bg-gray-50"
                 >
                   <td className="px-6 py-4 font-bold text-dark-green flex items-center gap-3">
@@ -216,6 +225,9 @@ export default function SuperAdminPage() {
                       {shop.inventorySummary?.packaging || 0} | 📖{" "}
                       {shop.inventorySummary?.catalog || 0}
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                     <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-bold uppercase">Active</span>
                   </td>
 
                   <td className="px-6 py-4 text-center">
@@ -236,69 +248,144 @@ export default function SuperAdminPage() {
     </div>
   );
 
-  const MapView = () => (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-serif font-bold text-dark-green">
-        Live Map Visualization
-      </h2>
+  const MapView = () => {
+    const defaultCenter = [107.60981, -6.914744];
 
-      <div className="relative w-full h-[500px] bg-[#E5F0EC] rounded-3xl overflow-hidden border border-sage-green/20 shadow-inner group">
-        <div
-          className="absolute inset-0 opacity-10 pointer-events-none"
-          style={{
-            backgroundImage: "radial-gradient(#1A2F24 1px, transparent 1px)",
-            backgroundSize: "24px 24px",
-          }}
-        ></div>
+    return (
+      <div className="space-y-6">
+        <h2 className="text-2xl font-serif font-bold text-dark-green">
+          Live Map Visualization
+        </h2>
 
-        <div className="absolute top-20 left-20 w-64 h-64 bg-white/40 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-10 right-10 w-80 h-80 bg-green-200/30 rounded-full blur-3xl"></div>
-
-        {tenants.map((shop) => (
-          <motion.div
-            key={shop.id}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute cursor-pointer flex flex-col items-center group/marker"
-            style={{ left: `${shop.x}%`, top: `${shop.y}%` }}
-            whileHover={{ scale: 1.2, zIndex: 10 }}
+        <div className="w-full h-[500px] rounded-3xl overflow-hidden border border-sage-green/20 shadow-inner relative z-0">
+          <Map
+            initialViewState={{
+              longitude: defaultCenter[0],
+              latitude: defaultCenter[1],
+              zoom: 12,
+            }}
+            center={[ defaultCenter[0], defaultCenter[1] ]}
+            zoom={14}
           >
-            <div className="absolute bottom-full mb-3 bg-white px-4 py-2 rounded-xl shadow-xl text-xs font-bold whitespace-nowrap opacity-0 group-hover/marker:opacity-100 transition-opacity pointer-events-none z-20 flex items-center gap-2 transform translate-y-2 group-hover/marker:translate-y-0 duration-200">
-              <Store size={14} className="text-sage-green" />
-              <div>
-                <p className="text-dark-green font-bold text-sm">
-                  {shop.shop?.name}
-                </p>
-                <p className="text-[10px] text-gray-400 font-normal">
-                  {shop.shop?.location}
-                </p>
-              </div>
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white"></div>
-            </div>
+            {tenants.map((t) => {
+               const shopData = t.shop || {};
+               const canCustomize = shopData.can_customize;
+               const lat = t.coordinate?.lat || defaultCenter[1];
+               const lng = t.coordinate?.lng || defaultCenter[0];
+               
+               const markerKey = t.id || t.email || `marker-${lat}-${lng}`;
 
-            <div className="relative">
-              <MapPin
-                size={36}
-                className="text-red-500 drop-shadow-lg fill-red-500"
-              />
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 bg-white rounded-full flex items-center justify-center -mt-1">
-                <Store size={10} className="text-red-500" />
-              </div>
-            </div>
+               return (
+                <MapMarker key={markerKey} longitude={lng} latitude={lat}>
+                  <MarkerContent>
+                    <div className="group relative cursor-pointer">
+                      <MapPin
+                        size={40}
+                        className={`drop-shadow-lg transition-transform hover:scale-110 ${
+                          canCustomize
+                            ? "text-sage-green fill-sage-green stroke-white" 
+                            : "text-gray-700 fill-gray-700 stroke-white"    
+                        }`}
+                      />
+                      
+                      <div className="absolute top-[10px] left-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow-sm">
+                        <Store
+                          size={10}
+                          className={
+                            canCustomize ? "text-sage-green" : "text-gray-700"
+                          }
+                        />
+                      </div>
 
-            <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
-              <div className="w-8 h-8 bg-red-500/20 rounded-full animate-ping" />
-            </div>
-          </motion.div>
-        ))}
+                      {canCustomize && (
+                        <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                        </span>
+                      )}
+                    </div>
+                  </MarkerContent>
 
-        <div className="absolute bottom-6 left-6 bg-white/90 backdrop-blur px-4 py-2 rounded-xl text-xs font-bold text-dark-green shadow-lg border border-white flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          Live Monitoring: {tenants.length} Active Stores
+                  <MarkerPopup className="p-0 w-[280px] rounded-xl overflow-hidden shadow-xl border-none">
+                    <div className="relative h-32 w-full bg-gray-100">
+                      <img
+                        src={shopData.image || "/assets/flowershop/placeholder_store.png"}
+                        alt={shopData.name}
+                        className="w-full h-full object-cover"
+                      />
+                      {canCustomize && (
+                        <div className="absolute top-2 left-2 bg-sage-green/90 backdrop-blur px-2 py-0.5 rounded text-[10px] font-bold text-white shadow-sm flex items-center gap-1">
+                           <Package size={10} /> Custom Available
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="p-4 bg-white space-y-3">
+                      <div>
+                        <h3 className="font-serif font-bold text-lg text-dark-green leading-tight">
+                          {shopData.name}
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                          {shopData.fullAddress || shopData.location || "Bandung"}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-3 text-xs">
+                        <div className="flex items-center gap-1 text-yellow-500 font-bold bg-yellow-50 px-1.5 py-0.5 rounded">
+                          <Star size={12} fill="currentColor" />
+                          {shopData.rating || "New"}
+                        </div>
+                        <div className="flex items-center gap-1 text-gray-500">
+                          <Clock size={12} />
+                          {shopData.openTime || "09:00 - 21:00"}
+                        </div>
+                      </div>
+
+                      <div className="pt-1 flex gap-2">
+                        <button
+                          onClick={() =>
+                            window.open(
+                              `http://maps.google.com/maps?q=${lat},${lng}`,
+                              "_blank"
+                            )
+                          }
+                          className="flex-1 bg-dark-green text-white text-xs font-bold py-2 rounded-lg hover:bg-sage-green transition flex items-center justify-center gap-1.5 shadow-md"
+                        >
+                          <Navigation size={12} /> Rute
+                        </button>
+                        {/* Link ke Shop Detail (Opsional jika ada page detail) */}
+                        {shopData.id && (
+                             <Link href={`/shop/${shopData.id}`} className="flex-1">
+                              <button className="w-full border border-gray-200 text-gray-600 text-xs font-bold py-2 rounded-lg hover:bg-gray-50 transition flex items-center justify-center gap-1.5">
+                                 Kunjungi <ExternalLink size={12} />
+                              </button>
+                            </Link>
+                        )}
+                      </div>
+                    </div>
+                  </MarkerPopup>
+                </MapMarker>
+               );
+            })}
+          </Map>
+
+          <div className="absolute bottom-4 left-4 bg-white/90 backdrop-blur p-3 rounded-xl shadow-lg border border-white/50 text-xs space-y-1 z-10">
+            <div className="flex items-center gap-2">
+               <span className="w-3 h-3 rounded-full bg-sage-green border border-white shadow-sm"></span>
+               <span className="font-bold text-gray-700">Bisa Custom</span>
+            </div>
+            <div className="flex items-center gap-2">
+               <span className="w-3 h-3 rounded-full bg-gray-700 border border-white shadow-sm"></span>
+               <span className="font-bold text-gray-700">Toko Biasa</span>
+            </div>
+             <div className="mt-2 pt-2 border-t border-gray-200 text-[10px] text-gray-500">
+                Total: {tenants.length} Mitra Aktif
+             </div>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="bg-cream-bg min-h-screen font-sans flex">
@@ -336,7 +423,9 @@ export default function SuperAdminPage() {
                 : "text-gray-500 hover:bg-gray-50"
             }`}
           >
-            <Store size={18} /> Active Tenants
+            <div className="flex items-center gap-3">
+                <Store size={18} /> Active Tenants
+            </div>
           </button>
 
           <button
@@ -347,7 +436,9 @@ export default function SuperAdminPage() {
                 : "text-gray-500 hover:bg-gray-50"
             }`}
           >
-            <Map size={18} /> Live Map
+             <div className="flex items-center gap-3">
+                <MapIcon size={18} /> Live Map
+            </div>
           </button>
         </nav>
 
