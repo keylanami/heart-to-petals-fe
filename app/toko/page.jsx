@@ -502,6 +502,11 @@ export default function TenantListPage() {
   };
 
   const filteredProducts = allItems.filter((item) => {
+
+    if (item.type !== "promo" && (item.stock || 0) <= 0) {
+      return false; 
+    }
+
     if (!isSearching) return true;
     const q = searchQuery.toLowerCase().trim();
     const matchTitle = (item.title || "").toLowerCase().includes(q);
