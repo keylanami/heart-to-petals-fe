@@ -1,397 +1,686 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams, useParams } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { toJpeg } from "html-to-image";
-import { FLOWER_LIBRARY } from "../../utils/flower"; 
-import { SHOPS } from "../../utils/shop"; 
-import { Info, Store, ArrowLeft } from "lucide-react";
-import { useToast } from "@/app/context/ToastContext"; 
-
-const CANVAS_COLORS = [
-    { name: "White", hex: "#FFFFFF", class: "bg-white" },
-    { name: "Cream", hex: "#FDFBF7", class: "bg-[#FDFBF7]" },
-    { name: "Soft Pink", hex: "#FFF0F5", class: "bg-[#FFF0F5]" },
-    { name: "Soft Blue", hex: "#F0F8FF", class: "bg-[#F0F8FF]" },
-    { name: "Grid", hex: "grid", class: "bg-gray-50" },
-];
+// Pastikan path import ini benar sesuai struktur foldermu
+import { FLOWER_LIBRARY, MOCK_PACKAGINGS } from "../../utils/flower";
+import { SHOPS } from "../../utils/shop";
+import {
+  Info,
+  Store,
+  ArrowLeft,
+  Gift,
+  Package,
+  Box,
+  UploadCloud,
+  Save,
+  Check,
+  X,
+  Palette,
+} from "lucide-react";
+import { useToast } from "@/app/context/ToastContext";
 
 export default function CustomBuilder() {
   const router = useRouter();
-  const params = useParams(); 
+  const params = useParams();
   const canvasRef = useRef(null);
-  const { showToast } = useToast(); 
+  const { showToast } = useToast();
 
-  // --- SETUP SHOP ID ---
-  const [selectedShopId, setSelectedShopId] = useState(null);
-  
-  // State lainnya
+  const [activeShop, setActiveShop] = useState(null);
   const [selectedFlowers, setSelectedFlowers] = useState([]);
   const [activeCategory, setActiveCategory] = useState("romance");
-  const [bouquetName, setBouquetName] = useState("Untitled Bouquet");
+  const [bouquetName, setBouquetName] = useState("My Untitled Bouquet");
   const [zoom, setZoom] = useState(100);
-  const [canvasBg, setCanvasBg] = useState(CANVAS_COLORS[1]); 
-  
-  const [activeId, setActiveId] = useState(null); 
-  const [editingId, setEditingId] = useState(null); 
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
+  const [activePackagingItem, setActivePackagingItem] = useState(null);
+  const [selectedVariant, setSelectedVariant] = useState(null);
+
+  const [refImage, setRefImage] = useState(null);
+  const [refImagePreview, setRefImagePreview] = useState(null);
   const [currentDraftId, setCurrentDraftId] = useState(null);
 
-  // --- DETEKSI TOKO ---
+
+  const [activeId, setActiveId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+
   useEffect(() => {
-    const editId = localStorage.getItem("editDraftId");
-    
-    if (editId) {
+    if (params?.id) {
+      // A. Set Toko Aktif
+      const shop = SHOPS.find((s) => String(s.id) === String(params.id));
+      if (shop) {
+        if (!shop.can_customize) {
+          showToast("Toko ini tidak menerima custom!", "error");
+          router.push("/toko");
+        } else {
+          setActiveShop(shop);
+        }
+      } else {
+        showToast("Toko tidak ditemukan", "error");
+        router.push("/toko");
+      }
+
+      const editId = localStorage.getItem("editDraftId");
+      if (editId) {
         const drafts = JSON.parse(localStorage.getItem("flowerDrafts") || "[]");
-        const draftToLoad = drafts.find(d => String(d.id) === String(editId));
-        
-        if (draftToLoad) {
-            setSelectedFlowers(draftToLoad.items);
-            setBouquetName(draftToLoad.name);
-            if (draftToLoad.canvasBg) setCanvasBg(draftToLoad.canvasBg);
-            setCurrentDraftId(draftToLoad.id);
-            
-            if (draftToLoad.shop?.id) {
-                setSelectedShopId(draftToLoad.shop.id);
+        const draft = drafts.find((d) => String(d.id) === String(editId));
+
+        if (draft) {
+          setCurrentDraftId(draft.id);
+          setBouquetName(draft.name);
+          setSelectedFlowers(draft.items || []);
+          if (draft.refImagePreview) setRefImagePreview(draft.refImagePreview);
+
+          if (draft.packaging && draft.packaging.id) {
+            const savedPkg = MOCK_PACKAGINGS.find(
+              (p) => p.id === draft.packaging.id
+            );
+            if (savedPkg) {
+              setActivePackagingItem(savedPkg);
+              setSelectedVariant(draft.packaging.variant);
             }
+          }
         }
         localStorage.removeItem("editDraftId");
-
-    } else {
-        if (params?.id) {
-            setSelectedShopId(params.id); 
-        } else {
-            setSelectedShopId(SHOPS[0].id);
-        }
+      }
     }
-  }, [params]);
+  }, [params, router, showToast]);
 
-  const activeShop = SHOPS.find(s => String(s.id) === String(selectedShopId)) || SHOPS[0];
+  const getCanvasBackground = () => {
+    if (selectedVariant && activePackagingItem?.type !== "ribbon") {
+      return selectedVariant.hex;
+    }
+    return "#F3F4F6";
+  };
 
-  const filteredLibrary = FLOWER_LIBRARY.filter(f => 
-    f.category === activeCategory && 
-    String(f.shop_id) === String(activeShop.id) 
-  );
+  const filteredLibrary = activeShop
+    ? FLOWER_LIBRARY.filter(
+        (f) =>
+          f.category === activeCategory &&
+          String(f.shop_id) === String(activeShop.id)
+      )
+    : [];
 
-  const totalPrice = selectedFlowers.reduce((sum, item) => sum + item.price, 0);
-  const editingFlower = selectedFlowers.find(f => f.uid === editingId);
+  const shopPackagings = activeShop
+    ? MOCK_PACKAGINGS.filter((p) => String(p.shop_id) === String(activeShop.id))
+    : [];
 
+  const totalPrice =
+    selectedFlowers.reduce((sum, item) => sum + item.price, 0) +
+    (activePackagingItem ? activePackagingItem.price : 0);
+  const editingFlower = selectedFlowers.find((f) => f.uid === editingId);
 
-  // --- ACTIONS ---
   const addFlower = (flower) => {
     const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newFlower = {
       ...flower,
-      uid: uniqueId, 
-      x: 0, y: 0,
-      rotation: (Math.random() * 40) - 20,
-      scale: 1, 
+      uid: uniqueId,
+      x: Math.random() * 60 - 30,
+      y: Math.random() * 60 - 30,
+      rotation: Math.random() * 40 - 20,
+      scale: 1,
     };
-    setSelectedFlowers([...selectedFlowers, newFlower]); 
-    setActiveId(uniqueId); 
+    setSelectedFlowers([...selectedFlowers, newFlower]);
+    setActiveId(uniqueId);
   };
 
   const removeFlower = (uid) => {
-    setSelectedFlowers(prev => prev.filter((item) => item.uid !== uid));
+    setSelectedFlowers((prev) => prev.filter((item) => item.uid !== uid));
     if (activeId === uid) setActiveId(null);
     if (editingId === uid) setEditingId(null);
   };
 
   const handleMouseDown = (e, uid, x, y) => {
     e.stopPropagation();
-    setActiveId(uid);    
-    setIsDragging(true); 
+    setActiveId(uid);
+    setIsDragging(true);
     setDragOffset({ x: e.clientX - x, y: e.clientY - y });
   };
 
   const handleMouseMove = (e) => {
     if (!isDragging || !activeId) return;
-    setSelectedFlowers(prevFlowers => prevFlowers.map(flower => {
-      if (flower.uid === activeId) {
-        return { ...flower, x: e.clientX - dragOffset.x, y: e.clientY - dragOffset.y };
-      }
-      return flower;
-    }));
+    setSelectedFlowers((prev) =>
+      prev.map((flower) => {
+        if (flower.uid === activeId) {
+          return {
+            ...flower,
+            x: e.clientX - dragOffset.x,
+            y: e.clientY - dragOffset.y,
+          };
+        }
+        return flower;
+      })
+    );
   };
 
   const handleMouseUp = () => setIsDragging(false);
-
   const handleDoubleClick = (e, uid) => {
     e.stopPropagation();
-    setEditingId(uid); 
+    setEditingId(uid);
   };
 
   const updateFlowerProps = (key, value) => {
-    setSelectedFlowers(prevFlowers => prevFlowers.map(flower => {
-      if (flower.uid === editingId) {
-        return { ...flower, [key]: parseFloat(value) };
-      }
-      return flower;
-    }));
+    setSelectedFlowers((prev) =>
+      prev.map((flower) =>
+        flower.uid === editingId
+          ? { ...flower, [key]: parseFloat(value) }
+          : flower
+      )
+    );
   };
 
-  const bringToFront = () => {
+  const layerAction = (direction) => {
     if (!editingId) return;
-    const index = selectedFlowers.findIndex(f => f.uid === editingId);
-    if (index === -1 || index === selectedFlowers.length - 1) return; 
+    const idx = selectedFlowers.findIndex((f) => f.uid === editingId);
+    if (
+      (direction === "up" && idx === selectedFlowers.length - 1) ||
+      (direction === "down" && idx === 0)
+    )
+      return;
     const newArr = [...selectedFlowers];
-    const [item] = newArr.splice(index, 1);
-    newArr.push(item); 
+    const item = newArr.splice(idx, 1)[0];
+    newArr.splice(direction === "up" ? idx + 1 : idx - 1, 0, item);
     setSelectedFlowers(newArr);
   };
 
-  const sendToBack = () => {
-    if (!editingId) return;
-    const index = selectedFlowers.findIndex(f => f.uid === editingId);
-    if (index === -1 || index === 0) return; 
-    const newArr = [...selectedFlowers];
-    const [item] = newArr.splice(index, 1);
-    newArr.unshift(item); 
-    setSelectedFlowers(newArr);
-  };
-
-  const handleSaveDraft = async () => {
-    if (selectedFlowers.length === 0) { 
-        showToast("Kanvas masih kosong! Tambahkan bunga dulu.", "error"); 
-        return; 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024)
+        return showToast("File terlalu besar (Max 2MB)", "error");
+      setRefImage(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setRefImagePreview(reader.result);
+      reader.readAsDataURL(file);
     }
-    
+  };
+
+  const handleSave = async (isCheckout = false) => {
+    if (selectedFlowers.length === 0)
+      return showToast("Canvas masih kosong!", "error");
+
     setActiveId(null);
     setEditingId(null);
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((r) => setTimeout(r, 200));
 
-    let previewImage = null;
+    let designImage = null;
     if (canvasRef.current) {
-        try {
-            previewImage = await toJpeg(canvasRef.current, {
-                quality: 0.6, 
-                backgroundColor: canvasBg.hex === 'grid' ? '#ffffff' : canvasBg.hex, 
-                style: { transform: 'scale(1)', width: '500px', height: '600px', margin: '0' }
-            });
-        } catch (err) { console.error(err); }
+      try {
+        designImage = await toJpeg(canvasRef.current, {
+          quality: 0.8,
+          cacheBust: true,
+          backgroundColor: getCanvasBackground(),
+          width: 500,
+          height: 600,
+          style: {
+            transform: "scale(1)",
+            transformOrigin: "top left",
+            width: "500px",
+            height: "600px",
+            margin: "0",
+          },
+        });
+      } catch (err) {
+        console.error("Snapshot error:", err);
+      }
     }
 
-    const draftPayload = {
+
+    const payload = {
+      id: currentDraftId || Date.now(),
       name: bouquetName,
       date: new Date().toLocaleDateString("id-ID"),
       items: selectedFlowers,
       totalPrice: totalPrice,
-      previewImage: previewImage, 
-      canvasBg: canvasBg,
-      shop: activeShop 
+      previewImage: designImage, 
+      designImage: designImage,
+      refImagePreview: refImagePreview,
+      packaging: {
+        id: activePackagingItem?.id,
+        name: activePackagingItem?.name,
+        price: activePackagingItem?.price,
+        variant: selectedVariant,
+      },
+      shop: activeShop,
+      status: isCheckout ? "in_cart" : "draft",
     };
 
     try {
-        const existingDrafts = JSON.parse(localStorage.getItem("flowerDrafts") || "[]");
+      const existingDrafts = JSON.parse(
+        localStorage.getItem("flowerDrafts") || "[]"
+      );
+      let updatedDrafts;
+      if (currentDraftId) {
+        updatedDrafts = existingDrafts.map((d) =>
+          d.id === currentDraftId ? payload : d
+        );
+      } else {
+        updatedDrafts = [payload, ...existingDrafts];
+      }
+      localStorage.setItem("flowerDrafts", JSON.stringify(updatedDrafts));
 
-        if (currentDraftId) {
-            const updatedDrafts = existingDrafts.map(d => d.id === currentDraftId ? { ...d, ...draftPayload } : d);
-            localStorage.setItem("flowerDrafts", JSON.stringify(updatedDrafts));
-        } else {
-            const newDraft = { id: Date.now(), ...draftPayload };
-            localStorage.setItem("flowerDrafts", JSON.stringify([newDraft, ...existingDrafts]));
-        }
+      if (isCheckout) {
+        const cartItem = {
+          ...payload,
+          type: "custom_bouquet",
+          qty: 1,
+          image: designImage || "/assets/bouquet/placeholder.png",
+          price: totalPrice,
+        };
 
-        showToast("Draft berhasil disimpan!", "success");
-        router.push(`/custom/${activeShop.id}/drafts`);
-        
+        const currentCart = JSON.parse(localStorage.getItem("myCart") || "[]");
+        localStorage.setItem(
+          "myCart",
+          JSON.stringify([...currentCart, cartItem])
+        );
+
+        showToast("Berhasil masuk keranjang!", "success");
+        router.push("/cart");
+      } else {
+        showToast("Draft tersimpan!", "success");
+        router.push(`/drafts`);
+      }
     } catch (e) {
-        showToast("Gagal menyimpan draft!", "error");
+      console.error(e);
+      showToast("Gagal menyimpan.", "error");
     }
   };
 
+  if (!activeShop)
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-400">
+        Loading Studio...
+      </div>
+    );
+
   return (
-    <div 
-        className="flex h-screen bg-[#F3F4F6] overflow-hidden font-sans"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
+    <div
+      className="flex h-screen bg-[#F3F4F6] overflow-hidden font-sans"
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
     >
-    
-      <aside className="w-80 bg-white border-r border-gray-200 flex flex-col z-20 shadow-xl">
+      <aside className="w-96 bg-white border-r border-gray-200 flex flex-col z-20 shadow-xl overflow-y-auto">
         <div className="p-6 border-b border-gray-100">
-          <Link href={`/shop/${activeShop.id}`} className="text-gray-400 text-sm hover:text-dark-green mb-2 flex items-center gap-1">
-             <ArrowLeft size={14}/> Back to Shop
+          <Link
+            href={`/shop/${activeShop.id}`}
+            className="text-gray-400 text-sm hover:text-dark-green mb-4 flex items-center gap-1"
+          >
+            <ArrowLeft size={14} /> Back to Shop
           </Link>
-          <h2 className="text-2xl font-serif font-bold text-dark-green">Flower Library</h2>
-          
-          <div className="mt-3 flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-             <Store size={16} className="text-sage-green" />
-             <div className="flex flex-col">
-                <span className="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Vendor</span>
-                <span className="text-sm font-bold text-dark-green leading-none">{activeShop.name}</span>
-             </div>
+          <h2 className="text-xl font-serif font-bold text-dark-green mb-1">
+            {activeShop.name}
+          </h2>
+          <p className="text-xs text-gray-400">Custom Studio</p>
+        </div>
+
+        <div className="flex-1 p-6 space-y-8 overflow-y-auto custom-scrollbar">
+          <div>
+            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3 block">
+              1. Pilih Packaging
+            </label>
+
+            <div className="space-y-3 mb-4">
+              {shopPackagings.map((pkg) => (
+                <div
+                  key={pkg.id}
+                  onClick={() => {
+                    setActivePackagingItem(pkg);
+                    setSelectedVariant(null);
+                  }}
+                  className={`p-3 rounded-xl border-2 cursor-pointer transition-all flex justify-between items-center ${
+                    activePackagingItem?.id === pkg.id
+                      ? "border-sage-green bg-sage-green/10"
+                      : "border-gray-100 hover:border-gray-300"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        activePackagingItem?.id === pkg.id
+                          ? "bg-sage-green text-white"
+                          : "bg-gray-100 text-gray-400"
+                      }`}
+                    >
+                      {pkg.type === "box" ? (
+                        <Box size={16} />
+                      ) : (
+                        <Gift size={16} />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-dark-green">
+                        {pkg.name}
+                      </p>
+                      <p className="text-[10px] text-gray-500">
+                        Rp {pkg.price.toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  {activePackagingItem?.id === pkg.id && (
+                    <Check size={16} className="text-sage-green" />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {activePackagingItem && (
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 animate-in slide-in-from-top-2">
+                <span className="text-xs font-bold text-dark-green mb-3 block">
+                  Pilih Warna{" "}
+                  {activePackagingItem.type === "box" ? "Box" : "Kertas"}:
+                </span>
+                <div className="grid grid-cols-4 gap-2">
+                  {activePackagingItem.variants.map((variant, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedVariant(variant)}
+                      className={`relative flex flex-col items-center gap-1 group`}
+                      title={variant.name}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-full shadow-sm border-2 transition-transform hover:scale-110 ${
+                          selectedVariant?.hex === variant.hex
+                            ? "border-dark-green ring-2 ring-sage-green ring-offset-1"
+                            : "border-gray-200"
+                        }`}
+                        style={{ backgroundColor: variant.hex }}
+                      ></div>
+                      <span className="text-[9px] text-gray-500 truncate w-full text-center">
+                        {variant.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3 block">
+              2. Pilih Bunga (Stock)
+            </label>
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-hide">
+              {["romance", "gratitude", "regret", "grief"].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-3 py-1 text-[10px] font-bold uppercase rounded-full whitespace-nowrap transition-all ${
+                    activeCategory === cat
+                      ? "bg-dark-green text-white"
+                      : "bg-gray-100 text-gray-400"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1 custom-scrollbar">
+              {filteredLibrary.length > 0 ? (
+                filteredLibrary.map((flower) => (
+                  <div
+                    key={flower.id}
+                    onClick={() => addFlower(flower)}
+                    className="group cursor-pointer bg-white p-2 rounded-xl border border-gray-100 hover:border-sage-green transition-all hover:shadow-sm"
+                  >
+                    <div className="aspect-square bg-gray-50 rounded-lg mb-2 p-2">
+                      <img
+                        src={flower.image}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+                    <h4 className="font-bold text-dark-green text-xs truncate">
+                      {flower.name}
+                    </h4>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-[10px] text-gray-500">
+                        {flower.price.toLocaleString()}
+                      </span>
+                      <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center text-dark-green group-hover:bg-dark-green group-hover:text-white transition">
+                        +
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="col-span-2 text-center py-4 text-xs text-gray-400">
+                  Stok Kosong
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] uppercase font-bold text-gray-400 tracking-wider mb-3 block">
+              3. Referensi (Opsional)
+            </label>
+            <div className="relative w-full h-24 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center text-gray-400 hover:border-sage-green cursor-pointer overflow-hidden">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="absolute inset-0 opacity-0 cursor-pointer z-10"
+              />
+              {refImagePreview ? (
+                <img
+                  src={refImagePreview}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="flex flex-col items-center">
+                  <UploadCloud size={20} className="mb-1" />
+                  <span className="text-[10px] font-bold">Upload Foto</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        
-        <div className="flex overflow-x-auto px-6 py-3 gap-2 border-b border-gray-100 scrollbar-hide">
-          {["romance", "gratitude", "regret", "peace"].map((cat) => (
-            <button key={cat} onClick={() => setActiveCategory(cat)} className={`px-3 py-1 text-xs font-bold uppercase rounded-full whitespace-nowrap transition-all ${activeCategory === cat ? "bg-dark-green text-white" : "bg-gray-100 text-gray-400"}`}>{cat}</button>
-          ))}
-        </div>
 
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {filteredLibrary.length > 0 ? filteredLibrary.map((flower) => (
-            <div key={flower.id} onClick={() => addFlower(flower)} className="flex items-center gap-3 p-2 rounded-xl hover:bg-cream-bg cursor-pointer border border-transparent hover:border-sage-green group relative">
-              <div className="w-14 h-14 bg-gray-50 rounded-lg overflow-hidden border border-gray-100"><img src={flower.image} className="w-full h-full object-cover p-1" /></div>
-              <div className="flex-1">
-                <h3 className="font-bold text-dark-green text-sm">{flower.name}</h3>
-                <p className="text-xs text-gray-500 mt-0.5">{flower.price.toLocaleString()} <span className="text-[10px] bg-gray-100 px-1 rounded ml-1">{flower.unit}</span></p>
-              </div>
-              <button className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-dark-green group-hover:bg-dark-green group-hover:text-white transition text-xs">+</button>
-            </div>
-          )) : (
-            <div className="text-center py-10 flex flex-col items-center justify-center text-gray-400 text-xs gap-2">
-                <span className="text-2xl">🥀</span>
-                <p>Stok bunga kategori ini<br/>kosong di {activeShop.name}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="p-6 border-t bg-white">
-            <div className="flex justify-between items-center mb-4">
-                <span className="text-sm text-gray-500">Estimasi</span>
-                <span className="text-lg font-bold text-dark-green">{totalPrice.toLocaleString('id-ID', {style: 'currency', currency: 'IDR'})}</span>
-            </div>
-            <button onClick={handleSaveDraft} className="w-full py-3 bg-dark-green text-white rounded-full font-bold shadow-lg hover:bg-sage-green transition">
-                {currentDraftId ? "Update Draft" : "Save as New Draft"}
-            </button>
+        <div className="p-6 border-t bg-white z-20">
+          <div className="flex justify-between items-center mb-4">
+            <span className="text-sm text-gray-500">Estimasi</span>
+            <span className="text-xl font-bold text-dark-green">
+              {totalPrice.toLocaleString("id-ID", {
+                style: "currency",
+                currency: "IDR",
+              })}
+            </span>
+          </div>
+          <button
+            onClick={() => handleSave(false)}
+            className="flex-1 py-3 px-30 border bg-dark-green border-dark-green text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-gray-50"
+          >
+            <Save size={16} /> Save Draft
+          </button>
         </div>
       </aside>
 
-
-      <main className="flex-1 relative flex flex-col bg-white">
-      
+      <main className="flex-1 relative flex flex-col bg-[#F3F4F6]">
         <header className="h-16 bg-white border-b border-gray-200 flex justify-between items-center px-6 z-10 shadow-sm">
-            <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">Name:</span>
-                <input type="text" value={bouquetName} onChange={(e) => setBouquetName(e.target.value)} className="font-bold text-dark-green focus:outline-none border-b border-transparent focus:border-sage-green w-48" />
-            </div>
+          <input
+            type="text"
+            value={bouquetName}
+            onChange={(e) => setBouquetName(e.target.value)}
+            className="font-serif font-bold text-xl text-dark-green focus:outline-none bg-transparent"
+            placeholder="Namai Buketmu..."
+          />
 
-            <div className="flex items-center gap-3 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
-                <span className="text-[10px] uppercase font-bold text-gray-400">Canvas:</span>
-                <div className="flex gap-2">
-                    {CANVAS_COLORS.map((color) => (
-                        <button 
-                            key={color.name} 
-                            onClick={() => setCanvasBg(color)}
-                            title={color.name}
-                            className={`w-5 h-5 rounded-full border border-gray-300 shadow-sm transition-transform hover:scale-110 ${color.hex === 'grid' ? 'bg-gray-100' : ''} ${canvasBg.name === color.name ? 'ring-2 ring-dark-green ring-offset-1' : ''}`}
-                            style={color.hex !== 'grid' ? { backgroundColor: color.hex } : {}}
-                        >
-                            {color.hex === 'grid' && <span className="block text-[8px] text-center text-gray-400">#</span>}
-                        </button>
-                    ))}
+          <div className="flex items-center gap-4">
+            {/* Visual Indicator of Selected Background */}
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 rounded-lg border border-gray-200">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">
+                Packaging:
+              </span>
+              {selectedVariant ? (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="w-4 h-4 rounded-full border border-gray-300"
+                    style={{ backgroundColor: selectedVariant.hex }}
+                  ></div>
+                  <span className="text-xs font-bold text-dark-green">
+                    {selectedVariant.name}
+                  </span>
                 </div>
+              ) : (
+                <span className="text-xs text-gray-400 italic">
+                  Belum dipilih
+                </span>
+              )}
             </div>
 
-            <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
-                <button onClick={() => setZoom(Math.max(50, zoom - 10))} className="w-6 h-6 flex items-center justify-center font-bold text-gray-500 hover:text-dark-green">-</button>
-                <span className="text-xs font-bold w-8 text-center text-dark-green">{zoom}%</span>
-                <button onClick={() => setZoom(Math.min(200, zoom + 10))} className="w-6 h-6 flex items-center justify-center font-bold text-gray-500 hover:text-dark-green">+</button>
+            <div className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 py-1 border border-gray-200">
+              <button
+                onClick={() => setZoom(Math.max(50, zoom - 10))}
+                className="w-6 h-6 flex items-center justify-center font-bold text-gray-500"
+              >
+                -
+              </button>
+              <span className="text-xs font-bold w-8 text-center text-dark-green">
+                {zoom}%
+              </span>
+              <button
+                onClick={() => setZoom(Math.min(200, zoom + 10))}
+                className="w-6 h-6 flex items-center justify-center font-bold text-gray-500"
+              >
+                +
+              </button>
             </div>
+          </div>
         </header>
 
-    
-        <div className="flex-1 relative overflow-hidden flex items-center justify-center bg-[#F3F4F6]">
-            
-            <div className="absolute top-6 right-6 bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white/50 z-10 w-56 animate-in fade-in zoom-in duration-500 pointer-events-none select-none">
-                <h4 className="font-bold text-dark-green mb-2 flex items-center gap-2 text-xs uppercase tracking-widest">
-                    <Info size={14} /> Cara Edit
-                </h4>
-                <ul className="space-y-1.5 list-disc pl-4 text-[10px] text-gray-500 leading-relaxed font-medium">
-                    <li><span className="font-bold text-dark-green">Drag</span> bunga untuk memindahkan posisi.</li>
-                    <li><span className="font-bold text-dark-green">Double Click</span> bunga untuk membuka menu edit (Ukuran, Rotasi, Layer).</li>
-                    <li>Klik area kosong untuk <span className="font-bold text-dark-green">Unselect</span>.</li>
-                </ul>
-            </div>
+        <div className="flex-1 relative overflow-hidden flex items-center justify-center">
+          <div
+            className="absolute inset-0 z-0"
+            onClick={() => {
+              setActiveId(null);
+              setEditingId(null);
+            }}
+          ></div>
 
-            <div className="absolute inset-0 z-0" onClick={() => { setActiveId(null); setEditingId(null); }}></div>
-
-            <div 
-                ref={canvasRef}
-                id="canvas-root"
-                className={`relative w-[500px] h-[600px] flex items-center justify-center shadow-2xl transition-colors duration-300 ${canvasBg.class}`}
-                style={{ 
-                    transform: `scale(${zoom / 100})`, 
-                    backgroundColor: canvasBg.hex !== 'grid' ? canvasBg.hex : undefined 
+          <div
+            ref={canvasRef}
+            id="canvas-root"
+            className={`relative w-[500px] h-[600px] shadow-2xl transition-colors duration-500 ease-in-out`}
+            style={{
+              transform: `scale(${zoom / 100})`,
+              backgroundColor: getCanvasBackground(),
+            }}
+          >
+            {selectedFlowers.map((item, index) => (
+              <div
+                key={item.uid}
+                onMouseDown={(e) =>
+                  handleMouseDown(e, item.uid, item.x, item.y)
+                }
+                onDoubleClick={(e) => handleDoubleClick(e, item.uid)}
+                className="absolute cursor-move group select-none flex justify-center items-center"
+                style={{
+                  transform: `translate(${item.x}px, ${item.y}px) rotate(${item.rotation}deg) scale(${item.scale})`,
+                  zIndex: index + 10,
+                  left: "50%",
+                  top: "50%",
+                  marginLeft: "-5rem",
+                  marginTop: "-5rem",
                 }}
-            >
-                {canvasBg.hex === 'grid' && <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#000 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>}
-                
-                {selectedFlowers.length > 0 && <div className="absolute bottom-10 w-16 h-48 bg-gradient-to-t from-green-900/20 to-transparent blur-2xl rounded-full z-0 pointer-events-none"></div>}
-
-                {selectedFlowers.map((item, index) => (
-                    <div 
-                        key={item.uid}
-                        onMouseDown={(e) => handleMouseDown(e, item.uid, item.x, item.y)}
-                        onDoubleClick={(e) => handleDoubleClick(e, item.uid)}
-                        className="absolute cursor-move group select-none"
-                        style={{
-                            transform: `translate(${item.x}px, ${item.y}px) rotate(${item.rotation}deg) scale(${item.scale})`,
-                            zIndex: index + 10, 
-                            transformOrigin: 'center center'
-                        }}
-                    >
-                        <img 
-                            src={item.image} 
-                            className={`w-40 h-40 object-contain drop-shadow-xl pointer-events-none transition-filter duration-200 ${activeId === item.uid ? 'brightness-110 drop-shadow-2xl' : ''}`}
-                        />
-                        {activeId === item.uid && <div className="absolute -inset-2 border-2 border-dashed border-sage-green rounded-lg opacity-60 pointer-events-none"></div>}
-                        
-                        <div onClick={(e) => { e.stopPropagation(); removeFlower(item.uid); }} className="absolute -top-3 -right-3 bg-white text-red-500 border border-red-100 w-6 h-6 rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 shadow-md cursor-pointer hover:bg-red-50 z-[1000]">✕</div>
-                    </div>
-                ))}
-                
-                {selectedFlowers.length === 0 && (
-                    <div className="text-center text-gray-300 select-none pointer-events-none">
-                        <p className="text-4xl mb-2">🌸</p>
-                        <p className="font-serif italic">Canvas Kosong</p>
-                    </div>
+              >
+                <img
+                  src={item.image}
+                  crossOrigin="anonymous"
+                  className={`w-40 h-40 object-contain drop-shadow-xl pointer-events-none transition-filter duration-200 ${
+                    activeId === item.uid
+                      ? "brightness-110 drop-shadow-2xl"
+                      : ""
+                  }`}
+                />
+                {activeId === item.uid && (
+                  <div className="absolute inset-0 border-2 border-dashed border-sage-green rounded-lg opacity-60 pointer-events-none"></div>
                 )}
-            </div>
-
-          
-            {editingId && editingFlower && (
-                <div className="absolute bottom-6 right-6 bg-white p-5 rounded-2xl shadow-2xl border border-gray-100 w-72 z-[1000] animate-in slide-in-from-bottom-5">
-                    
-                    <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
-                        <div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase">Editing</span>
-                            <h3 className="font-bold text-dark-green text-sm truncate w-40">{editingFlower.name}</h3>
-                        </div>
-                        <button onClick={() => setEditingId(null)} className="text-gray-400 hover:text-dark-green bg-gray-100 w-6 h-6 rounded-full flex items-center justify-center">✕</button>
-                    </div>
-                    
-                    <div className="space-y-5">
-                        <div>
-                            <span className="text-[10px] font-bold text-gray-400 uppercase mb-2 block">Layer Order</span>
-                            <div className="flex gap-2">
-                                <button onClick={sendToBack} className="flex-1 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 hover:text-dark-green transition flex items-center justify-center gap-1">
-                                    <span>↓</span> To Back
-                                </button>
-                                <button onClick={bringToFront} className="flex-1 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-600 hover:bg-gray-100 hover:text-dark-green transition flex items-center justify-center gap-1">
-                                    To Front <span>↑</span>
-                                </button>
-                            </div>
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-xs mb-1">
-                                <span className="text-gray-500 font-medium">Size</span>
-                                <span className="font-bold text-dark-green">{Math.round(editingFlower.scale * 100)}%</span>
-                            </div>
-                            <input type="range" min="0.5" max="2" step="0.1" value={editingFlower.scale} onChange={(e) => updateFlowerProps('scale', e.target.value)} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-dark-green" />
-                        </div>
-                        <div>
-                            <div className="flex justify-between text-xs mb-1">
-                                <span className="text-gray-500 font-medium">Rotation</span>
-                                <span className="font-bold text-dark-green">{editingFlower.rotation}°</span>
-                            </div>
-                            <input type="range" min="-180" max="180" step="5" value={editingFlower.rotation} onChange={(e) => updateFlowerProps('rotation', e.target.value)} className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-dark-green" />
-                        </div>
-                    </div>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    removeFlower(item.uid);
+                  }}
+                  className="absolute -top-2 -right-2 bg-white text-red-500 border border-red-100 w-5 h-5 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 shadow-md cursor-pointer hover:bg-red-50 z-[1000]"
+                >
+                  ✕
                 </div>
+              </div>
+            ))}
+
+            {selectedFlowers.length === 0 && (
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center text-gray-300 select-none pointer-events-none z-10">
+                <p className="text-4xl mb-2 opacity-50">🌸</p>
+                <p className="font-serif italic text-sm">Canvas Bersih</p>
+              </div>
             )}
+          </div>
+
+          {/* EDITING POPUP */}
+          {editingId && editingFlower && (
+            <div className="absolute bottom-6 right-6 bg-white p-4 rounded-2xl shadow-2xl border border-gray-100 w-64 z-[1000] animate-in slide-in-from-bottom-5">
+              <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-100">
+                <h3 className="font-bold text-dark-green text-xs truncate w-40">
+                  {editingFlower.name}
+                </h3>
+                <button
+                  onClick={() => setEditingId(null)}
+                  className="text-gray-400 hover:text-dark-green"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => layerAction("down")}
+                    className="flex-1 py-1 bg-gray-50 text-[10px] font-bold rounded hover:bg-gray-100"
+                  >
+                    To Back
+                  </button>
+                  <button
+                    onClick={() => layerAction("up")}
+                    className="flex-1 py-1 bg-gray-50 text-[10px] font-bold rounded hover:bg-gray-100"
+                  >
+                    To Front
+                  </button>
+                </div>
+                <div>
+                  <div className="flex justify-between text-[10px] mb-1 text-gray-500">
+                    <span>Size</span>
+                    <span>{Math.round(editingFlower.scale * 100)}%</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="2"
+                    step="0.1"
+                    value={editingFlower.scale}
+                    onChange={(e) => updateFlowerProps("scale", e.target.value)}
+                    className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-dark-green"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[10px] mb-1 text-gray-500">
+                    <span>Rotate</span>
+                    <span>{editingFlower.rotation}°</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="-180"
+                    max="180"
+                    step="5"
+                    value={editingFlower.rotation}
+                    onChange={(e) =>
+                      updateFlowerProps("rotation", e.target.value)
+                    }
+                    className="w-full h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-dark-green"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </main>
     </div>

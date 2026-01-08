@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
@@ -8,9 +8,9 @@ const ToastContext = createContext();
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
 
-
   const showToast = (message, type = "success") => {
-    const id = Date.now();
+    const id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
+    
     setToasts((prev) => [...prev, { id, message, type }]);
 
     setTimeout(() => {
@@ -36,7 +36,6 @@ export function ToastProvider({ children }) {
     </ToastContext.Provider>
   );
 }
-
 
 const ToastItem = ({ message, type, onClose }) => {
   const styles = {
@@ -77,7 +76,7 @@ const ToastItem = ({ message, type, onClose }) => {
         ${currentStyle.bg} ${currentStyle.border}
       `}
     >
-     
+      
         {isDark && (
             <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 rounded-full blur-xl -mr-8 -mt-8"></div>
         )}

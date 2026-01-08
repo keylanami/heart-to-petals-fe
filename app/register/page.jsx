@@ -36,16 +36,26 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (formData.password !== formData.confirmPassword) {
       setError("Password tidak cocok!");
       return;
     }
-    
+
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    const success = register(formData.name, formData.email, formData.password);
-    if (!success) setIsLoading(false);
+
+    const success = await register(
+      formData.name,
+      formData.email,
+      formData.password
+    );
+
+    if (!success) {
+      setError("Registrasi gagal");
+      setIsLoading(false);
+    }
   };
+
 
   return (
     <div className="min-h-screen bg-[#F3F4F6] relative flex items-center justify-center p-6 font-sans">

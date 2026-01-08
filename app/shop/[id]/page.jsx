@@ -11,6 +11,10 @@ import {
   Star,
   ArrowLeft,
   Store,
+  Slash,
+  Navigation,
+  Phone,
+  ExternalLink
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -18,7 +22,8 @@ import Link from "next/link";
 import { allItems, SHOPS } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 import { useToast } from "@/app/context/ToastContext";
-
+import { useAuth } from "@/app/context/AuthContext";
+import { Map, MapMarker, MarkerContent } from "@/components/ui/map"; 
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -29,16 +34,33 @@ const itemVariants = {
   show: { opacity: 1, scale: 1 },
 };
 
-
-
 const BentoCard = ({ product, index, className }) => {
   const isDark = product.theme === "dark";
-  const { showToast } = useToast();;
+  const { showToast } = useToast();
   const { addToCart } = useCart();
+  const { user } = useAuth();
+  const router = useRouter();
+
+  const stock = product.stock || 0;
+  const isOutOfStock = stock <= 0;
 
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isOutOfStock) return; 
+
+    if (!user) {
+      showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+      router.push("/login");
+      return;
+    }
+
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return;
+    }
+
     addToCart(product, 1);
     showToast(`${product.title} masuk keranjang!`);
   };
@@ -50,17 +72,22 @@ const BentoCard = ({ product, index, className }) => {
       initial="hidden"
       animate="show"
       exit="hidden"
-      className={`group relative overflow-hidden cursor-pointer h-full shadow-sm hover:shadow-2xl transition-shadow duration-500 ${className}`}
+      className={`group relative overflow-hidden h-full shadow-sm transition-all duration-500 
+        ${className} 
+        ${isOutOfStock ? "grayscale opacity-60 cursor-not-allowed" : "hover:shadow-2xl cursor-pointer"}
+      `}
     >
-      <Link href={`/product/${product.id}`} className="absolute inset-0 z-10" />
+      {!isOutOfStock && <Link href={`/product/${product.id}`} className="absolute inset-0 z-10" />}
 
       <div className="absolute inset-0 overflow-hidden">
         <img
           src={product.image}
           alt={product.title}
-          className="w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+          className={`w-full h-full object-cover transition-transform duration-700 ease-in-out 
+            ${isOutOfStock ? "" : "group-hover:scale-110"}`}
         />
       </div>
+      
       <div
         className={`absolute inset-0 bg-gradient-to-t ${
           isDark
@@ -68,10 +95,17 @@ const BentoCard = ({ product, index, className }) => {
             : "from-[#8C8681] via-[#8C8681]/20"
         } to-transparent opacity-60 group-hover:opacity-80 transition-opacity duration-500`}
       ></div>
+
       <div className="absolute top-5 left-5 z-20 pointer-events-none">
-        <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
-          {product.tag}
-        </span>
+        {isOutOfStock ? (
+            <span className="bg-gray-800 text-white border border-gray-600 text-[10px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full shadow-sm flex items-center gap-1">
+                <Slash size={10} /> Stok Habis
+            </span>
+        ) : (
+            <span className="bg-white/20 backdrop-blur-md border border-white/30 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full shadow-sm">
+                {product.tag}
+            </span>
+        )}
       </div>
 
       <div
@@ -79,7 +113,7 @@ const BentoCard = ({ product, index, className }) => {
           isDark ? "text-cream-bg" : "text-white"
         }`}
       >
-        <div className="transform transition-transform duration-500 group-hover:-translate-y-2">
+        <div className={`transform transition-transform duration-500 ${!isOutOfStock && "group-hover:-translate-y-2"}`}>
           <h3 className="text-2xl md:text-3xl font-serif font-bold leading-tight mb-1 drop-shadow-lg">
             {product.title}
           </h3>
@@ -91,41 +125,65 @@ const BentoCard = ({ product, index, className }) => {
             }).format(product.price)}
           </p>
         </div>
-        <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
-          <div className="overflow-hidden">
-            <p className="text-sm opacity-90 line-clamp-2 mb-5 leading-relaxed font-light">
-              {product.desc}
-            </p>
-            <div className="flex gap-3 pb-1 pointer-events-auto">
-              <button
-                onClick={handleAddToCart}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md border transition-all active:scale-95 ${
-                  isDark
-                    ? "bg-cream-bg/90 text-dark-green border-cream-bg hover:bg-white"
-                    : "bg-dark-green/80 text-white border-dark-green/50 hover:bg-dark-green"
-                }`}
-              >
-                <ShoppingBag size={14} /> Add
-              </button>
-              <button
-                className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
-                  isDark
-                    ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
-                    : "bg-white/20 border border-white/50 text-white hover:bg-white hover:text-dark-green"
-                }`}
-              >
-                Buy Now
-              </button>
+
+        {!isOutOfStock && (
+            <div className="grid grid-rows-[0fr] group-hover:grid-rows-[1fr] transition-[grid-template-rows] duration-500 ease-out">
+            <div className="overflow-hidden">
+                <p className="text-sm opacity-90 line-clamp-2 mb-5 leading-relaxed font-light">
+                {product.desc}
+                </p>
+                <div className="flex gap-3 pb-1 pointer-events-auto">
+                <button
+                    onClick={handleAddToCart}
+                    className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md border transition-all active:scale-95 ${
+                    isDark
+                        ? "bg-cream-bg/90 text-dark-green border-cream-bg hover:bg-white"
+                        : "bg-dark-green/80 text-white border-dark-green/50 hover:bg-dark-green"
+                    }`}
+                >
+                    <ShoppingBag size={14} /> Add
+                </button>
+                <button
+                    onClick={handleAddToCart}
+                    className={`flex-1 py-3 rounded-full text-xs font-bold uppercase tracking-wide transition-all active:scale-95 ${
+                    isDark
+                        ? "bg-transparent border border-cream-bg/50 text-cream-bg hover:bg-cream-bg hover:text-dark-green"
+                        : "bg-white/20 border border-white/50 text-white hover:bg-white hover:text-dark-green"
+                    }`}
+                >
+                    Buy Now
+                </button>
+                </div>
             </div>
-          </div>
-        </div>
+            </div>
+        )}
       </div>
     </motion.div>
   );
 };
 
-
 const PromoCard = ({ className, shopId }) => {
+  const { user } = useAuth();
+  const { showToast } = useToast();
+  const router = useRouter();
+
+  const handleStartCustom = (e) => {
+    e?.preventDefault();
+
+    if (!user) {
+      showToast("Hey, login dulu baru bisa kustom!", "error");
+      router.push("/login");
+      return;
+    }
+
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return;
+    }
+
+    router.push(shopId ? `/custom/${shopId}` : "/custom");
+  };
+
   return (
     <motion.div
       layout
@@ -150,10 +208,10 @@ const PromoCard = ({ className, shopId }) => {
         Punya Cerita <br />{" "}
         <span className="italic text-cream-bg">Sendiri?</span>
       </h3>
-      
-      {/* UPDATE LINK DI SINI: Mengarah ke /custom/[shopId] */}
+
       <Link
-        href={shopId ? `/custom/${shopId}` : "/custom"} 
+        onClick={handleStartCustom}
+        href={shopId ? `/custom/${shopId}` : "/custom"}
         className="relative z-10 group/btn flex items-center gap-3 bg-cream-bg text-dark-green px-8 py-4 rounded-full font-bold text-sm hover:bg-white transition-all hover:scale-105 shadow-lg hover:shadow-xl"
       >
         <span>Mulai Custom Sekarang</span>
@@ -168,16 +226,43 @@ const PromoCard = ({ className, shopId }) => {
   );
 };
 
-// --- MAIN PAGE: STORE FRONT ---
 export default function ShopEtalasePage() {
   const { id } = useParams();
   const router = useRouter();
   const [activeMood, setActiveMood] = useState("All");
-
-  // 1. Ambil Data Toko
   const currentShop = SHOPS.find((s) => String(s.id) === String(id));
+  const { user } = useAuth();
+  const { showToast } = useToast();
 
-  // 2. Ambil Barang Toko (DENGAN FILTER PROMO)
+   
+  console.log("ID:", id);
+  console.log("Shop ditemukan:", currentShop);
+  console.log("Shop lat/lng:", currentShop?.lat, currentShop?.lng);
+
+  // --- MAP & CONTACT LOGIC ---
+  const shopCoordinate = currentShop
+    ? { lat: currentShop.lat, lng: currentShop.lng }
+    : { lat: -6.914744, lng: 107.60981 };
+  const shopPhone = currentShop?.phone || "+62 821-2345-6789"; 
+  // ---------------------------
+
+  const handleStartCustom = (e) => {
+    e?.preventDefault(); 
+    
+    if (!user) {
+        showToast("Hey, login dulu baru bisa kustom!", "error");
+        router.push("/login");
+        return;
+    }
+
+    if (user && (user.role === "tenant" || user.role === "superadmin")) {
+        showToast("Gunakan akun user untuk kustom!", "error");
+        return;
+    }
+
+    router.push(`/custom/${currentShop.id}`);
+  };
+
   const shopProducts = allItems.filter((item) => {
     if (!currentShop) return false;
     if (item.type === "promo") {
@@ -188,10 +273,19 @@ export default function ShopEtalasePage() {
 
   const filteredItems =
     activeMood === "All"
-    ? shopProducts
-    : shopProducts.filter(
-        (item) => item.type === "promo" || item.category === activeMood
-      );
+      ? shopProducts
+      : shopProducts.filter(
+          (item) => item.type === "promo" || item.category === activeMood
+        );
+
+  const sortedItems = [...filteredItems].sort((a, b) => {
+      const isA_Available = a.type === 'promo' || (a.stock || 0) > 0;
+      const isB_Available = b.type === 'promo' || (b.stock || 0) > 0;
+
+      if (isA_Available && !isB_Available) return -1;
+      if (!isA_Available && isB_Available) return 1;
+      return 0;
+  });
 
   const getBentoClass = (index) => {
     if (index % 6 === 0) return "md:col-span-2 md:row-span-2 min-h-[640px]";
@@ -223,78 +317,149 @@ export default function ShopEtalasePage() {
         </div>
       </div>
 
-      <div className="relative pt-36 pb-12 px-6 text-center z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <div className="w-24 h-24 mx-auto bg-gray-200 rounded-full overflow-hidden mb-6 border-4 border-white shadow-xl">
-            <img
-              src={currentShop.image}
-              alt={currentShop.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <h1 className="text-4xl md:text-6xl font-serif text-dark-green mb-3">
-            {currentShop.name}
-          </h1>
-          <div className="flex items-center justify-center gap-4 text-gray-500 text-sm mb-8">
-            <span className="flex items-center gap-1">
-              <MapPin size={14} /> {currentShop.location}
-            </span>
-            <span className="flex items-center gap-1 text-orange-500 font-bold bg-orange-50 px-2 py-0.5 rounded">
-              <Star size={12} fill="currentColor" /> {currentShop.rating}
-            </span>
-          </div>
+      <div className="relative pt-36 pb-12 px-6 z-10">
+        
+        <div className="max-w-5xl mx-auto mt-10 mb-10">
+            <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="bg-white/60 backdrop-blur-md rounded-[2.5rem] p-8 border border-white/60 shadow-lg flex flex-col md:flex-row gap-8 md:gap-12 items-center md:items-start"
+            >
+                <div className="flex-1 flex flex-col items-center md:items-start text-center md:text-left justify-center h-full pt-2">
+                    <div className="flex flex-col md:flex-row items-center gap-6 mb-4">
+                        <div className="w-24 h-24 bg-white rounded-full overflow-hidden border-4 border-white shadow-md shrink-0">
+                            <img
+                                src={currentShop.image}
+                                alt={currentShop.name}
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                        <div>
+                            <h1 className="text-3xl md:text-5xl font-serif font-bold text-dark-green leading-tight">
+                                {currentShop.name}
+                            </h1>
+                            <div className="flex flex-wrap gap-2 mt-2 justify-center md:justify-start">
+                                <span className="flex items-center gap-1 text-xs font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-md border border-orange-100">
+                                    <Star size={12} fill="currentColor" /> {currentShop.rating}
+                                </span>
+                                <span className="flex items-center gap-1 text-xs font-medium text-gray-500 bg-white px-2 py-1 rounded-md border border-gray-100">
+                                    <MapPin size={12} /> {currentShop.location}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
 
-          {/* Tombol Custom Header (SUDAH DIPERBAIKI) */}
-          {currentShop.can_customize && (
-            <div className="mb-10">
-              <Link
-                // UPDATE LINK DI SINI: Mengarah ke /custom/[id]
-                href={`/custom/${currentShop.id}`}
-                className="inline-flex items-center gap-2 bg-dark-green text-white px-8 py-3 rounded-full font-bold hover:bg-sage-green transition shadow-lg"
-              >
-                <Palette size={18} /> Racik Buket Sendiri
-              </Link>
-            </div>
-          )}
-        </motion.div>
+                    <div className="w-full h-px bg-dark-green/5 mb-5 w-3/4 mx-auto md:mx-0"></div>
 
-        {/* Filter Mood */}
-        <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative mt-4">
-          {["All", "Warm", "Gloomy"].map((mood) => {
-            const isActive = activeMood === mood;
-            return (
-              <button
-                key={mood}
-                onClick={() => setActiveMood(mood)}
-                className={`relative px-8 py-2.5 rounded-full text-sm font-bold transition-colors duration-300 z-10 ${
-                  isActive
-                    ? "text-white"
-                    : "text-gray-500 hover:text-dark-green"
-                }`}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-dark-green rounded-full shadow-md"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  {mood === "Warm" && (
-                    <Sparkles
-                      size={12}
-                      className={isActive ? "text-yellow-300" : ""}
+                    <div className="space-y-4 w-full md:w-auto">
+                        <div className="flex items-center justify-center md:justify-start gap-2 text-sm text-gray-600">
+                            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                <Phone size={14} />
+                            </div>
+                            <span className="font-mono font-medium">{shopPhone}</span>
+                        </div>
+
+                        {currentShop.can_customize && (
+                            <Link
+                                onClick={handleStartCustom}
+                                href={`/custom/${currentShop.id}`}
+                                className="group w-full md:w-auto inline-flex items-center justify-center gap-3 bg-dark-green text-white px-8 py-3.5 rounded-full font-bold hover:bg-sage-green transition-all shadow-md hover:shadow-lg"
+                            >
+                                <Palette size={18} className="group-hover:rotate-12 transition-transform"/>
+                                <span>Racik Buket Sendiri</span>
+                            </Link>
+                        )}
+                    </div>
+                </div>
+
+                <div className="w-full md:w-[320px] lg:w-[380px] shrink-0">
+                    <div className="h-[220px] w-full rounded-3xl overflow-hidden border-2 border-white/20 shadow-inner relative group z-0">
+                         <Map 
+                            key={`${shopCoordinate.lat}-${shopCoordinate.lng}`}
+                            initialViewState={{
+                                longitude: shopCoordinate.lng,
+                                latitude: shopCoordinate.lat,
+                                zoom: 14
+                            }}
+                            center={[shopCoordinate.lng, shopCoordinate.lat]}
+                            zoom={14}
+                        >
+                            <MapMarker longitude={shopCoordinate.lng} latitude={shopCoordinate.lat}>
+                              <MarkerContent>
+                                <div className="relative hover:-translate-y-2 transition-transform duration-300 group/pin cursor-pointer">
+                                  <MapPin
+                                    size={32}
+                                    className="text-red-500 fill-red-500 drop-shadow-lg"
+                                  />
+                                  <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-sm"></div>
+                                </div>
+                              </MarkerContent>
+                            </MapMarker>
+                        </Map>
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-dark-green/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end justify-center pb-4 pointer-events-none">
+                            <span className="text-white font-bold text-sm flex items-center gap-2 translate-y-2 group-hover:translate-y-0 transition-transform">
+                                <ExternalLink size={14} /> Buka Peta Besar
+                            </span>
+                        </div>
+
+                        <a 
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${shopCoordinate.lat},${shopCoordinate.lng}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="absolute inset-0 bg-transparent cursor-pointer z-10"
+                            title="Lihat Rute di Google Maps"
+                        />
+                    </div>
+                    
+                    <div className="flex justify-end mt-[-20px] mr-4 relative z-20 pointer-events-none">
+                         <button 
+                            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${shopCoordinate.lat},${shopCoordinate.lng}`, "_blank")}
+                            className="pointer-events-auto bg-white text-dark-green px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 hover:bg-gray-50 transition-all border border-gray-100"
+                         >
+                             <Navigation size={14} className="text-sage-green"/> Ambil Rute
+                         </button>
+                    </div>
+                </div>
+
+            </motion.div>
+        </div>
+
+        <div className="text-center mb-8">
+            <div className="inline-flex bg-white/50 backdrop-blur-sm p-1.5 rounded-full border border-dark-green/10 shadow-sm relative mt-4">
+            {["All", "Warm", "Gloomy"].map((mood) => {
+                const isActive = activeMood === mood;
+                return (
+                <button
+                    key={mood}
+                    onClick={() => setActiveMood(mood)}
+                    className={`relative px-8 py-2.5 rounded-full text-sm font-bold transition-colors duration-300 z-10 ${
+                    isActive
+                        ? "text-white"
+                        : "text-gray-500 hover:text-dark-green"
+                    }`}
+                >
+                    {isActive && (
+                    <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 bg-dark-green rounded-full shadow-md"
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
                     />
-                  )}
-                  {mood}
-                </span>
-              </button>
-            );
-          })}
+                    )}
+                    <span className="relative z-10 flex items-center gap-2">
+                    {mood === "Warm" && (
+                        <Sparkles
+                        size={12}
+                        className={isActive ? "text-yellow-300" : ""}
+                        />
+                    )}
+                    {mood}
+                    </span>
+                </button>
+                );
+            })}
+            </div>
         </div>
       </div>
 
@@ -307,14 +472,13 @@ export default function ShopEtalasePage() {
           className="grid grid-cols-1 md:grid-cols-4 gap-6 grid-flow-dense"
         >
           <AnimatePresence mode="popLayout">
-            {filteredItems.map((item, index) => {
+            {sortedItems.map((item, index) => {
               if (item.type === "promo") {
                 return (
-                  // PENTING: Pass 'shopId' ke PromoCard
-                  <PromoCard 
-                    key={item.id} 
-                    className={getBentoClass(index)} 
-                    shopId={currentShop.id} 
+                  <PromoCard
+                    key={item.id}
+                    className={getBentoClass(index)}
+                    shopId={currentShop.id}
                   />
                 );
               }
@@ -330,7 +494,7 @@ export default function ShopEtalasePage() {
           </AnimatePresence>
         </motion.div>
 
-        {filteredItems.filter((i) => i.type !== "promo").length === 0 && (
+        {sortedItems.filter((i) => i.type !== "promo").length === 0 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

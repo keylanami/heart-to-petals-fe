@@ -1,89 +1,121 @@
 "use client";
-import { createContext, useContext, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useToast } from "@/app/context/ToastContext"; 
 
-const AuthContext = createContext();
+import { createContext, useContext, useEffect, useState } from "react";
+import api from "@/lib/axios";
+import { useRouter } from "next/navigation";
+
+const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
   const router = useRouter();
-  const { showToast } = useToast(); 
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const getStorage = (key) => typeof window !== "undefined" ? localStorage.getItem(key) : null;
-  const setStorage = (key, value) => typeof window !== "undefined" && localStorage.setItem(key, value);
-  const removeStorage = (key) => typeof window !== "undefined" && localStorage.removeItem(key);
-
-  useEffect(() => {
+  /* --------------------
+     Fetch authenticated user
+  -------------------- */
+  const fetchUser = async () => {
     try {
-      const loggedInUser = getStorage("currentUser");
-      if (loggedInUser) setUser(JSON.parse(loggedInUser));
-    } catch (error) {
-      removeStorage("currentUser");
+      const res = await api.get("/api/user");
+      setUser(res.data);
+    } catch (err) {
+      setUser(null);
+    } finally {
+      setLoading(false);
     }
-  }, []);
+  };
 
-  const register = (name, email, password) => {
+  /* --------------------
+     Register
+  -------------------- */
+  const register = async (name, email, password) => {
     try {
-      const rawData = getStorage("users");
-      const existingUsers = rawData ? JSON.parse(rawData) : [];
-      
-      const isExist = existingUsers.find((u) => u.email === email);
-      if (isExist) {
-        showToast("Email sudah terdaftar!", "error");
-        return false;
-      }
+      await api.get("/sanctum/csrf-cookie");
+      await api.post("/api/register", {
+        name,
+        email,
+        password,
+        password_confirmation: password,
+        role: "buyer",
+      });
 
-      const newUser = { id: Date.now(), name, email, password };
-      existingUsers.push(newUser);
-      setStorage("users", JSON.stringify(existingUsers));
-      
-      showToast("Register Berhasil! Silakan Login.", "success");
-      
       router.push("/login");
       return true;
-    } catch (e) {
-      showToast("Gagal register.", "error");
+    } catch (err) {
+      console.error(err.response?.data);
       return false;
     }
   };
-
-  const login = (email, password) => {
+  const registerTenant = async (name, email, password) => {
     try {
-      const rawData = getStorage("users");
-      const existingUsers = rawData ? JSON.parse(rawData) : [];
-      
-      const validUser = existingUsers.find(
-        (u) => u.email === email && u.password === password
-      );
+      await api.get("/sanctum/csrf-cookie");
+      await api.post("/api/register-tenant", {
+        name,
+        email,
+        password,
+      });
 
-      if (validUser) {
-        setStorage("currentUser", JSON.stringify(validUser));
-        setUser(validUser);
-        showToast(`Welcome back, ${validUser.name}!`, "success");
-        router.push("/toko"); 
-        return true;
-      } else {
-        showToast("Email atau Password salah!", "error");
-        return false;
-      }
-    } catch (e) {
+      router.push("/login");
+      return true;
+    } catch (err) {
+      console.error(err.response?.data);
       return false;
     }
   };
 
-  const logout = () => {
-    removeStorage("currentUser");
-    setUser(null);
-    showToast("Berhasil Logout", "info");
-    router.push("/login");
+  /* --------------------
+     Login
+  -------------------- */
+  const login = async (email, password) => {
+    try {
+      await api.get("/sanctum/csrf-cookie");
+      await api.post("/api/login", {
+        email,
+        password,
+      });
+
+      await fetchUser();
+      router.push("/");
+      return true;
+    } catch (err) {
+      console.error(err.response?.data);
+      return false;
+    }
   };
+
+  /* --------------------
+     Logout
+  -------------------- */
+  const logout = async () => {
+    try {
+      await api.post("/api/logout");
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setUser(null);
+      router.push("/");
+    }
+  };
+
+  useEffect(() => {
+    fetchUser();
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ user, register, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        register,
+        login,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}

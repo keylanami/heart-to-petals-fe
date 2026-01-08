@@ -7,13 +7,18 @@ import {
   Minus,
   Plus,
   ShoppingBag,
-  Heart,
   Droplets,
   Leaf,
-  BookOpen,
-  MessageSquare, 
-  Star, 
-  User
+  Star,
+  Store,
+  CreditCard,
+  AlertCircle,
+  Lock,
+  CheckCircle,
+  ShieldAlert,
+  MapPin, 
+  Clock, 
+  Navigation,
 } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -22,6 +27,7 @@ import { allItems } from "@/app/utils/shop";
 import { useCart } from "@/app/context/CartContext";
 import { useToast } from "@/app/context/ToastContext";
 import { useAuth } from "@/app/context/AuthContext";
+import { Map, MapMarker, MarkerContent } from "@/components/ui/map";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -32,64 +38,127 @@ export default function ProductDetailPage() {
 
   const [qty, setQty] = useState(1);
   const [activeTab, setActiveTab] = useState("story");
-
-  // --- STATE REVIEW ---
   const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState({ rating: 0, text: "" });
   const [hoverRating, setHoverRating] = useState(0);
+  const [reviewStatus, setReviewStatus] = useState({
+    canReview: false,
+    message: "",
+  });
 
   const product = allItems.find((p) => String(p.id) === String(id));
+  
+  const shopData = product?.shop || {};
+  const defaultCoord = { lat: -6.914744, lng: 107.60981 };
+  const shopCoordinate = shopData.coordinate || defaultCoord;
+  const [isMapReady, setIsMapReady] = useState(false);
 
-  // --- LOGIC REKOMENDASI PRODUK (You Might Also Like) ---
-  const relatedProducts = product 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMapReady(true);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
+
+
+  const relatedProducts = product
     ? allItems
-        .filter((p) => p.category === product.category && String(p.id) !== String(id))
-        .slice(0, 3) // Ambil maksimal 3
+        .filter(
+          (p) => p.category === product.category && String(p.id) !== String(id)
+        )
+        .slice(0, 3)
     : [];
 
   if (product && relatedProducts.length < 3) {
-      const others = allItems.filter(p => String(p.id) !== String(id) && p.category !== product.category);
-      while (relatedProducts.length < 3 && others.length > 0) {
-          const randomIndex = Math.floor(Math.random() * others.length);
-          relatedProducts.push(others[randomIndex]);
-          others.splice(randomIndex, 1);
-      }
+    const others = allItems.filter(
+      (p) => String(p.id) !== String(id) && p.category !== product.category
+    );
+    while (relatedProducts.length < 3 && others.length > 0) {
+      const randomIndex = Math.floor(Math.random() * others.length);
+      relatedProducts.push(others[randomIndex]);
+      others.splice(randomIndex, 1);
+    }
   }
 
-  // 1. Load Review
   useEffect(() => {
     if (product) {
-        const storageKey = `reviews_${product.id}`;
-        const savedReviews = localStorage.getItem(storageKey);
-        
-        if (savedReviews) {
-            setReviews(JSON.parse(savedReviews));
-        } else {
-            setReviews([
-                { id: 1, name: "Sinta Melati", rating: 5, text: "Bunganya segar banget, tahan lama!", date: "12 Okt 2025" },
-                { id: 2, name: "Budi Santoso", rating: 4, text: "Pengiriman cepat, tapi packing agak penyok dikit.", date: "10 Okt 2025" }
-            ]);
-        }
+      const storageKey = `reviews_${product.id}`;
+      const savedReviews = localStorage.getItem(storageKey);
+      if (savedReviews) {
+        setReviews(JSON.parse(savedReviews));
+      } else {
+        setReviews([
+          {
+            id: 1,
+            name: "Sinta Melati",
+            userId: "mock_user_1",
+            rating: 5,
+            text: "Bunganya segar banget, tahan lama!",
+            date: "12 Okt 2025",
+          },
+          {
+            id: 2,
+            name: "Budi Santoso",
+            userId: "mock_user_2",
+            rating: 4,
+            text: "", 
+            date: "10 Okt 2025",
+          },
+        ]);
+      }
     }
   }, [product]);
 
-  // 2. Submit Review
+  useEffect(() => {
+    if (!user) {
+      setReviewStatus({ canReview: false, message: "login_required" });
+      return;
+    }
+    if (['tenant', 'superadmin'].includes(user.role)) {
+      setReviewStatus({ canReview: false, message: "role_restricted" });
+      return;
+    }
+    const alreadyReviewed = reviews.some(r => r.userEmail === user.email || r.userId === user.id);
+    if (alreadyReviewed) {
+      setReviewStatus({ canReview: false, message: "already_reviewed" });
+      return;
+    }
+    const hasPurchased = true; 
+    if (!hasPurchased) {
+      setReviewStatus({ canReview: false, message: "purchase_required" });
+    } else {
+      setReviewStatus({ canReview: true, message: "ok" });
+    }
+  }, [user, reviews, product]);
+
   const handleSubmitReview = (e) => {
     e.preventDefault();
-    if (!newReview.text.trim()) return;
-
+    if (!user) return;
+    if (['admin', 'superadmin', 'tenant'].includes(user.role)) {
+      showToast("Admin tidak dapat mengirim ulasan.", "error");
+      return;
+    }
+    if (newReview.rating === 0) {
+      showToast("Mohon beri bintang terlebih dahulu ⭐", "error");
+      return;
+    }
     const reviewItem = {
-        id: Date.now(),
-        name: user ? user.name : "Anonymous Guest",
-        rating: newReview.rating,
-        text: newReview.text,
-        date: new Date().toLocaleDateString("id-ID", { day: 'numeric', month: 'short', year: 'numeric' })
+      id: Date.now(),
+      name: user.name || user.email,
+      userId: user.id,
+      userEmail: user.email,
+      rating: newReview.rating,
+      text: newReview.text,
+      date: new Date().toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }),
     };
-
     const updatedReviews = [reviewItem, ...reviews];
     setReviews(updatedReviews);
     localStorage.setItem(`reviews_${product.id}`, JSON.stringify(updatedReviews));
-    setNewReview({ rating: 5, text: "" });
+    setNewReview({ rating: 0, text: "" });
     showToast("Terima kasih atas ulasanmu!", "success");
   };
 
@@ -97,250 +166,348 @@ export default function ProductDetailPage() {
     return (
       <main className="bg-cream-bg min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-serif text-dark-green mb-4">Bunga Tidak Ditemukan 🥀</h1>
-          <button onClick={() => router.back()} className="text-sage-green underline">Kembali ke Shop</button>
+          <h1 className="text-4xl font-serif text-dark-green mb-4">
+            Bunga Tidak Ditemukan 🥀
+          </h1>
+          <button onClick={() => router.back()} className="text-sage-green underline">
+            Kembali ke Shop
+          </button>
         </div>
       </main>
     );
   }
 
-  const priceFormatted = new Intl.NumberFormat("id-ID", {
+  const formatRupiah = (val) => new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     maximumSignificantDigits: 3,
-  }).format(product.price);
+  }).format(val);
+
+  const checkAuth = () => {
+    if (!user) {
+      showToast("Eits, login dulu baru bisa belanja! 🛒", "error");
+      router.push("/login");
+      return false;
+    }
+    if (user && (user.role === 'tenant' || user.role === 'superadmin')) {
+      showToast("Gunakan akun user untuk belanja!", "error");
+      return false;
+    }
+    return true;
+  };
 
   const handleAddToCart = () => {
+    if (!checkAuth()) return;
     addToCart(product, qty);
     showToast(`Berhasil menambahkan ${qty}x ${product.title} ke keranjang!`, "success");
   };
 
+  const handleBuyNow = () => {
+    if (!checkAuth()) return;
+    addToCart(product, qty);
+    router.push(`/checkout?direct=true&id=${product.id}`);
+  };
+
   const renderStars = (count) => {
     return [...Array(5)].map((_, i) => (
-        <Star key={i} size={12} className={i < count ? "text-yellow-400 fill-current" : "text-gray-300"} />
+      <Star
+        key={i}
+        size={12}
+        className={i < count ? "text-yellow-400 fill-current" : "text-gray-300"}
+      />
     ));
   };
+
+  const isOutOfStock = product.stock <= 0;
 
   return (
     <main className="bg-cream-bg min-h-screen">
       <Navbar />
-      <div className="max-w-5xl mx-auto px-6 pt-32 pb-24">
-        <motion.button
-          initial={{ opacity: 0, x: -10 }}
-          animate={{ opacity: 1, x: 0 }}
+      
+      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-28 pb-32 md:pb-16">
+        
+        <button
           onClick={() => router.back()}
-          className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-dark-green mb-8 transition-colors group"
+          className="flex items-center gap-2 text-sm font-bold text-gray-400 hover:text-dark-green mb-6 transition-colors group"
         >
           <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
-          Back to Collection
-        </motion.button>
+          Kembali
+        </button>
 
-        <div className="bg-white rounded-[2.5rem] shadow-xl overflow-hidden border border-white/50 p-6 md:p-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-16 items-start">
+        <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 p-5 md:p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
             
-            {/* GAMBAR PRODUK */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="relative aspect-[4/5] rounded-[2rem] overflow-hidden bg-gray-100 shadow-inner group"
-            >
+            <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-gray-100 group">
               <img
                 src={product.image}
                 alt={product.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${isOutOfStock ? 'grayscale opacity-80' : ''}`}
               />
-              <div className="absolute top-6 left-6">
-                <span className={`px-4 py-2 rounded-full text-xs font-bold uppercase tracking-widest backdrop-blur-md shadow-sm text-white ${product.theme === "dark" ? "bg-dark-green/80" : "bg-sage-green/90"}`}>
-                  {product.category} Mood
+              
+              <div className="absolute top-4 left-4">
+                <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-white shadow-sm ${
+                    product.theme === "dark" ? "bg-dark-green" : "bg-sage-green"
+                  }`}
+                >
+                  {product.category}
                 </span>
               </div>
-            </motion.div>
 
-            {/* DETAIL PRODUK */}
-            <div className="flex flex-col h-full pt-2">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <span className="text-xs font-bold text-sage-green tracking-[0.2em] uppercase mb-2 block">
-                    {product.tag} Collection
-                  </span>
-                  <h1 className="text-4xl md:text-5xl font-serif font-bold text-dark-green leading-tight mb-2">
-                    {product.title}
-                  </h1>
+              {isOutOfStock && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-[2px]">
+                      <div className="bg-white px-4 py-2 rounded-lg transform -rotate-6 shadow-lg border-2 border-red-500">
+                          <span className="text-red-600 font-extrabold text-lg uppercase tracking-widest">Stok Habis</span>
+                      </div>
+                  </div>
+              )}
+            </div>
+
+            <div className="flex flex-col h-full">
+              
+             <div className="mb-6">
+                 <div className="flex flex-col gap-4 mb-4">
+                     <div className="flex items-start justify-between">
+                         <Link href={`/shop/${shopData.id}`} className="group/shop flex items-center gap-3">
+                             <div className="w-10 h-10 rounded-full bg-sage-green/10 flex items-center justify-center text-sage-green border border-sage-green/20 group-hover/shop:bg-sage-green group-hover/shop:text-white transition-all">
+                                 <Store size={18} />
+                             </div>
+                             <div>
+                                 <h4 className="font-bold text-dark-green text-sm group-hover/shop:text-sage-green transition-colors">{shopData.name || "Florist Partner"}</h4>
+                                 <p className="text-[10px] text-gray-500 font-medium flex items-center gap-1">
+                                     <MapPin size={10} /> {shopData.location || "Lokasi Toko"}
+                                 </p>
+                             </div>
+                         </Link>
+                         <button 
+                             onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${shopCoordinate.lat},${shopCoordinate.lng}`, "_blank")}
+                             className="text-[10px] font-bold text-gray-400 hover:text-dark-green flex items-center gap-1 border border-gray-200 rounded-full px-3 py-1 hover:border-dark-green transition-all"
+                         >
+                             <Navigation size={10} /> Rute
+                         </button>
+                     </div>
+
+                     <div className="w-full h-24 rounded-xl overflow-hidden border border-gray-100 relative shadow-inner">
+                        {isMapReady ? (
+                          <Map 
+                            key={`${shopCoordinate.lat}-${shopCoordinate.lng}`}
+                            initialViewState={{
+                              longitude: shopCoordinate.lng,
+                              latitude: shopCoordinate.lat,
+                              zoom: 13
+                            }}
+                            center={[shopCoordinate.lng, shopCoordinate.lat]}
+                            zoom={13}
+                          >
+                            <MapMarker longitude={shopCoordinate.lng} latitude={shopCoordinate.lat}>
+                              <MarkerContent>
+                                <div className="relative hover:-translate-y-2 transition-transform duration-300 group/pin cursor-pointer">
+                                  <MapPin
+                                    size={32}
+                                    className="text-red-500 fill-red-500 drop-shadow-lg"
+                                  />
+                                  <div className="absolute top-[8px] left-1/2 -translate-x-1/2 w-2 h-2 bg-white rounded-full shadow-sm"></div>
+                                </div>
+                              </MarkerContent>
+                            </MapMarker>
+                          </Map>
+                        ) : (
+                          <div className="w-full h-full bg-gray-100 animate-pulse rounded-xl"></div>
+                        )}
+                        
+                        <a 
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${shopCoordinate.lat},${shopCoordinate.lng}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="absolute inset-0 bg-transparent hover:bg-black/5 transition-colors cursor-pointer z-10"
+                            title="Lihat di Google Maps"
+                        />
+                     </div>
+                 </div>
+
+                <h1 className="text-3xl md:text-4xl font-serif font-bold text-dark-green leading-tight mb-2">
+                  {product.title}
+                </h1>
+                
+                <div className="flex items-center gap-4 mt-3">
+                    <p className="text-2xl font-sans font-bold text-sage-green">
+                        {formatRupiah(product.price)}
+                    </p>
+                    <div className="h-6 w-px bg-gray-200"></div>
+                    {isOutOfStock ? (
+                        <span className="text-red-500 text-xs font-bold flex items-center gap-1">
+                            <AlertCircle size={14}/> Out of Stock
+                        </span>
+                    ) : (
+                        <span className={`text-xs font-bold flex items-center gap-1 ${product.stock < 5 ? "text-orange-500" : "text-green-600"}`}>
+                            <div className={`w-2 h-2 rounded-full ${product.stock < 5 ? "bg-orange-500 animate-pulse" : "bg-green-600"}`}></div>
+                            Stok: {product.stock}
+                        </span>
+                    )}
                 </div>
-                <button className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-400 hover:border-red-200 hover:bg-red-50 hover:text-red-500 transition-colors">
-                  <Heart size={20} />
-                </button>
               </div>
 
-              <p className="text-2xl font-sans font-medium text-gray-800 mb-6">{priceFormatted}</p>
-              <p className="text-gray-500 leading-relaxed mb-8 font-light">{product.desc}</p>
+              <p className="text-gray-500 text-sm leading-relaxed mb-8">
+                {product.desc}
+              </p>
 
-              {/* --- TABS SECTION --- */}
-              <div className="mb-8 bg-cream-bg/50 rounded-2xl p-2 border border-dark-green/5">
-                <div className="flex gap-1 mb-4 border-b border-gray-200/50 px-2 overflow-x-auto">
-                  {["story", "composition", "care", "reviews"].map((tab) => (
+              <div className="mb-8 flex-1">
+                <div className="flex gap-6 border-b border-gray-100 mb-4 overflow-x-auto scrollbar-hide">
+                  {["story", "flowers", "care", "reviews"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`
-                        flex-1 pb-3 text-xs font-bold uppercase tracking-wider transition-all relative min-w-[80px]
-                        ${activeTab === tab ? "text-dark-green" : "text-gray-400 hover:text-gray-600"}
-                      `}
+                      className={`pb-3 text-xs font-bold uppercase tracking-wider transition-all relative whitespace-nowrap ${
+                          activeTab === tab ? "text-dark-green border-b-2 border-dark-green" : "text-gray-400 hover:text-gray-600"
+                        }`}
                     >
                       {tab}
-                      {activeTab === tab && (
-                        <motion.div layoutId="underline" className="absolute bottom-0 left-0 w-full h-[2px] bg-dark-green" />
-                      )}
                     </button>
                   ))}
                 </div>
 
-                <div className="px-2 pb-2 min-h-[120px] text-sm text-gray-600">
+                <div className="min-h-[100px] text-sm text-gray-600 leading-relaxed">
                   <AnimatePresence mode="wait">
-                    
-                  
                     {activeTab === "story" && (
-                      <motion.div key="story" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex gap-3 items-start">
-                        <BookOpen size={18} className="text-sage-green shrink-0 mt-0.5" />
-                        <p className="leading-relaxed italic">"{product.story || product.desc}"</p>
+                      <motion.div key="story" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                        <p className="italic mb-2">"{product.story}"</p>
                       </motion.div>
                     )}
-
-                  
-                    {activeTab === "composition" && (
-                      <motion.div key="composition" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
-                        <ul className="grid grid-cols-1 gap-2">
-                          {product.composition ? (
-                            product.composition.map((item, idx) => (
-                              <li key={idx} className="flex items-center gap-2">
-                                <Leaf size={14} className="text-sage-green" />
-                                <span>{item}</span>
-                              </li>
-                            ))
-                          ) : ( <p>Detail komposisi standar.</p> )}
-                        </ul>
-                      </motion.div>
+                    {activeTab === "flowers" && (
+                      <motion.ul key="flowers" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-1">
+                        {product.flowers ? product.flowers.map((f, i) => (
+                            <li key={i} className="flex items-center gap-2"><Leaf size={12} className="text-sage-green"/> {f}</li>
+                        )) : "Standar komposisi"}
+                      </motion.ul>
                     )}
-
-                  
                     {activeTab === "care" && (
-                      <motion.div key="care" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }} className="flex gap-3 items-start">
-                        <Droplets size={18} className="text-blue-400 shrink-0 mt-0.5" />
-                        <p className="leading-relaxed">{product.care || "Ganti air setiap hari dan potong batang."}</p>
+                      <motion.div key="care" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex gap-3 bg-blue-50 p-3 rounded-xl border border-blue-100">
+                        <Droplets className="text-blue-400 shrink-0" size={16} />
+                        <p>{product.care}</p>
                       </motion.div>
                     )}
-
-                   
                     {activeTab === "reviews" && (
-                        <motion.div key="reviews" initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -5 }}>
-                            <form onSubmit={handleSubmitReview} className="mb-6 bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                                <p className="text-xs font-bold text-gray-400 uppercase mb-2">Tulis Ulasan</p>
-                                <div className="flex gap-1 mb-3">
-                                    {[1, 2, 3, 4, 5].map((star) => (
-                                        <button 
-                                            key={star} 
-                                            type="button"
-                                            onClick={() => setNewReview({...newReview, rating: star})}
-                                            onMouseEnter={() => setHoverRating(star)}
-                                            onMouseLeave={() => setHoverRating(0)}
-                                            className="focus:outline-none transition-transform hover:scale-110"
-                                        >
-                                            <Star 
-                                                size={20} 
-                                                className={`${(hoverRating || newReview.rating) >= star ? "text-yellow-400 fill-current" : "text-gray-200"}`} 
-                                            />
-                                        </button>
-                                    ))}
-                                </div>
-                                <textarea 
-                                    placeholder="Ceritakan pengalamanmu..." 
-                                    className="w-full text-sm bg-gray-50 rounded-lg p-3 focus:outline-none focus:ring-1 focus:ring-dark-green mb-3 resize-none h-20"
-                                    value={newReview.text}
-                                    onChange={(e) => setNewReview({...newReview, text: e.target.value})}
-                                    required
-                                />
-                                <button type="submit" className="w-full bg-dark-green text-white py-2 rounded-lg text-xs font-bold uppercase tracking-wider hover:bg-sage-green transition">
-                                    Kirim Ulasan
-                                </button>
-                            </form>
-
-                            <div className="space-y-4 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                                {reviews.length === 0 ? (
-                                    <p className="text-center text-gray-400 italic text-xs py-4">Belum ada ulasan. Jadilah yang pertama!</p>
-                                ) : (
-                                    reviews.map((rev) => (
-                                        <div key={rev.id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
-                                            <div className="flex justify-between items-start mb-1">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
-                                                        <User size={12} />
-                                                    </div>
-                                                    <span className="font-bold text-dark-green text-xs">{rev.name}</span>
-                                                </div>
-                                                <span className="text-[10px] text-gray-400">{rev.date}</span>
-                                            </div>
-                                            <div className="flex gap-0.5 mb-1 pl-8">
-                                                {renderStars(rev.rating)}
-                                            </div>
-                                            <p className="text-gray-600 text-xs pl-8 leading-relaxed">"{rev.text}"</p>
+                        <motion.div key="reviews" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                            {reviewStatus.canReview ? (
+                                <form onSubmit={handleSubmitReview} className="mb-4 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                                    <div className="flex gap-1 mb-2">
+                                        {[1,2,3,4,5].map(s => (
+                                            <Star key={s} size={16} className={`cursor-pointer ${s <= (hoverRating||newReview.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                                                onClick={() => setNewReview({...newReview, rating: s})} onMouseEnter={() => setHoverRating(s)} onMouseLeave={() => setHoverRating(0)} />
+                                        ))}
+                                    </div>
+                                    <input className="w-full text-xs bg-white p-2 rounded border border-gray-200 mb-2 focus:outline-none focus:border-sage-green" placeholder="Ceritakan pengalamanmu..."
+                                        value={newReview.text} onChange={e => setNewReview({...newReview, text: e.target.value})} />
+                                    <button type="submit" className="text-[10px] font-bold bg-dark-green text-white px-3 py-1.5 rounded hover:bg-sage-green transition">Kirim Ulasan</button>
+                                </form>
+                            ) : (
+                                <div className="mb-4 bg-gray-50 p-4 rounded-xl border border-gray-100 text-center">
+                                    {reviewStatus.message === "login_required" && (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <Lock size={20} className="text-gray-400"/>
+                                            <p className="text-xs text-gray-500">Silakan <Link href="/login" className="text-dark-green font-bold underline">Login</Link> untuk menulis ulasan.</p>
                                         </div>
-                                    ))
-                                )}
+                                    )}
+                                    {reviewStatus.message === "role_restricted" && (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <ShieldAlert size={20} className="text-orange-500"/>
+                                            <p className="text-xs text-gray-500">Admin/Tenant tidak dapat memberikan ulasan produk.</p>
+                                        </div>
+                                    )}
+                                    {reviewStatus.message === "purchase_required" && (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <ShoppingBag size={20} className="text-gray-400"/>
+                                            <p className="text-xs text-gray-500">Hanya pembeli yang dapat memberikan ulasan.</p>
+                                        </div>
+                                    )}
+                                    {reviewStatus.message === "already_reviewed" && (
+                                        <div className="flex flex-col items-center gap-2">
+                                            <CheckCircle size={20} className="text-sage-green"/>
+                                            <p className="text-xs text-gray-500">Kamu sudah memberikan ulasan untuk produk ini. Terima kasih!</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <div className="space-y-3 max-h-40 overflow-y-auto custom-scrollbar">
+                                {reviews.length === 0 ? <p className="text-gray-400 text-xs italic">Belum ada ulasan.</p> : reviews.map(r => (
+                                    <div key={r.id} className="pb-2 border-b border-gray-100 last:border-0">
+                                            <div className="flex justify-between text-xs mb-1">
+                                                <span className="font-bold text-dark-green">{r.name}</span>
+                                                <span className="text-[10px] text-gray-400">{r.date}</span>
+                                            </div>
+                                            <div className="flex gap-0.5 mb-1">{renderStars(r.rating)}</div>
+                                            {r.text && <p className="text-gray-600 text-xs italic">"{r.text}"</p>}
+                                    </div>
+                                ))}
                             </div>
                         </motion.div>
                     )}
-
                   </AnimatePresence>
                 </div>
               </div>
 
-              <div className="mt-auto pt-6 border-t border-gray-100 flex gap-4">
-                <div className="flex items-center gap-4 bg-gray-50 rounded-full px-4 py-3 border border-gray-200">
-                  <button onClick={() => setQty(Math.max(1, qty - 1))} className="hover:text-dark-green transition">
-                    <Minus size={16} />
-                  </button>
-                  <span className="font-bold w-4 text-center">{qty}</span>
-                  <button onClick={() => setQty(qty + 1)} className="hover:text-dark-green transition">
-                    <Plus size={16} />
-                  </button>
-                </div>
+              <div className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 p-4 z-50 md:static md:bg-transparent md:border-0 md:p-0 md:z-0">
+                <div className="max-w-6xl mx-auto md:max-w-none flex items-center gap-3">
+                    
+                    <div className="flex items-center gap-3 bg-gray-100 rounded-xl px-3 py-2 border border-gray-200 h-12">
+                        <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-8 h-full flex items-center justify-center hover:text-sage-green disabled:opacity-30" disabled={isOutOfStock}>
+                            <Minus size={16} />
+                        </button>
+                        <span className="font-bold w-4 text-center text-sm">{qty}</span>
+                        <button onClick={() => setQty(Math.min(product.stock, qty + 1))} className="w-8 h-full flex items-center justify-center hover:text-sage-green disabled:opacity-30" disabled={isOutOfStock}>
+                            <Plus size={16} />
+                        </button>
+                    </div>
 
-                <button onClick={handleAddToCart} className="flex-1 bg-dark-green text-white rounded-full font-bold uppercase tracking-wide hover:bg-sage-green transition-colors shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
-                  <ShoppingBag size={18} />
-                  <span>Add to Cart</span>
-                </button>
+                    <div className="flex gap-2 flex-1 h-12">
+                        <button
+                            onClick={handleAddToCart}
+                            disabled={isOutOfStock}
+                            className="flex-1 rounded-xl border border-dark-green text-dark-green font-bold text-xs md:text-sm hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:border-gray-300 disabled:text-gray-400 flex flex-col md:flex-row items-center justify-center gap-1"
+                        >
+                            <ShoppingBag size={16} />
+                            <span>Add Cart</span>
+                        </button>
+                        
+                        <button
+                            onClick={handleBuyNow}
+                            disabled={isOutOfStock}
+                            className="flex-[1.5] rounded-xl bg-dark-green text-white font-bold text-xs md:text-sm hover:bg-sage-green transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 flex flex-col md:flex-row items-center justify-center gap-1"
+                        >
+                            {isOutOfStock ? (
+                                <span>Stok Habis</span>
+                            ) : (
+                                <>
+                                    <CreditCard size={16} />
+                                    <span>Beli Sekarang</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
               </div>
+
             </div>
           </div>
         </div>
 
-    
-        <div className="mt-20 text-center">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-8">You might also like</p>
-          
+        <div className="mt-16 mb-8">
+          <h3 className="text-lg font-bold text-dark-green mb-6 text-center md:text-left border-b border-gray-200 pb-2 inline-block">
+            You might also love
+          </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {relatedProducts.map((item) => (
-                <Link href={`/product/${item.id}`} key={item.id} className="group block bg-white rounded-2xl p-4 shadow-sm hover:shadow-xl transition-all border border-transparent hover:border-sage-green/30">
-                    <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden mb-4 relative">
-                        <img 
-                            src={item.image} 
-                            alt={item.title} 
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
-                        />
-                        <div className="absolute top-2 right-2 bg-white/30 backdrop-blur-sm px-2 py-1 rounded-md text-[10px] font-bold text-white">
-                            {item.category}
-                        </div>
-                    </div>
-                    <div className="text-left">
-                        <h4 className="font-serif font-bold text-dark-green text-lg leading-tight group-hover:text-sage-green transition-colors line-clamp-1">
-                            {item.title}
-                        </h4>
-                        <p className="text-sm text-gray-500 mt-1">
-                            {new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumSignificantDigits: 3 }).format(item.price)}
-                        </p>
-                    </div>
-                </Link>
+              <Link href={`/product/${item.id}`} key={item.id} className="group block bg-white rounded-2xl p-3 shadow-sm hover:shadow-lg transition-all border border-gray-100">
+                <div className="aspect-square bg-gray-100 rounded-xl overflow-hidden mb-3 relative">
+                  <img src={item.image} alt={item.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-dark-green text-sm line-clamp-1 group-hover:text-sage-green transition-colors">
+                    {item.title}
+                  </h4>
+                  <p className="text-xs text-gray-500 mt-0.5">{formatRupiah(item.price)}</p>
+                </div>
+              </Link>
             ))}
           </div>
         </div>

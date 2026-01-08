@@ -5,31 +5,37 @@ const CartContext = createContext();
 
 export function CartProvider({ children }) {
   const [cart, setCart] = useState([]);
-  const [isInitialized, setIsInitialized] = useState(false); // GUARD: Biar gak nimpa LocalStorage
+  const [isInitialized, setIsInitialized] = useState(false); 
 
-  // 1. Load data sekali saat mount
   useEffect(() => {
     if (typeof window !== "undefined") {
       const savedCart = localStorage.getItem("myCart");
       if (savedCart) {
-        try {
-          setCart(JSON.parse(savedCart));
-        } catch (error) {
-          console.error("Gagal parse cart:", error);
-        }
+        try { setCart(JSON.parse(savedCart)); } 
+        catch (e) { console.error(e); }
       }
-      setIsInitialized(true); // Tandai sudah load
+      setIsInitialized(true); 
+
+      const handleResetCart = () => {
+          setCart([]);
+          localStorage.removeItem("myCart");
+      };
+
+      window.addEventListener("reset-cart", handleResetCart);
+      
+      return () => {
+          window.removeEventListener("reset-cart", handleResetCart);
+      };
     }
   }, []);
 
-  // 2. Simpan otomatis tiap cart berubah (TAPI TUNGGU Initialized dulu)
   useEffect(() => {
     if (isInitialized && typeof window !== "undefined") {
       localStorage.setItem("myCart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("storage"));
     }
   }, [cart, isInitialized]);
 
-  // --- ACTIONS ---
 
   const addToCart = (product, quantity = 1) => {
     setCart((prev) => {
@@ -37,9 +43,13 @@ export function CartProvider({ children }) {
       if (existingItemIndex > -1) {
         const newCart = [...prev];
         newCart[existingItemIndex].qty += quantity;
+        if (newCart[existingItemIndex].qty <= 0) {
+            newCart.splice(existingItemIndex, 1); 
+        }
         return newCart;
       } else {
-        return [...prev, { ...product, qty: quantity }];
+        if (quantity > 0) return [...prev, { ...product, qty: quantity }];
+        return prev;
       }
     });
   };
